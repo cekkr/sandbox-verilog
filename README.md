@@ -708,6 +708,10 @@ Your firmware can load these and emit a series of `csr_write` and `seed_cell` ca
   the Icarus Verilog harness, print the deterministic bin weights (“linear”
   distribution), and optionally draw random samples that approximate the classic
   Gaussian profile.
+- **`examples/neural_edge_slice/`** – Edge Detector slice (`OP_EDGE`) coupled to
+  a tiny ReLU neuron. Run `python3 examples/neural_edge_slice/run.py` to compile
+  the harness, visualise the edge magnitude heatmap, and inspect which cells
+  fire when edge energy plus raw intensity crosses a threshold.
 
 ## Dynamic FPGA adaptation implementation
 
