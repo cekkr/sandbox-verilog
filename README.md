@@ -46,11 +46,11 @@ The project is organized into clean, layered modules:
 | **`sand_math.vh`**          | Saturating/rounding fixed-point helpers used by the PE and raster engine.                                                                                                  |
 | **`sand_pe.v`**             | The *Processing Element* (one grain). Reads its 4–8 neighbors and applies an operation (sum, diffusion, clamp, etc.) or a user-defined microcode rule.                    |
 | **`sand_scheduler_dynamic.v`** | Adaptive round-robin scheduler. Tracks per-job activity, selects step budgets, and drives the pointer-swap raster engine (`sand_engine_raster`).                         |
-| **`src/extensions/sand_engine_raster.v`** | Streaming single-port engine that walks the grid cell-by-cell, produces activity metrics, and writes results into the opposite memory plane.                          |
-| **`src/extensions/sand_jobmem2p.v`**     | Two-plane dual-port job memory. Each job/layer owns {read,write} planes and a plane-select bit toggled by the scheduler.                                              |
+| **`sand_engine_raster.v`** | Streaming single-port engine that walks the grid cell-by-cell, produces activity metrics, and writes results into the opposite memory plane.                          |
+| **`sand_jobmem2p.v`**     | Two-plane dual-port job memory. Each job/layer owns {read,write} planes and a plane-select bit toggled by the scheduler.                                              |
 | **`sand_top.v`**            | Integration wrapper exposing the CSR bus, seeding port, and the adaptive core.                                                                                            |
 | **`src/bram_tdp_wrap.v`**   | Portable true dual-port BRAM wrapper (vendor-inferable).                                                                                                                   |
-| **`sand_grid.v` / `sand_scheduler.v` / `sand_jobmem.v`** | Legacy fully-parallel path kept for reference (instantiates an in-core `WIDTH × HEIGHT` PE mesh).                                             |
+| **`legacy`** / (**`sand_grid.v` / `sand_scheduler.v` / `sand_jobmem.v`**) | Legacy fully-parallel path kept for reference (instantiates an in-core `WIDTH × HEIGHT` PE mesh).                                             |
 
 ---
 
