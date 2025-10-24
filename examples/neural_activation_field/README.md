@@ -13,8 +13,7 @@ aligned with the main RTL using `sand_defs.vh` and the shared circuit library:
 
 - `sand_circuit_neighbor_mix` performs 3D weighted averaging with programmable
   self/planar/vertical gains plus a bias.
-- `sand_circuit_activation_softsign` applies a smooth softsign non-linearity to
-  emulate a tanh-like activation without LUT lookups.
+- `sand_circuit_activation_micro_lut` applies a microcode-based activation that mirrors the streaming processing element.
 - `sand_circuit_neuron_relu` turns the depth-collapsed response into a
   thresholded ReLU spike map.
 
@@ -22,74 +21,64 @@ The Python runner generates a config header from YAML/JSON, compiles the
 testbench with Icarus Verilog, executes the simulation, and renders the 3D
 activation volume as ASCII heatmaps.
 
+## "Sandbox" vs "Mobile Sand" vs "Solid Sandbox" 
+
+This example can be run in three different modes, each representing a different stage in the development and deployment of a neural network on the sandbox hardware:
+
+*   **"Sandbox" (Training/Exploration):** This is the default mode of operation. In this mode, the testbench uses behavioural models for the different components of the neural network. This allows for rapid prototyping and exploration of different network architectures and parameters. The `run.py` script is used to compile and run the simulation, and to visualize the results.
+
+*   **"Mobile Sand" (Hardware-in-the-loop):** In this mode, the behavioural models are replaced with their hardware-equivalent counterparts. This allows for more accurate simulation of the neural network's behaviour on the target hardware. This mode is useful for verifying the correctness of the hardware implementation and for fine-tuning the network parameters.
+
+*   **"Solid Sandbox" (Inference):** This is the final stage, where the trained neural network is deployed on the sandbox hardware for inference. In this mode, the network is fed with real sensor data, and the output is used to drive other components of the system.
+
+## Driving the example with an image
+
+To drive the example with an image, you can use the `--image-file` command-line argument to specify the path to a hex file containing the image data. The hex file should be a plain text file with one hexadecimal value per line. The values should be in Q8.8 format.
+
 ```
 python3 examples/neural_activation_field/run.py \
+    --image-file <path_to_image.hex> \
     [--config configs/default.yaml] \
-    [--window-width 8] [--window-height 8] [--window-depth 3] \
-    [--pattern core|ripple|layered|noise] \
-    [--iterations 6] \
-    [--self-gain 0.6] [--planar-gain 0.3] [--vertical-gain 0.2] \
-    [--bias -0.1] [--feedback 0.45] [--damp 0.08] \
-    [--learning-rate 0.18] [--target 0.4] \
-    [--readout-edge 0.5] [--readout-raw 0.5] \
-    [--readout-bias -0.05] [--readout-threshold 0.25] \
-    [--json activation.json]
+    ...
 ```
 
-- Parses the optional YAML/JSON config (`configs/default.yaml` by default) and
-  writes a generated `neural_activation_field_config.vh` header in `build/`.
-- Compiles `neural_activation_field_tb.v` together with the required circuits
-  from `rtl/circuits/`.
-- Streams the simulation output, collecting per-iteration telemetry, the final
-  activation volume, and the readout neuron responses.
-- Prints ASCII heatmaps for each layer, plus the readout potentials and spike
-  mask. Optionally exports the raw fixed-point values to JSON.
+## Per-layer feedback gains
 
-### Patterns
+To specify per-layer feedback gains, you can use the `--feedback-l<n>-pct` command-line argument, where `<n>` is the layer number. For example, to set the feedback gain for layer 0 to 50%, you would use the following argument:
 
-| Pattern | Description |
-| --- | --- |
-| `core` | Spherical hotspot with vertical fall-off, ideal for testing diffusion. |
-| `ripple` | Radial rings that alternate excitation/inhibition, pushing the bias learner. |
-| `layered` | Monotonic ramp across depth and height to highlight vertical coupling. |
-| `noise` | Deterministic pseudo-random stimulus for stress-testing adaptation. |
+```
+python3 examples/neural_activation_field/run.py \
+    --feedback-l0-pct 50 \
+    [--config configs/default.yaml] \
+    ...
+```
 
-### How to read the arguments
+## How to read the arguments
 
-The behavioural harness mirrors the way the streaming RTL walks a “3D” sandbox:
-the hardware still visits one 2D slice at a time, but every iteration the engine
-automatically pulls the layer above/below so vertical interactions feel
-continuous. The example exposes two related notions of “depth”:
+The behavioural harness mirrors the way the streaming RTL walks a “3D” sandbox: the hardware still visits one 2D slice at a time, but every iteration the engine automatically pulls the layer above/below so vertical interactions feel continuous. The example exposes two related notions of “depth”:
 
-- **Grid depth (`window_depth`)** – number of stacked layers processed every
-  iteration. In hardware a single raster pass visits depth slices sequentially
-  (layer 0, layer 1, …) yet the neighbour taps give the illusion of a 3D volume.
-- **Iteration count (`iterations`)** – how many times the full stack is updated
-  before the run terminates. Each iteration represents another round of
-  time-multiplexed updates across the same stack, letting the field settle.
+- **Grid depth (`window_depth`)** – number of stacked layers processed every iteration. In hardware a single raster pass visits depth slices sequentially (layer 0, layer 1, …) yet the neighbour taps give the illusion of a 3D volume.
+- **Iteration count (`iterations`)** – how many times the full stack is updated before the run terminates. Each iteration represents another round of time-multiplexed updates across the same stack, letting the field settle.
 
-Arguments fall into a few groups (CLI flags map straight to the plusargs passed
-into the testbench):
+Arguments fall into a few groups (CLI flags map straight to the plusargs passed into the testbench):
 
 | Group | Flag / YAML key | Purpose |
 | --- | --- | --- |
 | Volume geometry | `--window-width`, `--window-height`, `--window-depth` (`window.width/height/depth`) | Size of the sub-volume extracted from the global sandbox grid. |
 | Stimulus pattern | `--pattern` (`pattern`) | Chooses one of the procedural base patterns (core, ripple, layered, noise). |
+| Stimulus pattern | `--image-file` (`image_file`) | Path to a hex file containing the image data. |
 | Timing | `--iterations` (`iterations`) | Number of sequential update passes applied to the stack. |
 | Neighbour mix | `--self-gain`, `--planar-gain`, `--vertical-gain`, `--bias` (`aggregator.self/planar/vertical/bias`) | Gains and bias given to `sand_circuit_neighbor_mix` before the activation. |
-| Feedback loop | `--feedback`, `--damp` (`feedback.gain/damp`) | Coupling strength from the top layer back into the bottom, and how much of the previous deviation is cancelled. |
+| Feedback loop | `--feedback-l<n>-pct`, `--damp` (`feedback.gain/damp`) | Coupling strength from each layer back into the bottom, and how much of the previous deviation is cancelled. |
 | Bias learning | `--learning-rate`, `--target` (`learning.rate/target`) | Scales the moving-average error and sets the desired mean activation for the top slice. |
 | Readout neuron | `--readout-edge`, `--readout-raw`, `--readout-bias`, `--readout-threshold` (`readout.edge/raw/bias/threshold`) | Gains and threshold for the ReLU neuron that compresses the stack into a spike map. |
 | Output | `--json` | Optional path to dump the raw fixed-point grids. |
 
-All numeric overrides expect real values in the CLI. Internally they are scaled
-to thousandths (e.g. `--self-gain 0.55` → `550`) so the Verilog side can stay in
-integer arithmetic.
+All numeric overrides expect real values in the CLI. Internally they are scaled to thousandths (e.g. `--self-gain 0.55` → `550`) so the Verilog side can stay in integer arithmetic.
 
 ### Example configuration / input
 
-The default preset (`configs/default.yaml`) describes a 6×6×3 “ripple” volume and
-corresponding gains:
+The default preset (`configs/default.yaml`) describes a 6×6×3 “ripple” volume and corresponding gains:
 
 ```yaml
 neural_activation_field:
@@ -129,7 +118,7 @@ editing YAML. For example:
 python3 examples/neural_activation_field/run.py \
     --pattern core --iterations 6 \
     --self-gain 0.65 --planar-gain 0.25 --vertical-gain 0.15 --bias -0.05 \
-    --feedback 0.5 --damp 0.08 \
+    --feedback-l0-pct 50 --feedback-l1-pct 20 --feedback-l2-pct 10 --damp 0.08 \
     --learning-rate 0.2 --target 0.45 \
     --readout-edge 0.7 --readout-raw 0.3 --readout-bias -0.05 --readout-threshold 0.35
 ```
@@ -216,9 +205,9 @@ readable, but the same plumbing works for larger sandboxes (e.g. 64×64×8):
 
 ### Next steps
 
-- Swap the behavioural softsign for the hardware microcode LUT to mirror the
+- [x] Swap the behavioural softsign for the hardware microcode LUT to mirror the
   streaming PE activation.
-- Expose per-layer feedback gains to emulate skip connections or attention
+- [x] Expose per-layer feedback gains to emulate skip connections or attention
   maps.
-- Drive the example from real sensor frames (or an image) using the seed port
+- [ ] Drive the example from real sensor frames (or an image) using the seed port
   instead of synthetic stimuli.

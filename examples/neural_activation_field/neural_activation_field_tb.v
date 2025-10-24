@@ -18,6 +18,8 @@ module neural_activation_field_tb;
     integer pattern_id        = NAF_PATTERN_ID_DEFAULT;
     integer iterations        = NAF_ITERATIONS_DEFAULT;
 
+    string image_file = "";
+
     integer self_gain_pct     = NAF_SELF_GAIN_PCT;
     integer planar_gain_pct   = NAF_PLANAR_GAIN_PCT;
     integer vertical_gain_pct = NAF_VERTICAL_GAIN_PCT;
@@ -72,8 +74,11 @@ module neural_activation_field_tb;
     reg  signed [`DATA_W-1:0] act_in;
     wire signed [`DATA_W-1:0] act_out;
 
-    sand_circuit_activation_softsign softsign_core (
+    reg signed [`DATA_W-1:0] micro_lut [0:15];
+
+    sand_circuit_activation_micro_lut micro_lut_core (
         .value_in(act_in),
+        .micro_lut(micro_lut),
         .value_out(act_out)
     );
 
@@ -103,7 +108,7 @@ module neural_activation_field_tb;
     integer planar_gain_q;
     integer vertical_gain_q;
     integer bias_q;
-    integer feedback_gain_q;
+    integer feedback_gain_q_per_layer [0:MAX_D-1];
     integer damp_gain_q;
     integer learning_q;
     integer target_q;
@@ -184,6 +189,37 @@ module neural_activation_field_tb;
         end
     endfunction
 
+    task init_micro_lut;
+        integer i;
+        integer val;
+        begin
+            // Approximate softsign: x / (1 + abs(x))
+            // Scaled for Q format
+            for (i = 0; i < 16; i = i + 1) begin
+                // This is a coarse approximation. A more accurate one could be generated.
+                case(i)
+                    8'h0: val = 0;            // 0
+                    8'h1: val = 16384 / 2;     // 0.5
+                    8'h2: val = 16384 * 3/4;   // 0.75
+                    8'h3: val = 16384 * 7/8;   // 0.875
+                    8'h4: val = 16384;         // 1
+                    8'h5: val = 16384;         // 1
+                    8'h6: val = 16384;         // 1
+                    8'h7: val = 16384;         // 1
+                    8'h8: val = 0;            // -0
+                    8'h9: val = -16384 / 2;    // -0.5
+                    8'ha: val = -16384 * 3/4;  // -0.75
+                    8'hb: val = -16384 * 7/8;  // -0.875
+                    8'hc: val = -16384;        // -1
+                    8'hd: val = -16384;        // -1
+                    8'he: val = -16384;        // -1
+                    8'hf: val = -16384;        // -1
+                endcase
+                micro_lut[i] = val;
+            end
+        end
+    endtask
+
     task clear_buffers;
         integer z, y, x;
         begin
@@ -209,6 +245,12 @@ module neural_activation_field_tb;
         end
     endtask
 
+    task load_image;
+        begin
+            $readmemh(image_file, base_field[0]);
+        end
+    endtask
+
     task load_pattern;
         integer z, y, x;
         integer centre_x;
@@ -219,45 +261,49 @@ module neural_activation_field_tb;
         integer seed;
         integer value;
         begin
-            centre_x = window_w >> 1;
-            centre_y = window_h >> 1;
-            centre_z = window_d >> 1;
-            seed     = 32'h1ACE_1234;
+            if (image_file != "") begin
+                load_image();
+            end else begin
+                centre_x = window_w >> 1;
+                centre_y = window_h >> 1;
+                centre_z = window_d >> 1;
+                seed     = 32'h1ACE_1234;
 
-            for (z = 0; z < window_d; z = z + 1) begin
-                for (y = 0; y < window_h; y = y + 1) begin
-                    for (x = 0; x < window_w; x = x + 1) begin
-                        dx = x - centre_x;
-                        dy = y - centre_y;
-                        dz = z - centre_z;
+                for (z = 0; z < window_d; z = z + 1) begin
+                    for (y = 0; y < window_h; y = y + 1) begin
+                        for (x = 0; x < window_w; x = x + 1) begin
+                            dx = x - centre_x;
+                            dy = y - centre_y;
+                            dz = z - centre_z;
 
-                        if (pattern_id == 0) begin
-                            radial = dx*dx + dy*dy + (dz*dz << 1);
-                            value = (Q_ONE << 3) / (radial + 5);
-                            if (value > Q_ONE)
-                                value = Q_ONE;
-                        end else if (pattern_id == 1) begin
-                            radial = dx*dx + dy*dy;
-                            if (((radial + (dz << 1)) % 6) < 3)
-                                value = Q_ONE;
-                            else
-                                value = -(Q_ONE >> 1);
-                        end else if (pattern_id == 2) begin
-                            value = ((z * window_h + y) * Q_ONE) / (window_h * window_d + 1);
-                            if ((x ^ y ^ z) & 1)
-                                value = value - (Q_ONE >> 2);
-                        end else if (pattern_id == 3) begin
-                            seed = (seed * 1664525) + 1013904223;
-                            value = (seed >> 24) & 8'hFF;
-                            value = value - 9'sd128;
-                            value = (value * Q_ONE) / 64;
-                        end else begin
-                            value = (((x + y + z) & 1) == 0) ? (Q_ONE >> 1) : -(Q_ONE >> 2);
+                            if (pattern_id == 0) begin
+                                radial = dx*dx + dy*dy + (dz*dz << 1);
+                                value = (Q_ONE << 3) / (radial + 5);
+                                if (value > Q_ONE)
+                                    value = Q_ONE;
+                            end else if (pattern_id == 1) begin
+                                radial = dx*dx + dy*dy;
+                                if (((radial + (dz << 1)) % 6) < 3)
+                                    value = Q_ONE;
+                                else
+                                    value = -(Q_ONE >> 1);
+                            end else if (pattern_id == 2) begin
+                                value = ((z * window_h + y) * Q_ONE) / (window_h * window_d + 1);
+                                if ((x ^ y ^ z) & 1)
+                                    value = value - (Q_ONE >> 2);
+                            end else if (pattern_id == 3) begin
+                                seed = (seed * 1664525) + 1013904223;
+                                value = (seed >> 24) & 8'hFF;
+                                value = value - 9'sd128;
+                                value = (value * Q_ONE) / 64;
+                            end else begin
+                                value = (((x + y + z) & 1) == 0) ? (Q_ONE >> 1) : -(Q_ONE >> 2);
+                            end
+
+                            value = clamp_q(value);
+                            base_field[z][y][x]  = value;
+                            state_field[z][y][x] = value;
                         end
-
-                        value = clamp_q(value);
-                        base_field[z][y][x]  = value;
-                        state_field[z][y][x] = value;
                     end
                 end
             end
@@ -329,16 +375,18 @@ module neural_activation_field_tb;
                 end
             end
 
-            for (y = 0; y < window_h; y = y + 1) begin
-                for (x = 0; x < window_w; x = x + 1) begin
-                    feedback_term = fp_mul(activation_field[window_d-1][y][x], feedback_gain_q);
-                    damp_term     = fp_mul(
-                        fp_sub(state_field[0][y][x], base_field[0][y][x]),
-                        damp_gain_q
-                    );
-                    updated = fp_add(base_field[0][y][x], feedback_term);
-                    updated = fp_sub(updated, damp_term);
-                    next_state[0][y][x] = clamp_q(updated);
+            for (z = 0; z < window_d; z = z + 1) begin
+                for (y = 0; y < window_h; y = y + 1) begin
+                    for (x = 0; x < window_w; x = x + 1) begin
+                        feedback_term = fp_mul(activation_field[z][y][x], feedback_gain_q_per_layer[z]);
+                        damp_term     = fp_mul(
+                            fp_sub(state_field[z][y][x], base_field[z][y][x]),
+                            damp_gain_q
+                        );
+                        updated = fp_add(base_field[z][y][x], feedback_term);
+                        updated = fp_sub(updated, damp_term);
+                        next_state[z][y][x] = clamp_q(updated);
+                    end
                 end
             end
 
@@ -434,7 +482,7 @@ module neural_activation_field_tb;
             $display("NAF.config.self_gain_q=%0d planar_gain_q=%0d vertical_gain_q=%0d bias_q=%0d",
                      self_gain_q, planar_gain_q, vertical_gain_q, bias_q);
             $display("NAF.config.feedback_q=%0d damp_q=%0d learning_q=%0d target_q=%0d",
-                     feedback_gain_q, damp_gain_q, learning_q, target_q);
+                     feedback_gain_q_per_layer[0], damp_gain_q, learning_q, target_q);
             $display("NAF.readout.edge_gain_q=%0d raw_gain_q=%0d bias_q=%0d threshold_q=%0d",
                      read_edge_gain_q, read_raw_gain_q, read_bias_q, read_threshold_q);
 
@@ -472,7 +520,7 @@ module neural_activation_field_tb;
         end
     endtask
 
-    integer iter;
+    integer iter, z;
 
     initial begin
         if ($value$plusargs("WINDOW_W=%d", window_w));
@@ -480,12 +528,12 @@ module neural_activation_field_tb;
         if ($value$plusargs("WINDOW_D=%d", window_d));
         if ($value$plusargs("PATTERN_ID=%d", pattern_id));
         if ($value$plusargs("ITERATIONS=%d", iterations));
+        if ($value$plusargs("IMAGE_FILE=%s", image_file));
 
         if ($value$plusargs("SELF_GAIN=%d", self_gain_pct));
         if ($value$plusargs("PLANAR_GAIN=%d", planar_gain_pct));
         if ($value$plusargs("VERT_GAIN=%d", vertical_gain_pct));
         if ($value$plusargs("BIAS_PCT=%d", bias_pct));
-        if ($value$plusargs("FEEDBACK_PCT=%d", feedback_pct));
         if ($value$plusargs("DAMP_PCT=%d", damp_pct));
         if ($value$plusargs("LEARN_PCT=%d", learning_pct));
         if ($value$plusargs("TARGET_PCT=%d", target_pct));
@@ -493,6 +541,11 @@ module neural_activation_field_tb;
         if ($value$plusargs("READ_RAW_PCT=%d", read_raw_pct));
         if ($value$plusargs("READ_BIAS_PCT=%d", read_bias_pct));
         if ($value$plusargs("READ_THRESH_PCT=%d", read_thresh_pct));
+
+        for (z = 0; z < MAX_D; z = z + 1) begin
+            if ($value$plusargs($sformatf("FEEDBACK_L%0d_PCT=%d", z), feedback_pct));
+            feedback_gain_q_per_layer[z] = pct_to_q(feedback_pct);
+        end
 
         if (window_w < 2) window_w = 2;
         if (window_h < 2) window_h = 2;
@@ -502,6 +555,7 @@ module neural_activation_field_tb;
         if (window_d > MAX_D) window_d = MAX_D;
         if (iterations < 1) iterations = 1;
 
+        init_micro_lut;
         clear_buffers;
         load_pattern;
 
@@ -509,7 +563,6 @@ module neural_activation_field_tb;
         planar_gain_q   = pct_to_q(planar_gain_pct);
         vertical_gain_q = pct_to_q(vertical_gain_pct);
         bias_q          = pct_to_q(bias_pct);
-        feedback_gain_q = pct_to_q(feedback_pct);
         damp_gain_q     = pct_to_q(damp_pct);
         learning_q      = pct_to_q(learning_pct);
         target_q        = pct_to_q(target_pct);

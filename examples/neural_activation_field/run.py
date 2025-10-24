@@ -1,4 +1,4 @@
-"""Run the neural activation field behavioural demo."""
+"""Run the neural activation field behavioural demo.""
 from __future__ import annotations
 
 import argparse
@@ -55,7 +55,7 @@ def _parse_macro_int(path: pathlib.Path, name: str, default: int) -> int:
 def _build_example(
     repo_root: pathlib.Path,
     output: pathlib.Path,
-    *,
+    *, 
     include_dirs: Iterable[pathlib.Path],
     extra_sources: Iterable[pathlib.Path],
 ) -> pathlib.Path:
@@ -287,6 +287,7 @@ def _render_binary(grid: List[List[int]]) -> List[str]:
 def run_example(
     params: sand_configurator.ActivationFieldParams,
     json_path: pathlib.Path | None,
+    image_file: pathlib.Path | None,
 ) -> None:
     repo_root = REPO_ROOT
     defs_path = repo_root / "rtl" / "sand_defs.vh"
@@ -321,7 +322,6 @@ def run_example(
         "PLANAR_GAIN": params.planar_gain_pct,
         "VERT_GAIN": params.vertical_gain_pct,
         "BIAS_PCT": params.bias_pct,
-        "FEEDBACK_PCT": params.feedback_pct,
         "DAMP_PCT": params.damp_pct,
         "LEARN_PCT": params.learning_pct,
         "TARGET_PCT": params.target_pct,
@@ -330,6 +330,12 @@ def run_example(
         "READ_BIAS_PCT": params.read_bias_pct,
         "READ_THRESH_PCT": params.read_threshold_pct,
     }
+
+    if image_file:
+        plusargs["IMAGE_FILE"] = str(image_file)
+
+    for i in range(params.window_d):
+        plusargs[f"FEEDBACK_L{i}_PCT"] = params.feedback_pct
 
     stdout = sand_runner.run_vvp(vvp_path, plusargs=plusargs)
     sim_data = _parse_sim_output(stdout)
@@ -432,12 +438,12 @@ def main() -> None:
         choices=list(sand_configurator.ACTIVATION_PATTERN_TO_ID.keys()),  # type: ignore[attr-defined]
         help="Override base stimulation pattern",
     )
+    parser.add_argument("--image-file", type=pathlib.Path, help="Path to a hex file containing the image data")
     parser.add_argument("--iterations", type=int, help="Override iteration count")
     parser.add_argument("--self-gain", type=float, help="Override self gain (0..1)")
     parser.add_argument("--planar-gain", type=float, help="Override planar gain (0..1)")
     parser.add_argument("--vertical-gain", type=float, help="Override vertical gain")
     parser.add_argument("--bias", type=float, help="Override aggregator bias")
-    parser.add_argument("--feedback", type=float, help="Override feedback gain")
     parser.add_argument("--damp", type=float, help="Override damping gain")
     parser.add_argument("--learning-rate", type=float, help="Override learning rate")
     parser.add_argument("--target", type=float, help="Override target activation level")
@@ -449,7 +455,7 @@ def main() -> None:
     )
     parser.add_argument("--json", type=pathlib.Path, help="Dump raw Q data as JSON")
 
-    args = parser.parse_args()
+    args, remaining_args = parser.parse_known_args()
 
     params = sand_configurator.resolve_activation_field_params(args.config)
 
@@ -471,8 +477,6 @@ def main() -> None:
         params = params.override(vertical_gain_pct=int(round(args.vertical_gain * 1000.0)))
     if args.bias is not None:
         params = params.override(bias_pct=int(round(args.bias * 1000.0)))
-    if args.feedback is not None:
-        params = params.override(feedback_pct=int(round(args.feedback * 1000.0)))
     if args.damp is not None:
         params = params.override(damp_pct=int(round(args.damp * 1000.0)))
     if args.learning_rate is not None:
@@ -488,9 +492,16 @@ def main() -> None:
     if args.readout_threshold is not None:
         params = params.override(read_threshold_pct=int(round(args.readout_threshold * 1000.0)))
 
-    run_example(params=params, json_path=args.json)
+    # Handle per-layer feedback gains
+    for i in range(params.window_d):
+        arg_name = f"--feedback-l{i}-pct"
+        if arg_name in remaining_args:
+            idx = remaining_args.index(arg_name)
+            val = int(remaining_args[idx+1])
+            params = params.override(feedback_pct=val, layer=i)
+
+    run_example(params=params, json_path=args.json, image_file=args.image_file)
 
 
 if __name__ == "__main__":
     main()
-

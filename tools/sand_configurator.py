@@ -42,6 +42,11 @@ CIRCUIT_LIBRARY: Mapping[str, Dict[str, Any]] = {
         "module": "sand_circuit_activation_softsign",
         "description": "Soft-saturating activation using the softsign curve",
     },
+    "activation_micro_lut": {
+        "source": pathlib.Path("rtl/circuits/sand_circuit_activation_micro_lut.v"),
+        "module": "sand_circuit_activation_micro_lut",
+        "description": "Microcode-based activation that mirrors the streaming processing element",
+    },
 }
 
 PATTERN_TO_ID = {
@@ -92,7 +97,7 @@ DEFAULT_NEURAL_ACTIVATION = {
         "bias": -0.1,
         "threshold": 0.3,
     },
-    "circuits": ["neighbor_mix", "activation_softsign", "neuron_relu"],
+    "circuits": ["neighbor_mix", "activation_micro_lut", "neuron_relu"],
 }
 
 
@@ -145,7 +150,7 @@ class ActivationFieldParams:
     planar_gain_pct: int
     vertical_gain_pct: int
     bias_pct: int
-    feedback_pct: int
+    feedback_pct_per_layer: List[int]
     damp_pct: int
     learning_pct: int
     target_pct: int
@@ -175,8 +180,17 @@ class ActivationFieldParams:
         read_raw_pct: int | None = None,
         read_bias_pct: int | None = None,
         read_threshold_pct: int | None = None,
+        layer: int | None = None,
     ) -> "ActivationFieldParams":
         """Return a copy with selected fields overridden."""
+        feedback_pct_per_layer = self.feedback_pct_per_layer.copy()
+        if feedback_pct is not None:
+            if layer is not None:
+                feedback_pct_per_layer[layer] = feedback_pct
+            else:
+                for i in range(len(feedback_pct_per_layer)):
+                    feedback_pct_per_layer[i] = feedback_pct
+
         return ActivationFieldParams(
             window_w=window_w if window_w is not None else self.window_w,
             window_h=window_h if window_h is not None else self.window_h,
@@ -190,7 +204,7 @@ class ActivationFieldParams:
             planar_gain_pct=planar_gain_pct if planar_gain_pct is not None else self.planar_gain_pct,
             vertical_gain_pct=vertical_gain_pct if vertical_gain_pct is not None else self.vertical_gain_pct,
             bias_pct=bias_pct if bias_pct is not None else self.bias_pct,
-            feedback_pct=feedback_pct if feedback_pct is not None else self.feedback_pct,
+            feedback_pct_per_layer=feedback_pct_per_layer,
             damp_pct=damp_pct if damp_pct is not None else self.damp_pct,
             learning_pct=learning_pct if learning_pct is not None else self.learning_pct,
             target_pct=target_pct if target_pct is not None else self.target_pct,
@@ -362,7 +376,6 @@ def resolve_activation_field_params(
             "planar_gain_pct",
             "vertical_gain_pct",
             "bias_pct",
-            "feedback_pct",
             "damp_pct",
             "learning_pct",
             "target_pct",
@@ -420,12 +433,9 @@ def resolve_activation_field_params(
             _as_float(merged["aggregator"]["bias"], field="aggregator.bias")
         )
 
-    if "feedback_pct" in merged:
-        feedback_pct = int(merged["feedback_pct"])
-    else:
-        feedback_pct = _thousandths(
-            _as_float(merged["feedback"]["gain"], field="feedback.gain")
-        )
+    feedback_pct_per_layer = [
+        _thousandths(_as_float(merged["feedback"]["gain"], field="feedback.gain"))
+    ] * window_d
 
     if "damp_pct" in merged:
         damp_pct = int(merged["damp_pct"])
@@ -494,7 +504,7 @@ def resolve_activation_field_params(
         planar_gain_pct=planar_gain_pct,
         vertical_gain_pct=vertical_gain_pct,
         bias_pct=bias_pct,
-        feedback_pct=feedback_pct,
+        feedback_pct_per_layer=feedback_pct_per_layer,
         damp_pct=damp_pct,
         learning_pct=learning_pct,
         target_pct=target_pct,
@@ -541,7 +551,6 @@ def write_activation_field_header(
         f"localparam integer NAF_PLANAR_GAIN_PCT    = {params.planar_gain_pct};",
         f"localparam integer NAF_VERTICAL_GAIN_PCT  = {params.vertical_gain_pct};",
         f"localparam integer NAF_BIAS_PCT           = {params.bias_pct};",
-        f"localparam integer NAF_FEEDBACK_PCT       = {params.feedback_pct};",
         f"localparam integer NAF_DAMP_PCT           = {params.damp_pct};",
         f"localparam integer NAF_LEARNING_PCT       = {params.learning_pct};",
         f"localparam integer NAF_TARGET_PCT         = {params.target_pct};",
@@ -549,9 +558,13 @@ def write_activation_field_header(
         f"localparam integer NAF_READ_RAW_PCT       = {params.read_raw_pct};",
         f"localparam integer NAF_READ_BIAS_PCT      = {params.read_bias_pct};",
         f"localparam integer NAF_READ_THRESH_PCT    = {params.read_threshold_pct};",
+    ]
+    for i, feedback_pct in enumerate(params.feedback_pct_per_layer):
+        lines.append(f"localparam integer NAF_FEEDBACK_L{i}_PCT = {feedback_pct};")
+    lines.extend([
         "`endif  // NEURAL_ACTIVATION_FIELD_CONFIG_VH",
         "",
-    ]
+    ])
     output.write_text("\n".join(lines))
 
 
