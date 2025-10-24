@@ -45,6 +45,31 @@ module sand_scheduler_dynamic #(
     reg                  force_diag, use_micro;
     reg [DATA_W-1:0]     micro_lut [0:15];
 
+    // Enhanced unit behaviour controls
+    reg                  unit_flux_enable;
+    reg                  unit_overflow_reverse_top;
+    reg                  unit_overflow_reverse_bottom;
+    reg                  unit_pressure_diag_override;
+    reg [7:0]            unit_pressure_iters;
+    reg [DATA_W-1:0]     unit_weight_top;
+    reg [DATA_W-1:0]     unit_weight_bottom;
+    reg [DATA_W-1:0]     unit_weight_side;
+    reg [DATA_W-1:0]     unit_weight_retain;
+    reg [DATA_W-1:0]     unit_weight_prev;
+    reg [DATA_W-1:0]     unit_flux_threshold;
+    reg [DATA_W-1:0]     unit_flux_reverse_top;
+    reg [DATA_W-1:0]     unit_flux_reverse_bottom;
+    reg [DATA_W-1:0]     unit_pressure_gain;
+    reg [DATA_W-1:0]     unit_backprop_lr;
+    reg [DATA_W-1:0]     unit_backprop_neigh;
+    reg [DATA_W-1:0]     unit_backprop_decay;
+
+    // Per-job dynamic window placement
+    reg [15:0]           unit_window_width  [0:N_JOBS-1];
+    reg [15:0]           unit_window_height [0:N_JOBS-1];
+    reg [15:0]           unit_window_xoff   [0:N_JOBS-1];
+    reg [15:0]           unit_window_yoff   [0:N_JOBS-1];
+
     // Adaptive control registers
     reg                  adapt_enable;
     reg                  adapt_auto;
@@ -109,6 +134,10 @@ module sand_scheduler_dynamic #(
     reg                      eng_plane_sel;
     wire [31:0]              eng_activity;
     wire [31:0]              eng_cycles;
+    reg  [15:0]              win_width_sel;
+    reg  [15:0]              win_height_sel;
+    reg  [15:0]              win_xoff_sel;
+    reg  [15:0]              win_yoff_sel;
 
     sand_engine_raster #(
         .DATA_W(DATA_W),
@@ -140,7 +169,28 @@ module sand_scheduler_dynamic #(
         .jm_wdata(jm_wdata_i),
         .jm_rdata(jm_rdata_i),
         .frame_activity(eng_activity),
-        .frame_cycles(eng_cycles)
+        .frame_cycles(eng_cycles),
+        .unit_flux_enable(unit_flux_enable),
+        .unit_overflow_reverse_top(unit_overflow_reverse_top),
+        .unit_overflow_reverse_bottom(unit_overflow_reverse_bottom),
+        .unit_pressure_diag_override(unit_pressure_diag_override),
+        .unit_pressure_iters(unit_pressure_iters),
+        .unit_weight_top(unit_weight_top),
+        .unit_weight_bottom(unit_weight_bottom),
+        .unit_weight_side(unit_weight_side),
+        .unit_weight_retain(unit_weight_retain),
+        .unit_weight_prev(unit_weight_prev),
+        .unit_flux_threshold(unit_flux_threshold),
+        .unit_flux_reverse_top(unit_flux_reverse_top),
+        .unit_flux_reverse_bottom(unit_flux_reverse_bottom),
+        .unit_pressure_gain(unit_pressure_gain),
+        .unit_backprop_lr(unit_backprop_lr),
+        .unit_backprop_neigh(unit_backprop_neigh),
+        .unit_backprop_decay(unit_backprop_decay),
+        .unit_window_width(win_width_sel),
+        .unit_window_height(win_height_sel),
+        .unit_window_x_offset(win_xoff_sel),
+        .unit_window_y_offset(win_yoff_sel)
     );
 
     // -------------------------------------------------------------------------
@@ -198,6 +248,23 @@ module sand_scheduler_dynamic #(
             adapt_enable  <= 1'b0;
             adapt_auto    <= 1'b1;
             adapt_use_heavy <= 1'b1;
+            unit_flux_enable            <= 1'b0;
+            unit_overflow_reverse_top   <= 1'b0;
+            unit_overflow_reverse_bottom<= 1'b0;
+            unit_pressure_diag_override <= 1'b0;
+            unit_pressure_iters         <= 8'd1;
+            unit_weight_top             <= {DATA_W{1'b0}};
+            unit_weight_bottom          <= {DATA_W{1'b0}};
+            unit_weight_side            <= {DATA_W{1'b0}};
+            unit_weight_retain          <= {DATA_W{1'b0}};
+            unit_weight_prev            <= {DATA_W{1'b0}};
+            unit_flux_threshold         <= {DATA_W{1'b1}};
+            unit_flux_reverse_top       <= {DATA_W{1'b0}};
+            unit_flux_reverse_bottom    <= {DATA_W{1'b0}};
+            unit_pressure_gain          <= {DATA_W{1'b0}};
+            unit_backprop_lr            <= {DATA_W{1'b0}};
+            unit_backprop_neigh         <= {DATA_W{1'b0}};
+            unit_backprop_decay         <= {DATA_W{1'b0}};
             adapt_manual_steps <= clamp_steps(`ADAPT_DEFAULT_MANUAL_STEPS);
             adapt_min_steps    <= clamp_steps(`ADAPT_DEFAULT_MIN_STEPS);
             adapt_max_steps    <= clamp_steps(`ADAPT_DEFAULT_MAX_STEPS);
@@ -211,6 +278,10 @@ module sand_scheduler_dynamic #(
                 step_budget[j]   <= clamp_steps(`STEPS_PER_SLICE);
                 last_activity[j] <= 32'd0;
                 last_cycles[j]   <= 32'd0;
+                unit_window_width[j]  <= WIDTH;
+                unit_window_height[j] <= HEIGHT;
+                unit_window_xoff[j]   <= 16'd0;
+                unit_window_yoff[j]   <= 16'd0;
                 for (l=0; l<DEPTH; l=l+1) plane_sel[j][l] <= 1'b0;
             end
 
@@ -224,6 +295,10 @@ module sand_scheduler_dynamic #(
             eng_job_sel   <= {JOB_W{1'b0}};
             eng_layer_sel <= {LAYER_W{1'b0}};
             eng_plane_sel <= 1'b0;
+            win_width_sel  <= WIDTH;
+            win_height_sel <= HEIGHT;
+            win_xoff_sel   <= 16'd0;
+            win_yoff_sel   <= 16'd0;
         end else begin
             start_frame <= 1'b0;
 
@@ -260,6 +335,88 @@ module sand_scheduler_dynamic #(
                     `CSR_ADAPT_THRESH_HI: adapt_thresh_hi <= csr_wdata;
                     `CSR_ADAPT_CAPACITY:  adapt_cycle_limit <= csr_wdata;
                     `CSR_ADAPT_STATUS_SEL:status_job_sel <= csr_wdata[JOB_W-1:0];
+                    `CSR_UNIT_CTRL: begin
+                        unit_flux_enable            <= csr_wdata[0];
+                        unit_overflow_reverse_top   <= csr_wdata[1];
+                        unit_overflow_reverse_bottom<= csr_wdata[2];
+                        unit_pressure_diag_override <= csr_wdata[3];
+                        if (csr_wdata[15:8] == 8'd0)
+                            unit_pressure_iters <= 8'd1;
+                        else if (csr_wdata[15:8] > 8'd32)
+                            unit_pressure_iters <= 8'd32;
+                        else
+                            unit_pressure_iters <= csr_wdata[15:8];
+                    end
+                    `CSR_UNIT_WINDOW_WH: begin
+                        integer idx;
+                        integer width_tmp;
+                        integer height_tmp;
+                        integer x_tmp;
+                        integer y_tmp;
+                        idx = status_job_sel;
+                        if (idx < N_JOBS) begin
+                            width_tmp  = csr_wdata[15:0];
+                            height_tmp = csr_wdata[31:16];
+                            if (width_tmp == 0)  width_tmp  = WIDTH;
+                            if (height_tmp == 0) height_tmp = HEIGHT;
+                            if (width_tmp < 1)   width_tmp = 1;
+                            if (height_tmp < 1)  height_tmp = 1;
+                            if (width_tmp > WIDTH)   width_tmp = WIDTH;
+                            if (height_tmp > HEIGHT) height_tmp = HEIGHT;
+                            x_tmp = unit_window_xoff[idx];
+                            y_tmp = unit_window_yoff[idx];
+                            if ((x_tmp + width_tmp) > WIDTH)
+                                width_tmp = WIDTH - x_tmp;
+                            if ((y_tmp + height_tmp) > HEIGHT)
+                                height_tmp = HEIGHT - y_tmp;
+                            if (width_tmp < 1)  width_tmp = 1;
+                            if (height_tmp < 1) height_tmp = 1;
+                            unit_window_width[idx]  <= width_tmp[15:0];
+                            unit_window_height[idx] <= height_tmp[15:0];
+                        end
+                    end
+                    `CSR_UNIT_WINDOW_OFFSET: begin
+                        integer idx;
+                        integer x_tmp;
+                        integer y_tmp;
+                        integer width_tmp;
+                        integer height_tmp;
+                        idx = status_job_sel;
+                        if (idx < N_JOBS) begin
+                            x_tmp = csr_wdata[15:0];
+                            y_tmp = csr_wdata[31:16];
+                            if (x_tmp < 0) x_tmp = 0;
+                            if (y_tmp < 0) y_tmp = 0;
+                            if (x_tmp >= WIDTH)  x_tmp = WIDTH - 1;
+                            if (y_tmp >= HEIGHT) y_tmp = HEIGHT - 1;
+                            width_tmp  = unit_window_width[idx];
+                            height_tmp = unit_window_height[idx];
+                            if ((x_tmp + width_tmp) > WIDTH) begin
+                                width_tmp = WIDTH - x_tmp;
+                                if (width_tmp < 1) width_tmp = 1;
+                            end
+                            if ((y_tmp + height_tmp) > HEIGHT) begin
+                                height_tmp = HEIGHT - y_tmp;
+                                if (height_tmp < 1) height_tmp = 1;
+                            end
+                            unit_window_xoff[idx]   <= x_tmp[15:0];
+                            unit_window_yoff[idx]   <= y_tmp[15:0];
+                            unit_window_width[idx]  <= width_tmp[15:0];
+                            unit_window_height[idx] <= height_tmp[15:0];
+                        end
+                    end
+                    `CSR_UNIT_FLUX_WEIGHT_TOP:     unit_weight_top    <= csr_wdata[DATA_W-1:0];
+                    `CSR_UNIT_FLUX_WEIGHT_BOTTOM:  unit_weight_bottom <= csr_wdata[DATA_W-1:0];
+                    `CSR_UNIT_FLUX_WEIGHT_SIDE:    unit_weight_side   <= csr_wdata[DATA_W-1:0];
+                    `CSR_UNIT_FLUX_WEIGHT_RETAIN:  unit_weight_retain <= csr_wdata[DATA_W-1:0];
+                    `CSR_UNIT_FLUX_WEIGHT_PREV:    unit_weight_prev   <= csr_wdata[DATA_W-1:0];
+                    `CSR_UNIT_FLUX_THRESHOLD:      unit_flux_threshold     <= csr_wdata[DATA_W-1:0];
+                    `CSR_UNIT_FLUX_REVERSE_TOP:    unit_flux_reverse_top   <= csr_wdata[DATA_W-1:0];
+                    `CSR_UNIT_FLUX_REVERSE_BOTTOM: unit_flux_reverse_bottom<= csr_wdata[DATA_W-1:0];
+                    `CSR_UNIT_PRESSURE_GAIN:       unit_pressure_gain  <= csr_wdata[DATA_W-1:0];
+                    `CSR_UNIT_BACKPROP_LR:         unit_backprop_lr     <= csr_wdata[DATA_W-1:0];
+                    `CSR_UNIT_BACKPROP_NEIGH:      unit_backprop_neigh  <= csr_wdata[DATA_W-1:0];
+                    `CSR_UNIT_BACKPROP_DECAY:      unit_backprop_decay  <= csr_wdata[DATA_W-1:0];
                     default: begin
                         if (csr_addr >= `CSR_MICRO_BASE && csr_addr < (`CSR_MICRO_BASE+16)) begin
                             micro_lut[csr_addr-`CSR_MICRO_BASE] <= csr_wdata[DATA_W-1:0];
@@ -275,6 +432,10 @@ module sand_scheduler_dynamic #(
                     eng_job_sel   <= cur_job;
                     eng_layer_sel <= cur_layer;
                     eng_plane_sel <= plane_sel[cur_job][cur_layer];
+                    win_width_sel  <= unit_window_width[cur_job];
+                    win_height_sel <= unit_window_height[cur_job];
+                    win_xoff_sel   <= unit_window_xoff[cur_job];
+                    win_yoff_sel   <= unit_window_yoff[cur_job];
                     start_frame   <= 1'b1;
                     st            <= S_WAIT;
                 end
@@ -387,6 +548,57 @@ module sand_scheduler_dynamic #(
                 end
                 `CSR_ADAPT_BUDGET: begin
                     csr_rdata = { adapt_max_steps, adapt_min_steps, status_budget, adapt_manual_steps };
+                end
+                `CSR_UNIT_CTRL: begin
+                    csr_rdata = { 16'd0,
+                                  unit_pressure_iters,
+                                  4'd0,
+                                  unit_pressure_diag_override,
+                                  unit_overflow_reverse_bottom,
+                                  unit_overflow_reverse_top,
+                                  unit_flux_enable };
+                end
+                `CSR_UNIT_STATUS_WINDOW: begin
+                    csr_rdata = { unit_window_height[status_idx], unit_window_width[status_idx] };
+                end
+                `CSR_UNIT_STATUS_OFFSET: begin
+                    csr_rdata = { unit_window_yoff[status_idx], unit_window_xoff[status_idx] };
+                end
+                `CSR_UNIT_FLUX_WEIGHT_TOP: begin
+                    csr_rdata = {{(32-DATA_W){1'b0}}, unit_weight_top};
+                end
+                `CSR_UNIT_FLUX_WEIGHT_BOTTOM: begin
+                    csr_rdata = {{(32-DATA_W){1'b0}}, unit_weight_bottom};
+                end
+                `CSR_UNIT_FLUX_WEIGHT_SIDE: begin
+                    csr_rdata = {{(32-DATA_W){1'b0}}, unit_weight_side};
+                end
+                `CSR_UNIT_FLUX_WEIGHT_RETAIN: begin
+                    csr_rdata = {{(32-DATA_W){1'b0}}, unit_weight_retain};
+                end
+                `CSR_UNIT_FLUX_WEIGHT_PREV: begin
+                    csr_rdata = {{(32-DATA_W){1'b0}}, unit_weight_prev};
+                end
+                `CSR_UNIT_FLUX_THRESHOLD: begin
+                    csr_rdata = {{(32-DATA_W){1'b0}}, unit_flux_threshold};
+                end
+                `CSR_UNIT_FLUX_REVERSE_TOP: begin
+                    csr_rdata = {{(32-DATA_W){1'b0}}, unit_flux_reverse_top};
+                end
+                `CSR_UNIT_FLUX_REVERSE_BOTTOM: begin
+                    csr_rdata = {{(32-DATA_W){1'b0}}, unit_flux_reverse_bottom};
+                end
+                `CSR_UNIT_PRESSURE_GAIN: begin
+                    csr_rdata = {{(32-DATA_W){1'b0}}, unit_pressure_gain};
+                end
+                `CSR_UNIT_BACKPROP_LR: begin
+                    csr_rdata = {{(32-DATA_W){1'b0}}, unit_backprop_lr};
+                end
+                `CSR_UNIT_BACKPROP_NEIGH: begin
+                    csr_rdata = {{(32-DATA_W){1'b0}}, unit_backprop_neigh};
+                end
+                `CSR_UNIT_BACKPROP_DECAY: begin
+                    csr_rdata = {{(32-DATA_W){1'b0}}, unit_backprop_decay};
                 end
                 default: csr_rdata = 32'h0;
             endcase

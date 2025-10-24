@@ -42,15 +42,15 @@ The project is organized into clean, layered modules:
 
 | Module                      | Description                                                                                                                                                                |
 | :-------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`sand_defs.vh`**          | Global parameter file — defines word widths, grid size, number of jobs, math opcodes, and CSR addresses. Edit this first to customize your FPGA target.                    |
-| **`sand_math.vh`**          | Saturating/rounding fixed-point helpers used by the PE and raster engine.                                                                                                  |
-| **`sand_pe.v`**             | The *Processing Element* (one grain). Reads its 4–8 neighbors and applies an operation (sum, diffusion, clamp, etc.) or a user-defined microcode rule.                    |
-| **`sand_scheduler_dynamic.v`** | Adaptive round-robin scheduler. Tracks per-job activity, selects step budgets, and drives the pointer-swap raster engine (`sand_engine_raster`).                         |
-| **`sand_engine_raster.v`** | Streaming single-port engine that walks the grid cell-by-cell, produces activity metrics, and writes results into the opposite memory plane.                          |
-| **`sand_jobmem2p.v`**     | Two-plane dual-port job memory. Each job/layer owns {read,write} planes and a plane-select bit toggled by the scheduler.                                              |
-| **`sand_top.v`**            | Integration wrapper exposing the CSR bus, seeding port, and the adaptive core.                                                                                            |
+| **`src/sand_defs.vh`**          | Global parameter file — defines word widths, grid size, number of jobs, math opcodes, and CSR addresses. Edit this first to customize your FPGA target.                    |
+| **`src/sand_math.vh`**          | Saturating/rounding fixed-point helpers used by the PE and raster engine.                                                                                                  |
+| **`src/sand_pe.v`**             | The *Processing Element* (one grain). Reads its 4–8 neighbors and applies an operation (sum, diffusion, clamp, etc.) or a user-defined microcode rule.                    |
+| **`src/sand_scheduler_dynamic.v`** | Adaptive round-robin scheduler. Tracks per-job activity, selects step budgets, and drives the pointer-swap raster engine (`sand_engine_raster`).                         |
+| **`src/sand_engine_raster.v`** | Streaming single-port engine that walks the grid cell-by-cell, produces activity metrics, and writes results into the opposite memory plane.                          |
+| **`src/sand_jobmem2p.v`**     | Two-plane dual-port job memory. Each job/layer owns {read,write} planes and a plane-select bit toggled by the scheduler.                                              |
+| **`src/sand_top.v`**            | Integration wrapper exposing the CSR bus, seeding port, and the adaptive core.                                                                                            |
 | **`src/bram_tdp_wrap.v`**   | Portable true dual-port BRAM wrapper (vendor-inferable).                                                                                                                   |
-| **`legacy`** / (**`sand_grid.v` / `sand_scheduler.v` / `sand_jobmem.v`**) | Legacy fully-parallel path kept for reference (instantiates an in-core `WIDTH × HEIGHT` PE mesh).                                             |
+| **`src/legacy`** / (**`sand_grid.v` / `sand_scheduler.v` / `sand_jobmem.v`**) | Legacy fully-parallel path kept for reference (instantiates an in-core `WIDTH × HEIGHT` PE mesh).                                             |
 
 ---
 
@@ -98,6 +98,29 @@ All parameters are centralized in [`sand_defs.vh`](sand_defs.vh):
 
 You can freely change these before synthesis — the design is **fully parametric**.
 
+### Unit Dynamics & Windows
+
+The enhanced **unit** pipeline lets you bias each layer like a Galton board: you can stream weighted flux from the top, relax pressure iteratively, or fold in a backprop-style correction while the raster engine walks the grid.
+
+Key CSRs that drive this behaviour:
+
+| CSR | Description |
+| :-- | :---------- |
+| `CSR_UNIT_CTRL` | Bit0 enables flux, bits1-2 route overflow (up/down), bit3 optionally forces diagonal sampling for pressure, bits15:8 set the pressure iteration budget (1‥32) |
+| `CSR_UNIT_WINDOW_WH` / `CSR_UNIT_WINDOW_OFFSET` | Per-job active window (width/height and X/Y offset). Select the target job with `CSR_JOB_SELECT` before writing. |
+| `CSR_UNIT_STATUS_WINDOW` / `CSR_UNIT_STATUS_OFFSET` | Read back the sanitized window settings for the selected job. |
+| `CSR_UNIT_FLUX_*` | Directional weights (`TOP`, `BOTTOM`, `SIDE`, `RETAIN`, `PREV`), a saturation threshold, and fractional coefficients for overflow feedback. |
+| `CSR_UNIT_PRESSURE_GAIN` | Fixed-point exchange rate multiplied during each pressure iteration. |
+| `CSR_UNIT_BACKPROP_*` | Learning-rate, neighbour gain, and decay factors for the gradient update primitive. |
+
+**How the new opcodes map to the knobs**
+
+- `OP_WATER_FLUX` consumes the directional weights and threshold, mixes in `constB` as the vertical/backfeed term, and bleeds overflow according to the up/down coefficients.
+- `OP_PRESSURE` executes as many micro-iterations as requested, multiplying the difference between the running pressure and the neighbour average by `CSR_UNIT_PRESSURE_GAIN`.
+- `OP_BACKPROP` treats `constB` as the target signal, `CSR_UNIT_BACKPROP_LR` as the learning rate, and nudges the cell using the neighbour coupling (`NEIGH`) and decay values.
+
+Use window offsets to shrink the active region when a model only occupies part of the fabric: the raster engine will skip untouched cells, saving cycles and bandwidth without requiring you to resize the underlying BRAM planes.
+
 ---
 
 ## 🧩 The Processing Element (`sand_pe`)
@@ -121,6 +144,9 @@ next = f(self, neighbors, constA, constB, opcode)
 | `OP_DIFFUSION`    | `self + k*(avg - self)` (soft diffusion)        |
 | `OP_MIN / OP_MAX` | Minimum or maximum with neighbors               |
 | `OP_CLAMP`        | Clamp between constA..constB                    |
+| `OP_WATER_FLUX`   | Weighted water flux blending + overflow bleed   |
+| `OP_PRESSURE`     | Iterative pressure/exchange relaxation          |
+| `OP_BACKPROP`     | Single-step gradient update toward target       |
 | `OP_MICRO`        | Look up a user-defined rule from a 16-entry LUT |
 
 ### Microcode LUT

@@ -124,6 +124,26 @@ module sand_pe #(
             `OP_MAX:        alu_res = (self_in > max_nbr) ? self_in : max_nbr;
             `OP_CLAMP:      alu_res = (self_in < constA) ? constA :
                                        (self_in > constB) ? constB : self_in;
+            `OP_WATER_FLUX: begin
+                reg [DATA_W-1:0] flux_total;
+                reg [DATA_W-1:0] overflow;
+                flux_total = fp_add(fp_mul_const(self_in, constA), sum_nbrs[DATA_W-1:0]);
+                if (flux_total > constB) begin
+                    overflow   = fp_sub(flux_total, constB);
+                    flux_total = fp_sub(flux_total, overflow);
+                end
+                alu_res = flux_total;
+            end
+            `OP_PRESSURE: begin
+                reg [DATA_W-1:0] delta;
+                delta   = fp_sub(avg_nbrs, self_in);
+                alu_res = fp_add(self_in, fp_mul_const(delta, constA));
+            end
+            `OP_BACKPROP: begin
+                reg [DATA_W-1:0] err;
+                err     = fp_sub(constB, self_in);
+                alu_res = fp_add(self_in, fp_mul_const(err, constA));
+            end
             `OP_MICRO:      alu_res = micro_val;
             default:        alu_res = self_in;
         endcase

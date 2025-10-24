@@ -33,6 +33,25 @@
 `define CSR_ADAPT_BUDGET       8'h30   // R: step budget + misc info for selected job
 `define CSR_MICRO_BASE         8'h40   // W: microcode table (16 entries)
 
+// Enhanced unit controls
+`define CSR_UNIT_CTRL              8'h50   // W: unit behavior enable bits + iteration counts
+`define CSR_UNIT_WINDOW_WH         8'h54   // W: {height[31:16], width[15:0]} for selected job
+`define CSR_UNIT_WINDOW_OFFSET     8'h58   // W: {y_off[31:16], x_off[15:0]} for selected job
+`define CSR_UNIT_FLUX_WEIGHT_TOP   8'h5C   // W: weight for north/top flux
+`define CSR_UNIT_FLUX_WEIGHT_BOTTOM 8'h60  // W: weight for south/bottom flux
+`define CSR_UNIT_FLUX_WEIGHT_SIDE  8'h64   // W: weight for lateral/diagonal flux
+`define CSR_UNIT_FLUX_WEIGHT_RETAIN 8'h68  // W: retention/self weight
+`define CSR_UNIT_FLUX_WEIGHT_PREV  8'h6C   // W: previous-layer feedback weight
+`define CSR_UNIT_FLUX_THRESHOLD    8'h70   // W: saturation threshold for flux accumulator
+`define CSR_UNIT_FLUX_REVERSE_TOP  8'h74   // W: fraction of overflow sent back upward
+`define CSR_UNIT_FLUX_REVERSE_BOTTOM 8'h78 // W: fraction of overflow drained downward
+`define CSR_UNIT_PRESSURE_GAIN     8'h7C   // W: exchange rate gain
+`define CSR_UNIT_BACKPROP_LR       8'h80   // W: learning rate for backprop mode
+`define CSR_UNIT_BACKPROP_NEIGH    8'h84   // W: neighbor-coupled gradient gain
+`define CSR_UNIT_BACKPROP_DECAY    8'h88   // W: decay/regularization factor
+`define CSR_UNIT_STATUS_WINDOW     8'h8C   // R: {height[31:16], width[15:0]} for selected job
+`define CSR_UNIT_STATUS_OFFSET     8'h90   // R: {y_off[31:16], x_off[15:0]} for selected job
+
 // Adaptive scheduler defaults
 `define ADAPT_DEFAULT_MANUAL_STEPS    `STEPS_PER_SLICE
 `define ADAPT_DEFAULT_MIN_STEPS       1
@@ -54,6 +73,9 @@
 `define OP_MIN         4'd9  // min(self, any neighbor)
 `define OP_MAX         4'd10 // max(self, any neighbor)
 `define OP_CLAMP       4'd11 // clamp(self, constA..constB)
+`define OP_WATER_FLUX  4'd12 // weighted flux accumulation with overflow routing
+`define OP_PRESSURE    4'd13 // iterative pressure/exchange solver
+`define OP_BACKPROP    4'd14 // simple backprop-style gradient update
 `define OP_MICRO       4'd15 // 4-bit microcode index => f(self, sum, avg, etc.)
 
 `endif
