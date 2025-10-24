@@ -301,7 +301,7 @@ MIT License — free to use, modify, and embed in research or products.
 
 If you use it in a paper, demo, or project, consider referencing it as:
 
-> “The Sand Project — a dynamic parametric sandbox grid in Verilog (© 2025, Gecko’s Ink / Riccardo Cecchini)”
+> “The Sand(box) Project — a dynamic parametric sandbox grid in Verilog (© 2025, Riccardo Cecchini)”
 
 ---
 
@@ -332,10 +332,10 @@ Every cell listens, speaks, and transforms — just like you do.
 
 ---
 
-**Author:** Riccardo Cecchini (Gecko’s Ink) [no, seriously, written by ChatGPT 5]
-**Date:** 2025
-**Language:** Verilog-2001
-**Keywords:** FPGA, Cellular Automata, Diffusion, Machine Learning, Parallel Processing, Sandbox Simulation
+- **Author:** Riccardo Cecchini (Gecko’s Ink) [composed by ChatGPT 5]
+- **Date:** 2025
+- **Language:** Verilog-2001
+- **Keywords:** FPGA, Cellular Automata, Diffusion, Machine Learning, Parallel Processing, Sandbox Simulation
 
 # 🎛️ Example Configurations & Visual Interpretations
 
