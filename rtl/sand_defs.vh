@@ -31,6 +31,8 @@
 `define CSR_ADAPT_STATUS       8'h28   // R: packed status for selected job
 `define CSR_ADAPT_STATUS_SEL   8'h2C   // W: selects which job to expose via STATUS register
 `define CSR_ADAPT_BUDGET       8'h30   // R: step budget + misc info for selected job
+`define CSR_RULE_CONSTC        8'h34   // W: constC / mix coefficient C
+`define CSR_RULE_CONSTD        8'h38   // W: constD / mix bias term
 `define CSR_MICRO_BASE         8'h40   // W: microcode table (16 entries)
 
 // Enhanced unit controls
@@ -61,21 +63,26 @@
 `define ADAPT_DEFAULT_CAP_CYCLES      0
 
 // Opcodes for the PE ALU (baseline “math”)
-`define OP_NOP         4'd0
-`define OP_SELF        4'd1
-`define OP_SUM_NBRS    4'd2
-`define OP_AVG_NBRS    4'd3
-`define OP_ADD_CONST   4'd4
-`define OP_SUB_CONST   4'd5
-`define OP_MUL_CONST   4'd6
-`define OP_DIV_CONST   4'd7
-`define OP_DIFFUSION   4'd8  // self + k*(avg_nbrs - self)
-`define OP_MIN         4'd9  // min(self, any neighbor)
-`define OP_MAX         4'd10 // max(self, any neighbor)
-`define OP_CLAMP       4'd11 // clamp(self, constA..constB)
-`define OP_WATER_FLUX  4'd12 // weighted flux accumulation with overflow routing
-`define OP_PRESSURE    4'd13 // iterative pressure/exchange solver
-`define OP_BACKPROP    4'd14 // simple backprop-style gradient update
-`define OP_MICRO       4'd15 // 4-bit microcode index => f(self, sum, avg, etc.)
+`define OPCODE_W       5
+`define OP_NOP         5'd0
+`define OP_SELF        5'd1
+`define OP_SUM_NBRS    5'd2
+`define OP_AVG_NBRS    5'd3
+`define OP_ADD_CONST   5'd4
+`define OP_SUB_CONST   5'd5
+`define OP_MUL_CONST   5'd6
+`define OP_DIV_CONST   5'd7
+`define OP_DIFFUSION   5'd8  // self + k*(avg_nbrs - self)
+`define OP_MIN         5'd9  // min(self, any neighbor)
+`define OP_MAX         5'd10 // max(self, any neighbor)
+`define OP_CLAMP       5'd11 // clamp(self, constA..constB)
+`define OP_WATER_FLUX  5'd12 // weighted flux accumulation with overflow routing
+`define OP_PRESSURE    5'd13 // iterative pressure/exchange solver
+`define OP_BACKPROP    5'd14 // simple backprop-style gradient update
+`define OP_MICRO       5'd15 // microcode lookup (default)
+`define OP_LAPLACIAN   5'd16 // 6-neighbor laplacian (planar + vertical)
+`define OP_SHARPEN     5'd17 // self + alpha*(laplacian) with alpha=constA
+`define OP_EDGE        5'd18 // |dx|+|dy| using 4-neighbor gradients
+`define OP_MIX         5'd19 // a*self + b*avg + c*sum + d (fixed-point mix)
 
 `endif

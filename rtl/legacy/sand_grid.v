@@ -21,10 +21,12 @@ module sand_grid #(
     output wire [DATA_W-1:0]      write_buf[0:HEIGHT-1][0:WIDTH-1],
 
     // Config (broadcast)
-    input  wire [3:0]             opcode,
+    input  wire [`OPCODE_W-1:0]   opcode,
     input  wire                   use_diagonals,
     input  wire [DATA_W-1:0]      constA,
     input  wire [DATA_W-1:0]      constB,
+    input  wire [DATA_W-1:0]      constC,
+    input  wire [DATA_W-1:0]      constD,
     input  wire [DATA_W-1:0]      micro_lut [0:15]
 );
     genvar y,x;
@@ -52,6 +54,8 @@ module sand_grid #(
                 wire [DATA_W-1:0] nw_in = read_buf[clamp(y-1,0,HEIGHT-1)][clamp(x-1,0,WIDTH-1)];
                 wire [DATA_W-1:0] se_in = read_buf[clamp(y+1,0,HEIGHT-1)][clamp(x+1,0,WIDTH-1)];
                 wire [DATA_W-1:0] sw_in = read_buf[clamp(y+1,0,HEIGHT-1)][clamp(x-1,0,WIDTH-1)];
+                wire [DATA_W-1:0] above_in = self_in;
+                wire [DATA_W-1:0] below_in = self_in;
 
                 sand_pe #(
                     .DATA_W(DATA_W),
@@ -62,10 +66,13 @@ module sand_grid #(
                     .self_in(self_in),
                     .n_in(n_in), .s_in(s_in), .e_in(e_in), .w_in(w_in),
                     .ne_in(ne_in), .nw_in(nw_in), .se_in(se_in), .sw_in(sw_in),
+                    .above_in(above_in), .below_in(below_in),
                     .opcode(opcode),
                     .use_diagonals(use_diagonals),
                     .constA(constA),
                     .constB(constB),
+                    .constC(constC),
+                    .constD(constD),
                     .micro_lut(micro_lut),
                     .next_out(write_buf[y][x])
                 );

@@ -40,10 +40,13 @@ module sand_scheduler_dynamic #(
     // -------------------------------------------------------------------------
     // Configuration registers
     // -------------------------------------------------------------------------
-    reg [3:0]            opcode;
-    reg [DATA_W-1:0]     constA, constB;
+    reg [`OPCODE_W-1:0]  opcode;
+    reg [DATA_W-1:0]     constA, constB, constC, constD;
     reg                  force_diag, use_micro;
     reg [DATA_W-1:0]     micro_lut [0:15];
+    reg                  micro_lut_wr_stb;
+    reg [3:0]            micro_lut_wr_idx;
+    reg [DATA_W-1:0]     micro_lut_wr_data;
 
     // Enhanced unit behaviour controls
     reg                  unit_flux_enable;
@@ -156,7 +159,12 @@ module sand_scheduler_dynamic #(
         .use_diagonals(force_diag),
         .constA(constA),
         .constB(constB),
+        .constC(constC),
+        .constD(constD),
         .micro_lut(micro_lut),
+        .micro_lut_we(micro_lut_wr_stb),
+        .micro_lut_waddr(micro_lut_wr_idx),
+        .micro_lut_wdata(micro_lut_wr_data),
         .job_id(eng_job_sel),
         .layer_id(eng_layer_sel),
         .plane_read_sel(eng_plane_sel),
@@ -228,7 +236,9 @@ module sand_scheduler_dynamic #(
     wire heavy_opcode = (opcode == `OP_MUL_CONST) ||
                         (opcode == `OP_DIV_CONST) ||
                         (opcode == `OP_DIFFUSION) ||
-                        (opcode == `OP_MICRO);
+                        (opcode == `OP_MICRO) ||
+                        (opcode == `OP_SHARPEN) ||
+                        (opcode == `OP_MIX);
 
     // -------------------------------------------------------------------------
     // CSR write path + scheduler core
@@ -243,6 +253,8 @@ module sand_scheduler_dynamic #(
             opcode        <= `OP_DIFFUSION;
             constA        <= {DATA_W{1'b0}};
             constB        <= {DATA_W{1'b0}};
+            constC        <= {DATA_W{1'b0}};
+            constD        <= {DATA_W{1'b0}};
             force_diag    <= `USE_DIAGONALS[0];
             use_micro     <= 1'b0;
             adapt_enable  <= 1'b0;
@@ -272,6 +284,9 @@ module sand_scheduler_dynamic #(
             adapt_thresh_hi    <= `ADAPT_DEFAULT_HIGH_THRESH;
             adapt_cycle_limit  <= `ADAPT_DEFAULT_CAP_CYCLES;
             status_job_sel     <= {JOB_W{1'b0}};
+            micro_lut_wr_stb   <= 1'b0;
+            micro_lut_wr_idx   <= 4'd0;
+            micro_lut_wr_data  <= {DATA_W{1'b0}};
 
             for (j=0; j<16; j=j+1) micro_lut[j] <= {DATA_W{1'b0}};
             for (j=0; j<N_JOBS; j=j+1) begin
@@ -301,6 +316,7 @@ module sand_scheduler_dynamic #(
             win_yoff_sel   <= 16'd0;
         end else begin
             start_frame <= 1'b0;
+            micro_lut_wr_stb <= 1'b0;
 
             // ---------------- CSR writes -------------------------------------
             if (csr_we) begin
@@ -308,9 +324,11 @@ module sand_scheduler_dynamic #(
                     `CSR_JOB_SELECT: begin
                         status_job_sel <= csr_wdata[JOB_W-1:0];
                     end
-                    `CSR_RULE_OP:     opcode     <= csr_wdata[3:0];
+                    `CSR_RULE_OP:     opcode     <= csr_wdata[`OPCODE_W-1:0];
                     `CSR_RULE_CONSTA: constA     <= csr_wdata[DATA_W-1:0];
                     `CSR_RULE_CONSTB: constB     <= csr_wdata[DATA_W-1:0];
+                    `CSR_RULE_CONSTC: constC     <= csr_wdata[DATA_W-1:0];
+                    `CSR_RULE_CONSTD: constD     <= csr_wdata[DATA_W-1:0];
                     `CSR_FLAGS: begin
                         force_diag <= csr_wdata[0];
                         use_micro  <= csr_wdata[1];
@@ -420,6 +438,9 @@ module sand_scheduler_dynamic #(
                     default: begin
                         if (csr_addr >= `CSR_MICRO_BASE && csr_addr < (`CSR_MICRO_BASE+16)) begin
                             micro_lut[csr_addr-`CSR_MICRO_BASE] <= csr_wdata[DATA_W-1:0];
+                            micro_lut_wr_stb  <= 1'b1;
+                            micro_lut_wr_idx  <= csr_addr-`CSR_MICRO_BASE;
+                            micro_lut_wr_data <= csr_wdata[DATA_W-1:0];
                         end
                     end
                 endcase

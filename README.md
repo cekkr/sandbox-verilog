@@ -98,6 +98,8 @@ All parameters are centralized in [`sand_defs.vh`](sand_defs.vh):
 
 You can freely change these before synthesis — the design is **fully parametric**.
 
+Additional rule coefficients are mapped at `CSR_RULE_CONSTC` and `CSR_RULE_CONSTD` and pair with the new programmable mix (`OP_MIX`), giving you four independent fixed-point knobs per rule.
+
 ### Unit Dynamics & Windows
 
 The enhanced **unit** pipeline lets you bias each layer like a Galton board: you can stream weighted flux from the top, relax pressure iteratively, or fold in a backprop-style correction while the raster engine walks the grid.
@@ -128,32 +130,38 @@ Use window offsets to shrink the active region when a model only occupies part o
 Each PE runs the core update rule:
 
 ```
-next = f(self, neighbors, constA, constB, opcode)
+next = f(self, neighbors, constA…constD, opcode)
 ```
 
 ### Supported Operations
 
-| Opcode            | Behavior                                        |
-| :---------------- | :---------------------------------------------- |
-| `OP_SUM_NBRS`     | Sum of neighbors                                |
-| `OP_AVG_NBRS`     | Average of neighbors                            |
-| `OP_ADD_CONST`    | Add constant A                                  |
-| `OP_SUB_CONST`    | Subtract constant A                             |
-| `OP_MUL_CONST`    | Multiply by constant A                          |
-| `OP_DIV_CONST`    | Divide by constant A                            |
-| `OP_DIFFUSION`    | `self + k*(avg - self)` (soft diffusion)        |
-| `OP_MIN / OP_MAX` | Minimum or maximum with neighbors               |
-| `OP_CLAMP`        | Clamp between constA..constB                    |
-| `OP_WATER_FLUX`   | Weighted water flux blending + overflow bleed   |
-| `OP_PRESSURE`     | Iterative pressure/exchange relaxation          |
-| `OP_BACKPROP`     | Single-step gradient update toward target       |
-| `OP_MICRO`        | Look up a user-defined rule from a 16-entry LUT |
+| Opcode            | Behavior                                                                 |
+| :---------------- | :----------------------------------------------------------------------- |
+| `OP_SUM_NBRS`     | Sum of planar neighbors (4 or 8 depending on `use_diagonals`)            |
+| `OP_AVG_NBRS`     | Average of planar neighbors                                              |
+| `OP_ADD_CONST`    | Add constant A                                                           |
+| `OP_SUB_CONST`    | Subtract constant A                                                      |
+| `OP_MUL_CONST`    | Multiply by constant A                                                   |
+| `OP_DIV_CONST`    | Divide by constant A                                                     |
+| `OP_DIFFUSION`    | `self + k*(avg - self)` (soft diffusion)                                 |
+| `OP_MIN / OP_MAX` | Minimum or maximum across planar + vertical neighbors                    |
+| `OP_CLAMP`        | Clamp between constA..constB                                             |
+| `OP_WATER_FLUX`   | Weighted water flux blending + overflow bleed                            |
+| `OP_PRESSURE`     | Iterative pressure/exchange relaxation                                   |
+| `OP_BACKPROP`     | Single-step gradient update toward target                                |
+| `OP_LAPLACIAN`    | 6-neighbor Laplacian (`N+S+E+W+above+below - 6*self`)                   |
+| `OP_SHARPEN`      | Unsharp mask using Laplacian: `self - constA * laplacian`                |
+| `OP_EDGE`         | Gradient magnitude `|e-w| + |s-n|`                                       |
+| `OP_MIX`          | Programmable mix `a*self + b*avg + c*(planar sum + vertical) + d`        |
+| `OP_MICRO`        | Look up a user-defined rule from a 16-entry LUT                          |
+
+`OP_MIX` consumes four fixed-point coefficients sourced from `CSR_RULE_CONSTA…CONSTD`, letting you blend the current value, the neighbor average, the aggregated (planar + vertical) sum, and a constant bias in one pass. Vertical neighbors (`above_in`/`below_in`) are now available in the PE and the raster engine fetches them automatically every cell, so Laplacian, Min/Max, and mix operations react to layer-to-layer coupling out of the box.
 
 ### Microcode LUT
 
 You can define a 16-entry lookup table (`micro_lut`) via CSR writes.
 It lets you encode small nonlinear or symbolic rules (e.g., thresholds, Boolean masks, learned coefficients).
-Index computation is customizable in the code (`micro_idx` logic).
+Entries may now be rewritten on the fly while the engine is running, which makes online/ML-style adaptation loops straightforward—just stream incremental updates through `CSR_MICRO_BASE + index`.
 
 ---
 
@@ -205,7 +213,7 @@ Layer 2  ←  receives from 1
 ```
 
 Between layers, the scheduler can propagate data (e.g., “gravity” effects).
-To extend the PE for true 3D neighbor access, simply add `above_in` and `below_in` wires and modify the `sand_grid` generator accordingly — the rest of the system already handles layers.
+The PE now natively samples the layer above and below the current cell during every raster pass, so 3D diffusion/sharpening rules and min/max morphology span the full stack without additional glue.
 
 ---
 
@@ -229,6 +237,8 @@ To extend the PE for true 3D neighbor access, simply add `above_in` and `below_i
 | `0x04`       | Opcode                                        |
 | `0x08`       | Const A                                       |
 | `0x0C`       | Const B                                       |
+| `0x34`       | Const C (mix coefficient)                     |
+| `0x38`       | Const D (mix bias)                            |
 | `0x10`       | Flags (bit0: diagonals, bit1: microcode mode) |
 | `0x14`       | Status (`[0]=busy`, `[N_JOBS:1]=job_done`)    |
 | `0x40..0x4F` | Microcode table entries                       |
@@ -286,7 +296,7 @@ The architecture is designed not just for computation, but for **emergence**.
 
 ## 🧭 Roadmap & Extensions
 
-* [ ] Add **Z-neighbors** for vertical coupling
+* [x] Add **Z-neighbors** for vertical coupling
 * [ ] Introduce **pointer-swapped BRAM planes** for faster ping-pong
 * [ ] Add **AXI-Lite** interface and DMA streams
 * [ ] Explore **evolutionary rule optimization** via microcode mutation
@@ -600,13 +610,14 @@ To future-proof the engine, isolate arithmetic in **utility functions** inside `
 
 ---
 
-# 🧩 Extending the PE (suggested hooks)
+# 🧩 PE Extensions
 
-* **Z-neighbors:** Add `above_in`/`below_in` to `sand_pe` and feed from `layer-1 / layer+1`.
-* **Gradient Ops:** Provide `dx = e - w`, `dy = s - n`, then support `OP_LAPLACIAN`, `OP_SHARPEN`, `OP_EDGE`.
-* **Programmable Mix:** Add small coeff registers:
-  `next = a*self + b*avg + c*sum + d` (all fixed-point).
-* **Learned LUTs:** For ML-ish behavior, let a host rewrite `micro_lut` online as part of a training loop.
+All of the previously sketched hooks are now baked into the RTL:
+
+* **Z-neighbors:** Every PE receives `above_in`/`below_in`, and the raster engine streams layer ±1 so 3D rules just work.
+* **Gradient Ops:** New opcodes expose `dx`, `dy`, Laplacian sharpening, and a simple edge magnitude detector.
+* **Programmable Mix:** Four fixed-point coefficients (`constA…constD`) drive the `OP_MIX` blend for linear combos of self/avg/sum/bias.
+* **Learned LUTs:** `CSR_MICRO_BASE` writes update the shared 16-entry LUT live, enabling online training loops without pausing the engine.
 
 ---
 

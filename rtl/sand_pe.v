@@ -25,12 +25,16 @@ module sand_pe #(
     input  wire [DATA_W-1:0]      nw_in,
     input  wire [DATA_W-1:0]      se_in,
     input  wire [DATA_W-1:0]      sw_in,
+    input  wire [DATA_W-1:0]      above_in,
+    input  wire [DATA_W-1:0]      below_in,
 
     // Config
-    input  wire [3:0]             opcode,
+    input  wire [`OPCODE_W-1:0]   opcode,
     input  wire                   use_diagonals, // 0 => 4-neigh, 1 => 8-neigh
     input  wire [DATA_W-1:0]      constA,
     input  wire [DATA_W-1:0]      constB,
+    input  wire [DATA_W-1:0]      constC,
+    input  wire [DATA_W-1:0]      constD,
 
     // Microcode table (16 entries x DATA_W), supplied by grid (shared ROM/RAM)
     input  wire [DATA_W-1:0]      micro_lut [0:15],
@@ -38,6 +42,7 @@ module sand_pe #(
     // Output next state (to WRITE buffer)
     output reg  [DATA_W-1:0]      next_out
 );
+    localparam integer EXT_W = DATA_W + 4;
 
     // -------- Helper functions ------------------------------------------------
     function [DATA_W-1:0] fp_add;
@@ -66,6 +71,7 @@ module sand_pe #(
     reg [DATA_W+3:0] sum_nbrs;   // headroom
     reg [DATA_W-1:0] avg_nbrs;
     reg [DATA_W-1:0] min_nbr, max_nbr;
+    reg [DATA_W+2:0] sum4_only;
 
     wire [DATA_W-1:0] nb4 [0:3];
     assign nb4[0]=n_in; assign nb4[1]=s_in; assign nb4[2]=e_in; assign nb4[3]=w_in;
@@ -77,30 +83,64 @@ module sand_pe #(
     integer i;
     always @* begin
         sum_nbrs = { (DATA_W+4){1'b0} };
+        sum4_only = {(DATA_W+3){1'b0}};
         min_nbr  = { DATA_W{1'b1} }; // max value
         max_nbr  = { DATA_W{1'b0} };
 
+        for (i=0;i<4;i=i+1) begin
+            sum4_only = sum4_only + nb4[i];
+            if (nb4[i] < min_nbr) min_nbr = nb4[i];
+            if (nb4[i] > max_nbr) max_nbr = nb4[i];
+        end
+
         if (!use_diagonals) begin
-            for (i=0;i<4;i=i+1) begin
-                sum_nbrs = sum_nbrs + nb4[i];
-                if (nb4[i] < min_nbr) min_nbr = nb4[i];
-                if (nb4[i] > max_nbr) max_nbr = nb4[i];
-            end
-            avg_nbrs = sum_nbrs[DATA_W-1:0] >> 2; // /4
+            sum_nbrs = {1'b0, sum4_only};
+            avg_nbrs = sum4_only[DATA_W-1:0] >> 2; // /4
         end else begin
-            for (i=0;i<8;i=i+1) begin
+            sum_nbrs = {1'b0, sum4_only};
+            for (i=4;i<8;i=i+1) begin
                 sum_nbrs = sum_nbrs + nb8[i];
                 if (nb8[i] < min_nbr) min_nbr = nb8[i];
                 if (nb8[i] > max_nbr) max_nbr = nb8[i];
             end
             avg_nbrs = sum_nbrs[DATA_W-1:0] >> 3; // /8
         end
+
+        if (above_in < min_nbr) min_nbr = above_in;
+        if (above_in > max_nbr) max_nbr = above_in;
+        if (below_in < min_nbr) min_nbr = below_in;
+        if (below_in > max_nbr) max_nbr = below_in;
     end
 
     // Microcode “indexer”: small, flexible hook.
     // You can redefine this to compose an index from bits of self/sum/avg/etc.
     wire [3:0] micro_idx = { opcode[1:0], self_in[1:0] }; // simple example
     wire [DATA_W-1:0] micro_val = micro_lut[micro_idx];
+
+    // Signed helper views
+    wire signed [EXT_W-1:0] self_s  = {{(EXT_W-DATA_W){self_in[DATA_W-1]}}, self_in};
+    wire signed [EXT_W-1:0] above_s = {{(EXT_W-DATA_W){above_in[DATA_W-1]}}, above_in};
+    wire signed [EXT_W-1:0] below_s = {{(EXT_W-DATA_W){below_in[DATA_W-1]}}, below_in};
+    wire signed [EXT_W-1:0] n_s     = {{(EXT_W-DATA_W){n_in[DATA_W-1]}}, n_in};
+    wire signed [EXT_W-1:0] s_s     = {{(EXT_W-DATA_W){s_in[DATA_W-1]}}, s_in};
+    wire signed [EXT_W-1:0] e_s     = {{(EXT_W-DATA_W){e_in[DATA_W-1]}}, e_in};
+    wire signed [EXT_W-1:0] w_s     = {{(EXT_W-DATA_W){w_in[DATA_W-1]}}, w_in};
+
+    wire signed [EXT_W-1:0] dx_signed = e_s - w_s;
+    wire signed [EXT_W-1:0] dy_signed = s_s - n_s;
+    wire [DATA_W-1:0]       dx_abs = (dx_signed[EXT_W-1]) ? (-dx_signed)[DATA_W-1:0] : dx_signed[DATA_W-1:0];
+    wire [DATA_W-1:0]       dy_abs = (dy_signed[EXT_W-1]) ? (-dy_signed)[DATA_W-1:0] : dy_signed[DATA_W-1:0];
+
+    wire signed [EXT_W-1:0] sum4_signed = n_s + s_s + e_s + w_s;
+    wire signed [EXT_W-1:0] sum3d_signed = sum4_signed + above_s + below_s;
+    wire signed [EXT_W-1:0] self_x4 = self_s <<< 2;
+    wire signed [EXT_W-1:0] self_x2 = self_s <<< 1;
+    wire signed [EXT_W-1:0] self_x6 = self_x4 + self_x2;
+    wire signed [EXT_W-1:0] laplacian_signed = sum3d_signed - self_x6;
+    wire [DATA_W-1:0]       laplacian = laplacian_signed[DATA_W-1:0];
+
+    wire [DATA_W-1:0] sum_planar      = sum_nbrs[DATA_W-1:0];
+    wire [DATA_W-1:0] sum_with_vert   = fp_add(fp_add(sum_planar, above_in), below_in);
 
     // Main ALU
     reg [DATA_W-1:0] alu_res;
@@ -145,6 +185,30 @@ module sand_pe #(
                 alu_res = fp_add(self_in, fp_mul_const(err, constA));
             end
             `OP_MICRO:      alu_res = micro_val;
+            `OP_LAPLACIAN:  alu_res = laplacian;
+            `OP_SHARPEN: begin
+                reg [DATA_W-1:0] lap_gain;
+                reg [DATA_W-1:0] sharpen_val;
+                lap_gain    = fp_mul_const(laplacian, constA);
+                sharpen_val = fp_sub(self_in, lap_gain);
+                alu_res     = sharpen_val;
+            end
+            `OP_EDGE: begin
+                reg [DATA_W-1:0] edge_mag;
+                edge_mag = fp_add(dx_abs, dy_abs);
+                alu_res  = edge_mag;
+            end
+            `OP_MIX: begin
+                reg [DATA_W-1:0] mix_self;
+                reg [DATA_W-1:0] mix_avg;
+                reg [DATA_W-1:0] mix_sum;
+                reg [DATA_W-1:0] acc;
+                mix_self = fp_mul_const(self_in, constA);
+                mix_avg  = fp_mul_const(avg_nbrs, constB);
+                mix_sum  = fp_mul_const(sum_with_vert, constC);
+                acc      = fp_add(fp_add(mix_self, mix_avg), fp_add(mix_sum, constD));
+                alu_res  = acc;
+            end
             default:        alu_res = self_in;
         endcase
     end

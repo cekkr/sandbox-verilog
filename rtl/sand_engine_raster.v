@@ -27,11 +27,16 @@ module sand_engine_raster #(
     output reg                       frame_done,    // pulse when frame completes
 
     // Config (sampled on start_frame)
-    input  wire [3:0]                opcode,
+    input  wire [`OPCODE_W-1:0]      opcode,
     input  wire                      use_diagonals,
     input  wire [DATA_W-1:0]         constA,
     input  wire [DATA_W-1:0]         constB,
+    input  wire [DATA_W-1:0]         constC,
+    input  wire [DATA_W-1:0]         constD,
     input  wire [DATA_W-1:0]         micro_lut [0:15],
+    input  wire                      micro_lut_we,
+    input  wire [3:0]                micro_lut_waddr,
+    input  wire [DATA_W-1:0]         micro_lut_wdata,
 
     // Scheduler supplied context (sampled on start_frame)
     input  wire [JOB_W-1:0]          job_id,
@@ -76,6 +81,7 @@ module sand_engine_raster #(
     localparam integer CELLS = WIDTH*HEIGHT;
     localparam integer X_W   = (WIDTH  > 1) ? $clog2(WIDTH)  : 1;
     localparam integer Y_W   = (HEIGHT > 1) ? $clog2(HEIGHT) : 1;
+    localparam integer EXT_W = DATA_W + 4;
 
     // -------------------------------------------------------------------------
     // Helper functions
@@ -131,13 +137,14 @@ module sand_engine_raster #(
     reg                    diag_active;
 
     // Sampled config
-    reg [3:0]              opcode_reg;
-    reg [DATA_W-1:0]       constA_reg, constB_reg;
+    reg [`OPCODE_W-1:0]    opcode_reg;
+    reg [DATA_W-1:0]       constA_reg, constB_reg, constC_reg, constD_reg;
 
     // Neighbor latches
     reg [DATA_W-1:0] self_in;
     reg [DATA_W-1:0] n_in, s_in, e_in, w_in;
-   reg [DATA_W-1:0] ne_in, nw_in, se_in, sw_in;
+    reg [DATA_W-1:0] ne_in, nw_in, se_in, sw_in;
+    reg [DATA_W-1:0] above_in, below_in;
 
     // ALU plumbing
     reg [DATA_W-1:0] alu_res;
@@ -169,14 +176,42 @@ module sand_engine_raster #(
     reg [31:0] activity_counter;
     reg [31:0] cycle_counter;
 
-    // Microcode index
+    // Layer helpers for Z-neighbors
+    reg [LAYER_W-1:0] layer_reg;
+    reg [LAYER_W-1:0] layer_above_reg;
+    reg [LAYER_W-1:0] layer_below_reg;
+
+    // Microcode storage + index
+    reg  [DATA_W-1:0] micro_lut_reg [0:15];
     wire [3:0] micro_idx = { opcode_reg[1:0], self_in[1:0] };
-    wire [DATA_W-1:0] micro_val = micro_lut[micro_idx];
+    wire [DATA_W-1:0] micro_val = micro_lut_reg[micro_idx];
+
+    wire signed [EXT_W-1:0] self_s   = {{(EXT_W-DATA_W){self_in[DATA_W-1]}}, self_in};
+    wire signed [EXT_W-1:0] above_s  = {{(EXT_W-DATA_W){above_in[DATA_W-1]}}, above_in};
+    wire signed [EXT_W-1:0] below_s  = {{(EXT_W-DATA_W){below_in[DATA_W-1]}}, below_in};
+    wire signed [EXT_W-1:0] n_s      = {{(EXT_W-DATA_W){n_in[DATA_W-1]}}, n_in};
+    wire signed [EXT_W-1:0] s_s      = {{(EXT_W-DATA_W){s_in[DATA_W-1]}}, s_in};
+    wire signed [EXT_W-1:0] e_s      = {{(EXT_W-DATA_W){e_in[DATA_W-1]}}, e_in};
+    wire signed [EXT_W-1:0] w_s      = {{(EXT_W-DATA_W){w_in[DATA_W-1]}}, w_in};
+
+    wire signed [EXT_W-1:0] dx_signed = e_s - w_s;
+    wire signed [EXT_W-1:0] dy_signed = s_s - n_s;
+    wire [DATA_W-1:0]       dx_abs_val = (dx_signed[EXT_W-1]) ? (-dx_signed)[DATA_W-1:0] : dx_signed[DATA_W-1:0];
+    wire [DATA_W-1:0]       dy_abs_val = (dy_signed[EXT_W-1]) ? (-dy_signed)[DATA_W-1:0] : dy_signed[DATA_W-1:0];
+
+    wire signed [EXT_W-1:0] sum4_signed    = n_s + s_s + e_s + w_s;
+    wire signed [EXT_W-1:0] sum3d_signed   = sum4_signed + above_s + below_s;
+    wire signed [EXT_W-1:0] self_x4        = self_s <<< 2;
+    wire signed [EXT_W-1:0] self_x2        = self_s <<< 1;
+    wire signed [EXT_W-1:0] self_x6        = self_x4 + self_x2;
+    wire signed [EXT_W-1:0] laplacian_signed = sum3d_signed - self_x6;
+    wire [DATA_W-1:0]       laplacian_val  = laplacian_signed[DATA_W-1:0];
 
     // -------------------------------------------------------------------------
     // Sequential control
     // -------------------------------------------------------------------------
     integer xi, yi;
+    integer mi;
     reg [DATA_W+3:0] sum_tmp;
     reg [DATA_W-1:0] avg_tmp;
     reg [DATA_W-1:0] min_tmp;
@@ -184,6 +219,7 @@ module sand_engine_raster #(
     reg [DATA_W-1:0] avg_tmp_reg;
     reg [DATA_W-1:0] pressure_value;
     reg [7:0]        pressure_iters_rem;
+    reg [DATA_W-1:0] sum_with_vert_tmp;
 
     always @(posedge clk) begin
         if (rst) begin
@@ -206,6 +242,8 @@ module sand_engine_raster #(
             opcode_reg       <= `OP_NOP;
             constA_reg       <= {DATA_W{1'b0}};
             constB_reg       <= {DATA_W{1'b0}};
+            constC_reg       <= {DATA_W{1'b0}};
+            constD_reg       <= {DATA_W{1'b0}};
             activity_counter <= 32'd0;
             cycle_counter    <= 32'd0;
             unit_flux_enable_reg            <= 1'b0;
@@ -231,10 +269,25 @@ module sand_engine_raster #(
             avg_tmp_reg      <= {DATA_W{1'b0}};
             pressure_value   <= {DATA_W{1'b0}};
             pressure_iters_rem <= 8'd0;
+            above_in         <= {DATA_W{1'b0}};
+            below_in         <= {DATA_W{1'b0}};
+            layer_reg        <= {LAYER_W{1'b0}};
+            layer_above_reg  <= {LAYER_W{1'b0}};
+            layer_below_reg  <= {LAYER_W{1'b0}};
+            for (mi=0; mi<16; mi=mi+1) micro_lut_reg[mi] <= {DATA_W{1'b0}};
         end else begin
             frame_done         <= 1'b0;
             jm_we              <= 1'b0;
             jm_write_other_plane <= 1'b0;
+
+            if (start_frame) begin
+                for (mi=0; mi<16; mi=mi+1) begin
+                    micro_lut_reg[mi] <= micro_lut[mi];
+                end
+            end
+            if (micro_lut_we) begin
+                micro_lut_reg[micro_lut_waddr] <= micro_lut_wdata;
+            end
 
             if (busy) cycle_counter <= cycle_counter + 1;
 
@@ -255,6 +308,8 @@ module sand_engine_raster #(
                         opcode_reg     <= opcode;
                         constA_reg     <= constA;
                         constB_reg     <= constB;
+                        constC_reg     <= constC;
+                        constD_reg     <= constD;
                         unit_flux_enable_reg            <= unit_flux_enable;
                         unit_overflow_reverse_top_reg   <= unit_overflow_reverse_top;
                         unit_overflow_reverse_bottom_reg<= unit_overflow_reverse_bottom;
@@ -308,6 +363,14 @@ module sand_engine_raster #(
                         read_phase     <= 4'd0;
                         jm_job         <= job_id;
                         jm_layer       <= layer_id;
+                        layer_reg      <= layer_id;
+                        if (DEPTH > 1) begin
+                            layer_above_reg <= (layer_id == {LAYER_W{1'b0}}) ? layer_id : (layer_id - 1'b1);
+                            layer_below_reg <= (layer_id == (DEPTH-1)) ? layer_id : (layer_id + 1'b1);
+                        end else begin
+                            layer_above_reg <= layer_id;
+                            layer_below_reg <= layer_id;
+                        end
                         jm_plane_sel   <= plane_read_sel;
                         jm_idx         <= idx_from_xy(x_off_tmp, y_off_tmp);
                         busy           <= 1'b1;
@@ -363,7 +426,9 @@ module sand_engine_raster #(
                                 nw_in <= self_in;
                                 se_in <= self_in;
                                 sw_in <= self_in;
-                                read_phase <= 4'd15;
+                                jm_layer <= layer_above_reg;
+                                jm_idx   <= idx_from_xy(cur_x, cur_y);
+                                read_phase <= 4'd10;
                             end
                         end
                         4'd6: begin
@@ -389,6 +454,23 @@ module sand_engine_raster #(
                         end
                         4'd9: begin
                             sw_in      <= jm_rdata;
+                            jm_layer   <= layer_above_reg;
+                            jm_idx     <= idx_from_xy(cur_x, cur_y);
+                            read_phase <= 4'd10;
+                        end
+                        4'd10: begin
+                            above_in   <= jm_rdata;
+                            jm_layer   <= layer_below_reg;
+                            jm_idx     <= idx_from_xy(cur_x, cur_y);
+                            read_phase <= 4'd11;
+                        end
+                        4'd11: begin
+                            below_in   <= jm_rdata;
+                            jm_layer   <= layer_reg;
+                            jm_idx     <= idx_from_xy(cur_x, cur_y);
+                            read_phase <= 4'd12;
+                        end
+                        4'd12: begin
                             read_phase <= 4'd15;
                         end
                         4'd15: begin
@@ -415,6 +497,9 @@ module sand_engine_raster #(
                     end else begin
                         avg_tmp = sum_tmp[DATA_W-1:0] >> 2;
                     end
+                    sum_with_vert_tmp = `FP_ADD(`FP_ADD(sum_tmp[DATA_W-1:0], above_in, DATA_W),
+                                                 below_in,
+                                                 DATA_W);
 
                     if (opcode_reg == `OP_PRESSURE) begin
                         pressure_value     <= self_in;
@@ -503,6 +588,34 @@ module sand_engine_raster #(
                                 alu_res     = `FP_ADD(self_in, update_term, DATA_W);
                             end
                             `OP_MICRO:    alu_res = micro_val;
+                            `OP_LAPLACIAN: alu_res = laplacian_val;
+                            `OP_SHARPEN: begin
+                                reg [DATA_W-1:0] lap_gain;
+                                reg [DATA_W-1:0] sharpen_val;
+                                lap_gain    = `FP_MUL_Q(laplacian_val, constA_reg, FRAC_W);
+                                sharpen_val = `FP_SUB(self_in, lap_gain, DATA_W);
+                                alu_res     = sharpen_val;
+                            end
+                            `OP_EDGE: begin
+                                reg [DATA_W-1:0] edge_mag;
+                                edge_mag = `FP_ADD(dx_abs_val, dy_abs_val, DATA_W);
+                                alu_res  = edge_mag;
+                            end
+                            `OP_MIX: begin
+                                reg [DATA_W-1:0] mix_self;
+                                reg [DATA_W-1:0] mix_avg;
+                                reg [DATA_W-1:0] mix_sum;
+                                reg [DATA_W-1:0] mix_bias;
+                                reg [DATA_W-1:0] acc0;
+                                reg [DATA_W-1:0] acc1;
+                                mix_self = `FP_MUL_Q(self_in, constA_reg, FRAC_W);
+                                mix_avg  = `FP_MUL_Q(avg_tmp, constB_reg, FRAC_W);
+                                mix_sum  = `FP_MUL_Q(sum_with_vert_tmp, constC_reg, FRAC_W);
+                                mix_bias = constD_reg;
+                                acc0     = `FP_ADD(mix_self, mix_avg, DATA_W);
+                                acc1     = `FP_ADD(mix_sum, mix_bias, DATA_W);
+                                alu_res  = `FP_ADD(acc0, acc1, DATA_W);
+                            end
                             default:      alu_res = self_in;
                         endcase
 

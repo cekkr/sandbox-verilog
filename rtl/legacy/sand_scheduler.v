@@ -36,8 +36,8 @@ module sand_scheduler #(
     localparam CELLS = WIDTH*HEIGHT;
 
     // ----------------- Config Registers --------------------------------------
-    reg [3:0]           opcode;
-    reg [DATA_W-1:0]    constA, constB;
+    reg [`OPCODE_W-1:0] opcode;
+    reg [DATA_W-1:0]    constA, constB, constC, constD;
     reg                 force_diag, use_micro;
     reg [$clog2(N_JOBS)-1:0] forced_job_sel;
 
@@ -51,6 +51,8 @@ module sand_scheduler #(
             opcode <= `OP_DIFFUSION;
             constA <= { {(DATA_W-`FRAC_W){1'b0}}, {`FRAC_W{1'b1}} } >> 1; // ~0.5
             constB <= {DATA_W{1'b0}};
+            constC <= {DATA_W{1'b0}};
+            constD <= {DATA_W{1'b0}};
             force_diag <= `USE_DIAGONALS[0];
             use_micro  <= 1'b0;
             forced_job_sel <= {($clog2(N_JOBS)){1'b0}};
@@ -58,9 +60,11 @@ module sand_scheduler #(
         end else if (csr_we) begin
             case (csr_addr)
                 `CSR_JOB_SELECT:   forced_job_sel <= csr_wdata[$clog2(N_JOBS)-1:0];
-                `CSR_RULE_OP:      opcode         <= csr_wdata[3:0];
+                `CSR_RULE_OP:      opcode         <= csr_wdata[`OPCODE_W-1:0];
                 `CSR_RULE_CONSTA:  constA         <= csr_wdata[DATA_W-1:0];
                 `CSR_RULE_CONSTB:  constB         <= csr_wdata[DATA_W-1:0];
+                `CSR_RULE_CONSTC:  constC         <= csr_wdata[DATA_W-1:0];
+                `CSR_RULE_CONSTD:  constD         <= csr_wdata[DATA_W-1:0];
                 `CSR_FLAGS:        begin
                                     force_diag    <= csr_wdata[0];
                                     use_micro     <= csr_wdata[1];
@@ -107,7 +111,7 @@ module sand_scheduler #(
     wire[DATA_W-1:0] write_buf [0:HEIGHT-1][0:WIDTH-1];
 
     // ----------------- Grid compute fabric -----------------------------------
-    wire [3:0] eff_opcode   = use_micro ? `OP_MICRO : opcode;
+    wire [`OPCODE_W-1:0] eff_opcode = use_micro ? `OP_MICRO : opcode;
     wire       eff_diagonals= force_diag;
 
     sand_grid #(
@@ -121,6 +125,8 @@ module sand_scheduler #(
         .use_diagonals(eff_diagonals),
         .constA(constA),
         .constB(constB),
+        .constC(constC),
+        .constD(constD),
         .micro_lut(micro_lut)
     );
 
