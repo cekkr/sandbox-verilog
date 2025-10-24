@@ -44,6 +44,7 @@ The project is organized into clean, layered modules:
 | :-------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **`rtl/sand_defs.vh`**          | Global parameter file — defines word widths, grid size, number of jobs, math opcodes, and CSR addresses. Edit this first to customize your FPGA target.                    |
 | **`rtl/sand_math.vh`**          | Saturating/rounding fixed-point helpers used by the PE and raster engine.                                                                                                  |
+| **`rtl/circuits/`**             | Reusable combinational building blocks (edge detectors, neural shims, etc.) that examples can stitch together without rewriting Verilog.                                   |
 | **`rtl/sand_pe.v`**             | The *Processing Element* (one grain). Reads its 4–8 neighbors and applies an operation (sum, diffusion, clamp, etc.) or a user-defined microcode rule.                    |
 | **`rtl/sand_scheduler_dynamic.v`** | Adaptive round-robin scheduler. Tracks per-job activity, selects step budgets, and drives the pointer-swap raster engine (`sand_engine_raster`).                         |
 | **`rtl/sand_engine_raster.v`** | Streaming single-port engine that walks the grid cell-by-cell, produces activity metrics, and writes results into the opposite memory plane.                          |
@@ -709,9 +710,18 @@ Your firmware can load these and emit a series of `csr_write` and `seed_cell` ca
   distribution), and optionally draw random samples that approximate the classic
   Gaussian profile.
 - **`examples/neural_edge_slice/`** – Edge Detector slice (`OP_EDGE`) coupled to
-  a tiny ReLU neuron. Run `python3 examples/neural_edge_slice/run.py` to compile
-  the harness, visualise the edge magnitude heatmap, and inspect which cells
-  fire when edge energy plus raw intensity crosses a threshold.
+  a tiny ReLU neuron. Run
+  `python3 examples/neural_edge_slice/run.py --config examples/neural_edge_slice/configs/default.yaml`
+  to generate a config header from YAML, pull in the reusable circuits from
+  `rtl/circuits/`, compile the harness, and inspect which cells fire when edge
+  energy plus raw intensity crosses a threshold.
+
+The Python side now understands YAML/JSON descriptors via
+`tools.sand_configurator`. Each description expands into a light-weight Verilog
+header (dropped into `examples/<name>/build/`) and a source manifest that points
+at the necessary primitives in `rtl/circuits/`. CLI overrides still work, so you
+can start from a preset config and sweep gains, window sizes, or patterns
+without editing RTL.
 
 ## Dynamic FPGA adaptation implementation
 

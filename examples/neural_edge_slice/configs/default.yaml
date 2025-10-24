@@ -1,0 +1,13 @@
+neural_edge_slice:
+  window:
+    width: 8
+    height: 8
+  pattern: cross
+  gains:
+    edge: 0.7
+    raw: 0.3
+  bias: -0.25
+  threshold: 0.5
+  circuits:
+    - edge_l1
+    - neuron_relu

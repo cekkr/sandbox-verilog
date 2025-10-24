@@ -13,7 +13,7 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from tools import sand_runner
+from tools import sand_configurator, sand_runner
 
 
 WINDOW_RE = re.compile(r"NEURAL\.window_w=(\d+) window_h=(\d+) pattern_id=(\d+)")
@@ -39,12 +39,21 @@ def _parse_macro_int(path: pathlib.Path, name: str, default: int) -> int:
     return default
 
 
-def _build_example(repo_root: pathlib.Path, output: pathlib.Path) -> pathlib.Path:
-    sources = [repo_root / "examples" / "neural_edge_slice" / "neural_edge_slice_tb.v"]
+def _build_example(
+    repo_root: pathlib.Path,
+    output: pathlib.Path,
+    *,
+    include_dirs: Iterable[pathlib.Path],
+    extra_sources: Iterable[pathlib.Path],
+) -> pathlib.Path:
+    sources = [
+        repo_root / "examples" / "neural_edge_slice" / "neural_edge_slice_tb.v",
+        *(repo_root / src for src in extra_sources),
+    ]
     build_cfg = sand_runner.IcarusBuildConfig(
         sources=sources,
         output=output,
-        include_dirs=[repo_root / "rtl"],
+        include_dirs=include_dirs,
     )
     return sand_runner.compile_icarus(build_cfg)
 
@@ -173,18 +182,8 @@ def _render_binary(grid: List[List[int]]) -> List[str]:
     return ["".join("#" if cell else "." for cell in row) for row in grid]
 
 
-def _thousandths(value: float) -> int:
-    return int(round(value * 1000.0))
-
-
 def run_example(
-    window_w: int,
-    window_h: int,
-    pattern_id: int,
-    edge_gain: float,
-    raw_gain: float,
-    bias: float,
-    threshold: float,
+    params: sand_configurator.NeuralEdgeParams,
     json_path: pathlib.Path | None,
 ) -> None:
     repo_root = REPO_ROOT
@@ -193,18 +192,32 @@ def run_example(
 
     build_dir = repo_root / "examples" / "neural_edge_slice" / "build"
     build_dir.mkdir(parents=True, exist_ok=True)
+    header_path = build_dir / "neural_edge_slice_config.vh"
+    sand_configurator.write_neural_edge_header(params, header_path)
+
     vvp_path = build_dir / "neural_edge_slice.vvp"
 
-    _build_example(repo_root, vvp_path)
+    include_dirs = [
+        build_dir,
+        repo_root / "examples" / "neural_edge_slice",
+        repo_root / "rtl",
+    ]
+    extra_sources = sand_configurator.required_sources(params)
+    _build_example(
+        repo_root,
+        vvp_path,
+        include_dirs=include_dirs,
+        extra_sources=extra_sources,
+    )
 
     plusargs = {
-        "WINDOW_W": window_w,
-        "WINDOW_H": window_h,
-        "PATTERN_ID": pattern_id,
-        "EDGE_GAIN": _thousandths(edge_gain),
-        "RAW_GAIN": _thousandths(raw_gain),
-        "BIAS_PCT": _thousandths(bias),
-        "THRESH_PCT": _thousandths(threshold),
+        "WINDOW_W": params.window_w,
+        "WINDOW_H": params.window_h,
+        "PATTERN_ID": params.pattern_id,
+        "EDGE_GAIN": params.edge_gain_pct,
+        "RAW_GAIN": params.raw_gain_pct,
+        "BIAS_PCT": params.bias_pct,
+        "THRESH_PCT": params.threshold_pct,
     }
 
     stdout = sand_runner.run_vvp(vvp_path, plusargs=plusargs)
@@ -223,16 +236,20 @@ def run_example(
     active_pixels = sim_data["summary_q"].get("active_pixels", 0)
     total_relu = sim_data["summary_q"].get("total_relu", 0)
 
-    active_fraction = active_pixels / float(window_w * window_h)
-    avg_edge = sand_runner.q_to_float(total_edge, frac_w) / (window_w * window_h)
+    window_cells = params.window_w * params.window_h
+    active_fraction = active_pixels / float(window_cells)
+    avg_edge = sand_runner.q_to_float(total_edge, frac_w) / window_cells
     avg_relu = (
         sand_runner.q_to_float(total_relu, frac_w) / active_pixels
         if active_pixels
         else 0.0
     )
 
-    print(f"Neural edge slice — pattern {pattern_id}, window {window_w}×{window_h}")
-    print(f"  Active neurons: {active_pixels}/{window_w * window_h} "
+    print(
+        f"Neural edge slice — pattern {params.pattern} ({params.pattern_id}), "
+        f"window {params.window_w}×{params.window_h}"
+    )
+    print(f"  Active neurons: {active_pixels}/{window_cells} "
           f"({active_fraction:.1%})")
     print(f"  Mean edge magnitude: {avg_edge:.4f}")
     print(f"  Mean ReLU activation (active only): {avg_relu:.4f}")
@@ -255,8 +272,9 @@ def run_example(
 
     if json_path:
         payload = {
-            "window": {"width": window_w, "height": window_h},
-            "pattern_id": pattern_id,
+            "window": {"width": params.window_w, "height": params.window_h},
+            "pattern": params.pattern,
+            "pattern_id": params.pattern_id,
             "config_q": sim_data["config_q"],
             "frac_bits": frac_w,
             "edge_q": edge_q,
@@ -273,38 +291,46 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Neural edge detector slice demo atop the Sand fixed-point math"
     )
-    parser.add_argument("--window-width", type=int, default=8,
-                        help="Active window width (<= sand WIDTH)")
-    parser.add_argument("--window-height", type=int, default=8,
-                        help="Active window height (<= sand HEIGHT)")
-    parser.add_argument("--pattern", choices=["cross", "ramp", "checker", "diag"],
-                        default="cross", help="Input field pattern")
-    parser.add_argument("--edge-gain", type=float, default=0.7,
-                        help="Gain applied to the edge slice contribution (default 0.7)")
-    parser.add_argument("--raw-gain", type=float, default=0.3,
-                        help="Gain applied to the raw intensity (default 0.3)")
-    parser.add_argument("--bias", type=float, default=-0.25,
-                        help="Bias term added to the neuron sum (default -0.25)")
-    parser.add_argument("--threshold", type=float, default=0.5,
-                        help="Activation threshold for neuron firing (default 0.5)")
+    parser.add_argument("--config", type=pathlib.Path,
+                        help="Optional YAML/JSON config for the slice pipeline")
+    parser.add_argument("--window-width", type=int,
+                        help="Override window width (<= sand WIDTH)")
+    parser.add_argument("--window-height", type=int,
+                        help="Override window height (<= sand HEIGHT)")
+    parser.add_argument("--pattern", choices=list(sand_configurator.PATTERN_TO_ID.keys()),
+                        help="Override input field pattern")
+    parser.add_argument("--edge-gain", type=float,
+                        help="Override edge slice gain (float, e.g. 0.7)")
+    parser.add_argument("--raw-gain", type=float,
+                        help="Override raw intensity gain (float, e.g. 0.3)")
+    parser.add_argument("--bias", type=float,
+                        help="Override bias term added to the neuron sum")
+    parser.add_argument("--threshold", type=float,
+                        help="Override activation threshold for neuron firing")
     parser.add_argument("--json", type=pathlib.Path,
                         help="Optional path to dump raw Q data as JSON")
 
     args = parser.parse_args()
 
-    pattern_map = {"cross": 0, "ramp": 1, "checker": 2, "diag": 3}
-    run_example(
-        window_w=args.window_width,
-        window_h=args.window_height,
-        pattern_id=pattern_map[args.pattern],
-        edge_gain=args.edge_gain,
-        raw_gain=args.raw_gain,
-        bias=args.bias,
-        threshold=args.threshold,
-        json_path=args.json,
-    )
+    params = sand_configurator.resolve_neural_edge_params(args.config)
+
+    if args.window_width is not None:
+        params = params.override(window_w=args.window_width)
+    if args.window_height is not None:
+        params = params.override(window_h=args.window_height)
+    if args.pattern is not None:
+        params = params.override(pattern=args.pattern.lower())
+    if args.edge_gain is not None:
+        params = params.override(edge_gain_pct=int(round(args.edge_gain * 1000.0)))
+    if args.raw_gain is not None:
+        params = params.override(raw_gain_pct=int(round(args.raw_gain * 1000.0)))
+    if args.bias is not None:
+        params = params.override(bias_pct=int(round(args.bias * 1000.0)))
+    if args.threshold is not None:
+        params = params.override(threshold_pct=int(round(args.threshold * 1000.0)))
+
+    run_example(params=params, json_path=args.json)
 
 
 if __name__ == "__main__":
     main()
-

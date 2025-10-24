@@ -7,3 +7,5 @@ from .sand_runner import (  # noqa: F401
     run_vvp,
     q_to_float,
 )
+
+from . import sand_configurator  # noqa: F401

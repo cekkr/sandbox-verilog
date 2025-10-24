@@ -10,18 +10,25 @@ light up while smooth regions stay quiet.
 
 The Verilog testbench (`neural_edge_slice_tb.v`) is intentionally behavioural.
 It reuses the sandbox macros (grid dimensions, Q8.8 math) to keep the data
-representation consistent with the main RTL. The Python harness compiles and
-runs the simulation with **Icarus Verilog**, then renders the edge/activation
-maps as ASCII heatmaps for quick inspection.
+representation consistent with the main RTL while delegating the edge detector
+and neuron maths to reusable blocks in `rtl/circuits/`. The Python harness
+compiles and runs the simulation with **Icarus Verilog**, then renders the
+edge/activation maps as ASCII heatmaps for quick inspection. Configuration now
+flows through a YAML/JSON descriptor that the harness translates into a
+generated include file so the Verilog stays static.
 
 ```
-python3 examples/neural_edge_slice/run.py [--pattern cross|ramp|checker|diag]
+python3 examples/neural_edge_slice/run.py [--config configs/default.yaml]
+                                          [--pattern cross|ramp|checker|diag]
                                           [--window-width 10] [--window-height 10]
                                           [--edge-gain 0.8] [--raw-gain 0.2]
                                           [--bias -0.2] [--threshold 0.45]
                                           [--json output.json]
 ```
 
+- Parses the optional YAML/JSON config (defaults live in `configs/default.yaml`),
+  generates a `neural_edge_slice_config.vh` header inside `build/`, and stitches
+  in the required primitives from `rtl/circuits/`.
 - Compiles `neural_edge_slice_tb.v` using the shared `tools.sand_runner` glue.
 - Emits the edge magnitude slice (`|E-W| + |S-N|`) and the neuron’s raw/ReLU
   activations in Q8.8.
@@ -44,7 +51,10 @@ python3 examples/neural_edge_slice/run.py [--pattern cross|ramp|checker|diag]
 | --- | --- |
 | `neural_edge_slice_tb.v` | Fixed-point edge detector + single-layer neural combiner. |
 | `run.py` | CLI wrapper that compiles, runs, parses, and renders the results. |
+| `neural_edge_slice_config.vh` | Default behavioural knobs, superseded by generated headers in `build/`. |
+| `configs/default.yaml` | Preset describing the demo pipeline (window, gains, circuits). |
 | `build/` | Created on demand; contains the generated `neural_edge_slice.vvp`. |
+| `../../rtl/circuits/` | Library of reusable primitives (`sand_circuit_edge_l1`, `sand_circuit_neuron_relu`). |
 
 ### Next steps
 
@@ -53,4 +63,3 @@ python3 examples/neural_edge_slice/run.py [--pattern cross|ramp|checker|diag]
   classifiers or attention gates.
 * Chain multiple slices (edge, sharpen, diffusion) to approximate a full
   convolutional stem using only sandbox primitives.
-
