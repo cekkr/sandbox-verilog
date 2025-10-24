@@ -395,12 +395,14 @@ Below are **ready-to-run presets** you can load via CSR writes and simple seedin
 **Params:**
 
 * `W=64, H=64, D=8, USE_DIAGONALS=0` (4-neighborhood is fine)
-* Consider extending later with Z-neighbors (see roadmap).
 
 **CSR:**
 
-* `CSR_RULE_OP = OP_DIFFUSION` (horizontal smoothing)
-* `CSR_RULE_CONSTA = 0x0020` (k ≈ 0.125)
+* `CSR_RULE_OP = OP_MIX`
+* `CSR_RULE_CONSTA = 0x0100` (retain 100% of the current value)
+* `CSR_RULE_CONSTB = 0x0020` (blend 1/8 of the planar average)
+* `CSR_RULE_CONSTC = 0x0010` (drip in 1/16 of vertical neighbors)
+* `CSR_RULE_CONSTD = 0x0000`
 * `CSR_FLAGS = diag=0, micro=0`
 
 **Seeding:**
@@ -409,11 +411,7 @@ Below are **ready-to-run presets** you can load via CSR writes and simple seedin
 
   * For `x=0..63, y=0..4`, set `seed_data=0x0200..0x0800` (vary it).
 
-**Scheduler hint:**
-
-* Run normally; the provided PE is 2D. To emulate percolation, after each `S_STORE` of layer `z`, add a small **vertical transfer** when loading `z+1` (e.g., copy a fraction of `z`’s stored values into `z+1` before running it). You can do this in the scheduler (temporary hack) or properly by **adding `above_in/below_in`** to `sand_pe` for real Z-coupling.
-
-**What you’ll see:** Material spreads on each layer and appears to “move down” as lower layers pick up a fraction of upper layer values over time.
+**What you’ll see:** Material spreads on each layer, while a gentle vertical bleed lets lower layers accumulate the excess automatically thanks to the new `above_in`/`below_in` taps.
 
 ---
 
@@ -504,6 +502,49 @@ micro_idx = { opcode[1:0], self[1:0] }  // You can change this!
 * Low-amplitude noise.
 
 **What you’ll see:** Regions settle into plateaus with crisp boundaries—like a low-res segmentation map.
+
+---
+
+## 6) Laplacian Sharpening Pass
+
+**Interpretation:** Classic unsharp mask where the Laplacian accentuates edges.
+**Use case:** Embossed textures, field enhancement before thresholding.
+
+**Params:**
+
+* `W=128, H=128, D=1, USE_DIAGONALS=1`
+
+**CSR:**
+
+* `CSR_RULE_OP = OP_SHARPEN`
+* `CSR_RULE_CONSTA = 0x0080` (α ≈ 0.5 gain on the Laplacian)
+* `CSR_FLAGS = diag=1, micro=0`
+
+**Seeding:**
+
+* Start from any grayscale height-map (e.g., load an image into the grid).
+
+**What you’ll see:** Edges pop while flat regions stay close to the original value.
+
+---
+
+## 7) Edge Detector Slice
+
+**Interpretation:** Simple gradient magnitude `|e-w| + |s-n|`.
+**Use case:** Highlight boundaries before feeding microcode/learning rules.
+
+**Params:**
+
+* `W=64, H=64, D=1`
+
+**CSR:**
+
+* `CSR_RULE_OP = OP_EDGE`
+* `CSR_FLAGS = diag=0, micro=0`
+
+**Pipeline tip:** Run `OP_EDGE` into plane B while keeping the original data on plane A. Next slice, switch back to `OP_MICRO` or `OP_DIFFUSION` using the edge map as a mask or weighting factor.
+
+**What you’ll see:** Bright ridges along transitions; flat regions read near zero.
 
 ---
 
