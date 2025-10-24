@@ -29,7 +29,7 @@ Each unit:
 * Knows about its **neighbors** (north, south, east, west, optionally diagonals)
 * Updates itself using **mathematical operations** (sum, average, diffusion, min, max, etc.)
 * Can follow **user-defined rules** through a small **microcode table**
-* Evolves **in parallel** with all others, forming emergent patterns or stable flows
+* Evolves **in parallel** with all others, in emergent patterns or stable flows
 
 When seen in 3D, each **layer** of sand passes information to the next, like **water percolating** or **neurons activating in depth**.
 The entire structure behaves a bit like a **machine-learning model** — one that learns by local interactions rather than global training.
@@ -490,7 +490,7 @@ micro_idx = { opcode[1:0], self[1:0] }  // You can change this!
 
 * `W=32, H=32, D=4` (testbench window defaults to 6×6×3)
 * Weighted neighbour mix (`sand_circuit_neighbor_mix`) with programmable gains
-* Softsign activation (`sand_circuit_activation_softsign`) for tanh-like saturation
+* Microcode LUT activation (`sand_circuit_activation_micro_lut`) for hardware-like behavior
 * Iterative bias update nudged by a target activation level
 * Readout neuron combines depth-averaged activations into a spike heatmap
 
@@ -499,7 +499,7 @@ micro_idx = { opcode[1:0], self[1:0] }  // You can change this!
 
 **What you’ll see:** Each iteration prints the evolving bias/mean activation.
 The ASCII volume shows self-organising plateaus while the readout heatmap
-highlights regions that consistently excite the stack.
+highlights regions that consistently excite the stack. You can now also drive the simulation from an image file and set per-layer feedback gains.
 
 ---
 
