@@ -9,10 +9,10 @@ PROJECT_VECTOR:
 
 DIRECTORY_MAP:
 - rtl/: synthesizable path (`sand_defs.vh`, `sand_math.vh`, `sand_pe.v`, `sand_engine_raster.v`, `sand_jobmem2p.v`, `sand_scheduler_dynamic.v`, `sand_top.v`, `bram_tdp_wrap.v`).
-- rtl/circuits/: library of reusable combinational helpers (edge detector, neuron ReLU, future primitives).
+- rtl/circuits/: reusable combinational helpers (edge detector, neuron ReLU, neighbour mix, softsign activation).
 - rtl/legacy/: legacy fully parallel architecture (`sand_grid.v`, `sand_scheduler.v`, `sand_jobmem.v`).
 - tools/: Python utilities (`sand_runner.py`, `__init__.py`).
-- examples/: behavioural demos (`galton_board`, `neural_edge_slice`) with Verilog testbenches + Python runners.
+- examples/: behavioural demos (`galton_board`, `neural_edge_slice`, `neural_activation_field`) with Verilog testbenches + Python runners.
 - examples/neural_edge_slice/configs/: YAML presets that drive auto-generated config headers.
 - README.md: human-friendly deep dive (mirror but more verbose).
 - .gitignore: Python/build artefact ignores (standard template).
@@ -74,12 +74,13 @@ PYTHON TOOLING (`tools/sand_runner.py`, `tools/sand_configurator.py`, `tools/__i
 - `compile_icarus`: runs `iverilog -g2012` with include dirs/defines/top; returns VVP path.
 - `run_vvp`: executes compiled simulation, returns stdout, raises on non-zero exit.
 - `q_to_float`: converts fixed-point to float.
-- `sand_configurator`: parses YAML/JSON presets, resolves neural-edge parameters, writes include headers, and enumerates required `rtl/circuits/` sources.
+- `sand_configurator`: parses YAML/JSON presets, resolves neural-edge and neural-activation parameter sets, writes example-specific headers, and enumerates required `rtl/circuits/` sources for any circuit list.
 - `__init__.py`: re-exports helpers (runner + configurator) for convenience.
 
 EXAMPLE DEMOS (`examples/`):
 - `galton_board`: `galton_board_tb.v` behavioural Galton board using Q8.8 arrays; `run.py` compiles via sand_runner, applies plusargs (`LEFT_PCT`, `RIGHT_PCT`, board dims), parses `GALTON.bin` output, optional random sampling, JSON export.
 - `neural_edge_slice`: `neural_edge_slice_tb.v` now instantiates primitives from `rtl/circuits/` (edge detector + neuron). `run.py` consumes optional YAML/JSON configs (`configs/default.yaml`) through `sand_configurator`, emits a generated header, includes the required library sources, still parses stdout to grids/heatmaps, and honours CLI overrides for pattern/gains/bias/threshold/window.
+- `neural_activation_field`: `neural_activation_field_tb.v` blends 3D neighbours, applies a softsign activation, adapts a bias toward a target, and feeds a ReLU readout neuron. `run.py` mirrors the other examples—reads YAML (`configs/default.yaml`), emits a header, compiles the harness with the neighbour-mix/softsign circuits, parses per-iteration telemetry plus the final volume/readout maps, and renders ASCII slices or dumps JSON.
 
 WORKFLOW SNAPSHOT:
 - Edit global macros in `rtl/sand_defs.vh` to match target FPGA/sim.

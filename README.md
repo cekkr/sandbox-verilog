@@ -483,26 +483,23 @@ micro_idx = { opcode[1:0], self[1:0] }  // You can change this!
 
 ## 5) Neural-ish Activation Field
 
-**Interpretation:** Weighted sum → nonlinearity (microcode) → stable field.
-**Use case:** Tiny neural cellular automata prototype.
+**Interpretation:** 3D weighted blend → smooth activation → adaptive bias → spike readout.
+**Use case:** Tiny neural cellular automaton with feedback and basic self-tuning.
 
-**Params:**
+**Params (demo harness):**
 
-* `W=64, H=64, D=1, USE_DIAGONALS=1`
-* `OPCODE = OP_MICRO`, `micro=1`
+* `W=32, H=32, D=4` (testbench window defaults to 6×6×3)
+* Weighted neighbour mix (`sand_circuit_neighbor_mix`) with programmable gains
+* Softsign activation (`sand_circuit_activation_softsign`) for tanh-like saturation
+* Iterative bias update nudged by a target activation level
+* Readout neuron combines depth-averaged activations into a spike heatmap
 
-**Trick:** Use `OP_ADD_CONST` first to bias, then `OP_MICRO` next slice. Or fold bias into LUT.
+**Run it:**  
+`python3 examples/neural_activation_field/run.py --config examples/neural_activation_field/configs/default.yaml`
 
-**Microcode idea:**
-
-* Use a soft-threshold LUT that maps `avg_nbrs - self` sign to {0, small, big}.
-* Modify `micro_idx` to include `(avg_nbrs > self)` and a couple top bits from `avg_nbrs`.
-
-**Seeding:**
-
-* Low-amplitude noise.
-
-**What you’ll see:** Regions settle into plateaus with crisp boundaries—like a low-res segmentation map.
+**What you’ll see:** Each iteration prints the evolving bias/mean activation.
+The ASCII volume shows self-organising plateaus while the readout heatmap
+highlights regions that consistently excite the stack.
 
 ---
 
@@ -715,6 +712,12 @@ Your firmware can load these and emit a series of `csr_write` and `seed_cell` ca
   to generate a config header from YAML, pull in the reusable circuits from
   `rtl/circuits/`, compile the harness, and inspect which cells fire when edge
   energy plus raw intensity crosses a threshold.
+- **`examples/neural_activation_field/`** – 3D neighbour blend with softsign
+  activation, adaptive bias learning, and a ReLU readout. Run
+  `python3 examples/neural_activation_field/run.py --config examples/neural_activation_field/configs/default.yaml`
+  to generate the activation-field header, compile the harness with the new
+  circuit shims, and visualise the layered activation plates alongside the
+  spike map produced by the readout neuron.
 
 The Python side now understands YAML/JSON descriptors via
 `tools.sand_configurator`. Each description expands into a light-weight Verilog

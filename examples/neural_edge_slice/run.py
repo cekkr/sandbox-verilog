@@ -202,7 +202,7 @@ def run_example(
         repo_root / "examples" / "neural_edge_slice",
         repo_root / "rtl",
     ]
-    extra_sources = sand_configurator.required_sources(params)
+    extra_sources = sand_configurator.required_sources(params.circuits)
     _build_example(
         repo_root,
         vvp_path,
