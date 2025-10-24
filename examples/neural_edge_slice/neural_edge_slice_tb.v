@@ -1,67 +1,27 @@
 `timescale 1ns/1ps
 
 `include "sand_defs.vh"
-`include "neural_edge_slice_config.vh"
 
 module neural_edge_slice_tb;
     localparam integer Q_ONE  = (1 << `FRAC_W);
     localparam integer MAX_W  = `WIDTH;
     localparam integer MAX_H  = `HEIGHT;
     localparam integer Q_MAX  = (1 << (`DATA_W-1)) - 1;
+    localparam integer Q_MIN  = -(1 << (`DATA_W-1));
 
-    integer window_w          = NES_WINDOW_W_DEFAULT;
-    integer window_h          = NES_WINDOW_H_DEFAULT;
-    integer pattern_id        = NES_PATTERN_ID_DEFAULT;
-    integer edge_gain_pct     = NES_EDGE_GAIN_PCT;
-    integer raw_gain_pct      = NES_RAW_GAIN_PCT;
-    integer bias_pct          = NES_BIAS_PCT;
-    integer threshold_pct     = NES_THRESHOLD_PCT;
+    integer window_w          = 8;
+    integer window_h          = 8;
+    integer pattern_id        = 0;
+    integer edge_gain_pct     = 700;   // thousandths (0.7x)
+    integer raw_gain_pct      = 300;   // thousandths (0.3x)
+    integer bias_pct          = -250;  // thousandths (-0.25)
+    integer threshold_pct     = 500;   // thousandths (0.5)
 
     integer base_img   [0:MAX_H-1][0:MAX_W-1];
     integer edge_map   [0:MAX_H-1][0:MAX_W-1];
     integer neuron_raw [0:MAX_H-1][0:MAX_W-1];
     integer neuron_relu[0:MAX_H-1][0:MAX_W-1];
     integer neuron_fire[0:MAX_H-1][0:MAX_W-1];
-
-    // Shared combinational primitives sourced from rtl/circuits.
-    reg  signed [`DATA_W-1:0] edge_center;
-    reg  signed [`DATA_W-1:0] edge_north;
-    reg  signed [`DATA_W-1:0] edge_south;
-    reg  signed [`DATA_W-1:0] edge_east;
-    reg  signed [`DATA_W-1:0] edge_west;
-    wire signed [`DATA_W-1:0] edge_value;
-
-    sand_circuit_edge_l1 edge_core (
-        .center(edge_center),
-        .north(edge_north),
-        .south(edge_south),
-        .east(edge_east),
-        .west(edge_west),
-        .edge(edge_value)
-    );
-
-    reg  signed [`DATA_W-1:0] neuron_edge_in;
-    reg  signed [`DATA_W-1:0] neuron_raw_in;
-    reg  signed [`DATA_W-1:0] neuron_edge_gain_q_reg;
-    reg  signed [`DATA_W-1:0] neuron_raw_gain_q_reg;
-    reg  signed [`DATA_W-1:0] neuron_bias_q_reg;
-    reg  signed [`DATA_W-1:0] neuron_threshold_q_reg;
-
-    wire signed [`DATA_W-1:0] neuron_raw_out_wire;
-    wire signed [`DATA_W-1:0] neuron_relu_out_wire;
-    wire                      neuron_fire_wire;
-
-    sand_circuit_neuron_relu neuron_core (
-        .edge_in(neuron_edge_in),
-        .raw_in(neuron_raw_in),
-        .edge_gain_q(neuron_edge_gain_q_reg),
-        .raw_gain_q(neuron_raw_gain_q_reg),
-        .bias_q(neuron_bias_q_reg),
-        .threshold_q(neuron_threshold_q_reg),
-        .raw_out(neuron_raw_out_wire),
-        .relu_out(neuron_relu_out_wire),
-        .fire(neuron_fire_wire)
-    );
 
     integer edge_gain_q;
     integer raw_gain_q;
@@ -71,6 +31,30 @@ module neural_edge_slice_tb;
     integer total_edge_energy;
     integer total_relu_activation;
     integer active_pixels;
+
+    function integer saturate_signed;
+        input integer value;
+        begin
+            if (value > Q_MAX)
+                saturate_signed = Q_MAX;
+            else if (value < Q_MIN)
+                saturate_signed = Q_MIN;
+            else
+                saturate_signed = value;
+        end
+    endfunction
+
+    function integer saturate_positive;
+        input integer value;
+        begin
+            if (value < 0)
+                saturate_positive = 0;
+            else if (value > Q_MAX)
+                saturate_positive = Q_MAX;
+            else
+                saturate_positive = value;
+        end
+    endfunction
 
     function integer pct_to_q;
         input integer pct;
@@ -161,6 +145,7 @@ module neural_edge_slice_tb;
     task compute_edges;
         integer y, x;
         integer north, south, east, west, center;
+        integer dx, dy;
         begin
             total_edge_energy = 0;
             for (y = 0; y < window_h; y = y + 1) begin
@@ -171,15 +156,13 @@ module neural_edge_slice_tb;
                     west   = (x == 0) ? center : base_img[y][x-1];
                     east   = (x == window_w-1) ? center : base_img[y][x+1];
 
-                    edge_center = center;
-                    edge_north  = north;
-                    edge_south  = south;
-                    edge_east   = east;
-                    edge_west   = west;
-                    #0;
+                    dx = east - west;
+                    if (dx < 0) dx = -dx;
+                    dy = south - north;
+                    if (dy < 0) dy = -dy;
 
-                    edge_map[y][x] = edge_value;
-                    total_edge_energy = total_edge_energy + edge_value;
+                    edge_map[y][x] = saturate_positive(dx + dy);
+                    total_edge_energy = total_edge_energy + edge_map[y][x];
                 end
             end
         end
@@ -187,28 +170,32 @@ module neural_edge_slice_tb;
 
     task run_neuron;
         integer y, x;
+        integer edge_term;
+        integer raw_term;
+        integer combined;
         begin
             total_relu_activation = 0;
             active_pixels = 0;
 
-            neuron_edge_gain_q_reg = edge_gain_q;
-            neuron_raw_gain_q_reg  = raw_gain_q;
-            neuron_bias_q_reg      = bias_q;
-            neuron_threshold_q_reg = threshold_q;
-
             for (y = 0; y < window_h; y = y + 1) begin
                 for (x = 0; x < window_w; x = x + 1) begin
-                    neuron_edge_in = edge_map[y][x];
-                    neuron_raw_in  = base_img[y][x];
-                    #0;
+                    edge_term = (edge_gain_q * edge_map[y][x]) >>> `FRAC_W;
+                    raw_term  = (raw_gain_q * base_img[y][x]) >>> `FRAC_W;
+                    combined  = edge_term + raw_term + bias_q;
 
-                    neuron_raw[y][x]  = neuron_raw_out_wire;
-                    neuron_relu[y][x] = neuron_relu_out_wire;
-                    neuron_fire[y][x] = neuron_fire_wire;
+                    neuron_raw[y][x] = saturate_signed(combined);
+                    if (combined > 0) begin
+                        neuron_relu[y][x] = saturate_positive(combined);
+                        total_relu_activation = total_relu_activation + neuron_relu[y][x];
+                    end else begin
+                        neuron_relu[y][x] = 0;
+                    end
 
-                    total_relu_activation = total_relu_activation + neuron_relu[y][x];
-                    if (neuron_fire_wire) begin
+                    if (combined >= threshold_q) begin
+                        neuron_fire[y][x] = 1;
                         active_pixels = active_pixels + 1;
+                    end else begin
+                        neuron_fire[y][x] = 0;
                     end
                 end
             end
@@ -280,3 +267,4 @@ module neural_edge_slice_tb;
         $finish;
     end
 endmodule
+
