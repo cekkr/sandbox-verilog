@@ -139,6 +139,70 @@ weights, feedback loop, learning rate, and readout gains without touching the
 source files. The script converts each float into the fixed-point integer the
 Verilog testbench expects.
 
+### Large grids, external datasets, and weight dumps
+
+The behavioural runner sticks to small windows so the ASCII dashboards stay
+readable, but the same plumbing works for larger sandboxes (e.g. 64×64×8):
+
+1. Describe the region you want to simulate in a config/YAML file:
+
+   ```yaml
+   neural_activation_field:
+     window: { width: 64, height: 64, depth: 8 }
+     pattern: core  # or "external" if you plan to load data yourself
+     iterations: 6
+     aggregator: { self: 0.5, planar: 0.3, vertical: 0.2, bias: 0.0 }
+     feedback:   { gain: 0.2, damp: 0.05 }
+     learning:   { rate: 0.08, target: 0.4 }
+     readout:    { edge: 0.6, raw: 0.4, bias: 0.0, threshold: 0.35 }
+   ```
+
+2. Provide the initial state (and optional per-cell weights) as raw files. The
+   testbench consumes plain text or JSON:
+
+   - **Stimulus:** CSV of Q8.8 integers per layer (one file per depth plane) or
+     a single JSON map:  
+     ```json
+     {
+       "stimulus_q": [[[0, 128, ...], ...], ...],  // depth × height × width
+       "frac_bits": 8
+     }
+     ```
+   - **Custom gains:** optional JSON block containing cell-specific gains if the
+     uniform coefficients in the CLI aren’t enough.
+
+   Extend `run.py` by pointing `--config` to the new YAML and using `--json` to
+   capture the simulation output:
+   ```
+   python3 examples/neural_activation_field/run.py \
+       --config configs/large64.yaml \
+       --json build/runs/large64_results.json
+   ```
+
+3. Inspect the generated JSON. The runner already emits:
+
+   ```json
+   {
+     "activations_q": [[[...]]],  // final activation volume (fixed-point)
+     "readout_raw_q": [[...]],
+     "readout_relu_q": [[...]],
+     "readout_fire": [[0|1]],
+     "config": { "agg": {...}, "ctrl": {...}, "readout": {...} },
+     "iterations": { "0": {"bias_q": ...}, ... }
+   }
+   ```
+
+   Use this as training data, or convert it into weight updates for a real FPGA
+   run. If you plan to do iterative training, script a loop that:
+   (a) launches the simulation, (b) reads `activations_q`, (c) computes new
+   weights, and (d) rewrites the YAML/JSON inputs for the next pass.
+
+4. For complete offline workflows, you can add optional CLI flags (e.g.
+   `--stimulus-json`, `--weights-json`) that read structured inputs and seed the
+   Verilog arrays directly. The deliberate split between YAML (human-friendly
+   config) and JSON (machine-friendly volumes) makes it easy to evolve toward
+   a proper training/export pipeline without changing the core testbench.
+
 ### Files
 
 | File | Description |
