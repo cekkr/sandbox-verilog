@@ -24,7 +24,22 @@
 `define CSR_RULE_CONSTB        8'h0C   // W: constB (DATA_W)
 `define CSR_FLAGS              8'h10   // W: [0]=enable_diagonals override, [1]=use_microcode
 `define CSR_STATUS             8'h14   // R: [0]=engine_busy, [N_JOBS:1]=job_done bits
+`define CSR_ADAPT_CTRL         8'h18   // W: [0]=enable, [1]=auto, step budgets packed
+`define CSR_ADAPT_THRESH_LO    8'h1C   // W: activity threshold low
+`define CSR_ADAPT_THRESH_HI    8'h20   // W: activity threshold high
+`define CSR_ADAPT_CAPACITY     8'h24   // W: cycle budget hint for frame runtime (0=ignore)
+`define CSR_ADAPT_STATUS       8'h28   // R: packed status for selected job
+`define CSR_ADAPT_STATUS_SEL   8'h2C   // W: selects which job to expose via STATUS register
+`define CSR_ADAPT_BUDGET       8'h30   // R: step budget + misc info for selected job
 `define CSR_MICRO_BASE         8'h40   // W: microcode table (16 entries)
+
+// Adaptive scheduler defaults
+`define ADAPT_DEFAULT_MANUAL_STEPS    `STEPS_PER_SLICE
+`define ADAPT_DEFAULT_MIN_STEPS       1
+`define ADAPT_DEFAULT_MAX_STEPS       `STEPS_PER_SLICE
+`define ADAPT_DEFAULT_LOW_THRESH      16
+`define ADAPT_DEFAULT_HIGH_THRESH     (((`WIDTH*`HEIGHT) > 0) ? ((`WIDTH*`HEIGHT) >> 1) : 1)
+`define ADAPT_DEFAULT_CAP_CYCLES      0
 
 // Opcodes for the PE ALU (baseline “math”)
 `define OP_NOP         4'd0

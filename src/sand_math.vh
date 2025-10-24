@@ -21,10 +21,10 @@
 
 // Saturating add/sub on DATA_W bits
 `define SAT_ADD(a,b,DATA_W) \
-    ( {1'b0,(a)} + {1'b0,(b)} ) [DATA_W] ? ` _MAXW(DATA_W) : ( (a) + (b) )
+    ( {1'b0,(a)} + {1'b0,(b)} )[DATA_W] ? `_MAXW(DATA_W) : ( (a) + (b) )
 
 `define SAT_SUB(a,b,DATA_W) \
-    ( {1'b0,(a)} < {1'b0,(b)} ) ? ` _MINW(DATA_W) : ( (a) - (b) )
+    ( {1'b0,(a)} < {1'b0,(b)} ) ? `_MINW(DATA_W) : ( (a) - (b) )
 
 // Fixed‑point multiply by constant (QFRAC)
 `define FP_MUL_Q(a,c,FRAC_W) \

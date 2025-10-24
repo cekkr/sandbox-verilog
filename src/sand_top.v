@@ -27,7 +27,7 @@ module sand_top (
     output wire [`N_JOBS-1:0]         job_done
 );
 
-    sand_scheduler #(
+    sand_scheduler_dynamic #(
         .DATA_W(`DATA_W), .WIDTH(`WIDTH), .HEIGHT(`HEIGHT),
         .DEPTH(`DEPTH), .N_JOBS(`N_JOBS)
     ) u_sched (

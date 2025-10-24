@@ -1,0 +1,395 @@
+// =============================================================================
+// sand_scheduler_dynamic.v — adaptive scheduler with pointer-swap raster engine
+// - Bridges CSR control to the streaming engine and two-plane job memory
+// - Dynamically adjusts per-job step budgets based on activity & cycle metrics
+// =============================================================================
+`include "sand_defs.vh"
+
+module sand_scheduler_dynamic #(
+    parameter DATA_W = `DATA_W,
+    parameter WIDTH  = `WIDTH,
+    parameter HEIGHT = `HEIGHT,
+    parameter DEPTH  = `DEPTH,
+    parameter N_JOBS = `N_JOBS
+)(
+    input  wire                      clk,
+    input  wire                      rst,
+
+    // Tiny CSR bus
+    input  wire                      csr_we,
+    input  wire [7:0]                csr_addr,
+    input  wire [31:0]               csr_wdata,
+    input  wire                      csr_re,
+    output reg  [31:0]               csr_rdata,
+
+    // Seeding port (writes plane 0 by default)
+    input  wire                      seed_we,
+    input  wire [((N_JOBS > 1) ? $clog2(N_JOBS) : 1)-1:0] seed_job,
+    input  wire [((DEPTH  > 1) ? $clog2(DEPTH)  : 1)-1:0] seed_layer,
+    input  wire [(((WIDTH*HEIGHT) > 1) ? $clog2(WIDTH*HEIGHT) : 1)-1:0] seed_idx,
+    input  wire [DATA_W-1:0]         seed_data,
+
+    output reg  [N_JOBS-1:0]         job_done
+);
+    localparam integer CELLS   = WIDTH*HEIGHT;
+    localparam integer JOB_W   = (N_JOBS > 1) ? $clog2(N_JOBS) : 1;
+    localparam integer LAYER_W = (DEPTH  > 1) ? $clog2(DEPTH)  : 1;
+    localparam integer CELL_W  = (CELLS  > 1) ? $clog2(CELLS)  : 1;
+    localparam integer STEP_MAX= (`STEPS_PER_SLICE > 0) ? `STEPS_PER_SLICE : 1;
+
+    // -------------------------------------------------------------------------
+    // Configuration registers
+    // -------------------------------------------------------------------------
+    reg [3:0]            opcode;
+    reg [DATA_W-1:0]     constA, constB;
+    reg                  force_diag, use_micro;
+    reg [DATA_W-1:0]     micro_lut [0:15];
+
+    // Adaptive control registers
+    reg                  adapt_enable;
+    reg                  adapt_auto;
+    reg                  adapt_use_heavy;
+    reg [7:0]            adapt_manual_steps;
+    reg [7:0]            adapt_min_steps;
+    reg [7:0]            adapt_max_steps;
+    reg [31:0]           adapt_thresh_lo;
+    reg [31:0]           adapt_thresh_hi;
+    reg [31:0]           adapt_cycle_limit;
+    reg [JOB_W-1:0]      status_job_sel;
+
+    // Per-job adaptive state
+    reg [7:0]            step_budget [0:N_JOBS-1];
+    reg [31:0]           last_activity [0:N_JOBS-1];
+    reg [31:0]           last_cycles   [0:N_JOBS-1];
+
+    // Plane select per job/layer
+    reg plane_sel [0:N_JOBS-1][0:DEPTH-1];
+
+    // -------------------------------------------------------------------------
+    // Memory + engine wiring
+    // -------------------------------------------------------------------------
+    wire                       jm_we_i;
+    wire [JOB_W-1:0]           jm_job_i;
+    wire [LAYER_W-1:0]         jm_layer_i;
+    wire                       jm_plane_sel_i;
+    wire                       jm_write_other_plane_i;
+    wire [CELL_W-1:0]          jm_idx_i;
+    wire [DATA_W-1:0]          jm_wdata_i;
+    wire [DATA_W-1:0]          jm_rdata_i;
+
+    sand_jobmem2p #(
+        .DATA_W(DATA_W),
+        .WIDTH(WIDTH),
+        .HEIGHT(HEIGHT),
+        .DEPTH(DEPTH),
+        .N_JOBS(N_JOBS)
+    ) u_mem (
+        .clk(clk),
+        .seed_we(seed_we),
+        .seed_job(seed_job),
+        .seed_layer(seed_layer),
+        .seed_plane(1'b0),
+        .seed_idx(seed_idx),
+        .seed_data(seed_data),
+        .eng_we(jm_we_i),
+        .eng_job(jm_job_i),
+        .eng_layer(jm_layer_i),
+        .eng_plane_sel(jm_plane_sel_i),
+        .eng_write_other_plane(jm_write_other_plane_i),
+        .eng_idx(jm_idx_i),
+        .eng_wdata(jm_wdata_i),
+        .eng_rdata(jm_rdata_i)
+    );
+
+    reg                      start_frame;
+    wire                     eng_busy;
+    wire                     eng_done;
+    reg  [JOB_W-1:0]         eng_job_sel;
+    reg  [LAYER_W-1:0]       eng_layer_sel;
+    reg                      eng_plane_sel;
+    wire [31:0]              eng_activity;
+    wire [31:0]              eng_cycles;
+
+    sand_engine_raster #(
+        .DATA_W(DATA_W),
+        .FRAC_W(`FRAC_W),
+        .WIDTH(WIDTH),
+        .HEIGHT(HEIGHT),
+        .N_JOBS(N_JOBS),
+        .DEPTH(DEPTH)
+    ) u_eng (
+        .clk(clk),
+        .rst(rst),
+        .start_frame(start_frame),
+        .busy(eng_busy),
+        .frame_done(eng_done),
+        .opcode(use_micro ? `OP_MICRO : opcode),
+        .use_diagonals(force_diag),
+        .constA(constA),
+        .constB(constB),
+        .micro_lut(micro_lut),
+        .job_id(eng_job_sel),
+        .layer_id(eng_layer_sel),
+        .plane_read_sel(eng_plane_sel),
+        .jm_we(jm_we_i),
+        .jm_job(jm_job_i),
+        .jm_layer(jm_layer_i),
+        .jm_plane_sel(jm_plane_sel_i),
+        .jm_write_other_plane(jm_write_other_plane_i),
+        .jm_idx(jm_idx_i),
+        .jm_wdata(jm_wdata_i),
+        .jm_rdata(jm_rdata_i),
+        .frame_activity(eng_activity),
+        .frame_cycles(eng_cycles)
+    );
+
+    // -------------------------------------------------------------------------
+    // Scheduler FSM
+    // -------------------------------------------------------------------------
+    localparam S_IDLE  = 3'd0,
+               S_WAIT  = 3'd1,
+               S_NEXTJ = 3'd2,
+               S_NEXTL = 3'd3;
+
+    reg [2:0]          st;
+    reg [JOB_W-1:0]    cur_job;
+    reg [LAYER_W-1:0]  cur_layer;
+    reg [7:0]          cur_budget;
+    reg [7:0]          step_cnt;
+
+    wire [JOB_W-1:0]   next_job = (cur_job == (N_JOBS-1)) ? {JOB_W{1'b0}} : (cur_job + {{(JOB_W-1){1'b0}},1'b1});
+
+    // -------------------------------------------------------------------------
+    // Helper functions/tasks
+    // -------------------------------------------------------------------------
+    function [7:0] clamp_steps;
+        input [15:0] value;
+        integer tmp;
+        begin
+            tmp = value;
+            if (tmp < 1) tmp = 1;
+            if (tmp > STEP_MAX) tmp = STEP_MAX;
+            clamp_steps = tmp[7:0];
+        end
+    endfunction
+
+    wire [7:0] step_max_u8 = clamp_steps(STEP_MAX);
+
+    wire heavy_opcode = (opcode == `OP_MUL_CONST) ||
+                        (opcode == `OP_DIV_CONST) ||
+                        (opcode == `OP_DIFFUSION) ||
+                        (opcode == `OP_MICRO);
+
+    // -------------------------------------------------------------------------
+    // CSR write path + scheduler core
+    // -------------------------------------------------------------------------
+    integer j, l;
+    reg [7:0] adapt_min_clamped;
+    reg [7:0] adapt_max_clamped;
+    reg [7:0] manual_clamped;
+
+    always @(posedge clk) begin
+        if (rst) begin
+            opcode        <= `OP_DIFFUSION;
+            constA        <= {DATA_W{1'b0}};
+            constB        <= {DATA_W{1'b0}};
+            force_diag    <= `USE_DIAGONALS[0];
+            use_micro     <= 1'b0;
+            adapt_enable  <= 1'b0;
+            adapt_auto    <= 1'b1;
+            adapt_use_heavy <= 1'b1;
+            adapt_manual_steps <= clamp_steps(`ADAPT_DEFAULT_MANUAL_STEPS);
+            adapt_min_steps    <= clamp_steps(`ADAPT_DEFAULT_MIN_STEPS);
+            adapt_max_steps    <= clamp_steps(`ADAPT_DEFAULT_MAX_STEPS);
+            adapt_thresh_lo    <= `ADAPT_DEFAULT_LOW_THRESH;
+            adapt_thresh_hi    <= `ADAPT_DEFAULT_HIGH_THRESH;
+            adapt_cycle_limit  <= `ADAPT_DEFAULT_CAP_CYCLES;
+            status_job_sel     <= {JOB_W{1'b0}};
+
+            for (j=0; j<16; j=j+1) micro_lut[j] <= {DATA_W{1'b0}};
+            for (j=0; j<N_JOBS; j=j+1) begin
+                step_budget[j]   <= clamp_steps(`STEPS_PER_SLICE);
+                last_activity[j] <= 32'd0;
+                last_cycles[j]   <= 32'd0;
+                for (l=0; l<DEPTH; l=l+1) plane_sel[j][l] <= 1'b0;
+            end
+
+            st          <= S_IDLE;
+            cur_job     <= {JOB_W{1'b0}};
+            cur_layer   <= {LAYER_W{1'b0}};
+            cur_budget  <= clamp_steps(`STEPS_PER_SLICE);
+            step_cnt    <= 8'd0;
+            start_frame <= 1'b0;
+            job_done    <= {N_JOBS{1'b0}};
+            eng_job_sel   <= {JOB_W{1'b0}};
+            eng_layer_sel <= {LAYER_W{1'b0}};
+            eng_plane_sel <= 1'b0;
+        end else begin
+            start_frame <= 1'b0;
+
+            // ---------------- CSR writes -------------------------------------
+            if (csr_we) begin
+                case (csr_addr)
+                    `CSR_JOB_SELECT: begin
+                        status_job_sel <= csr_wdata[JOB_W-1:0];
+                    end
+                    `CSR_RULE_OP:     opcode     <= csr_wdata[3:0];
+                    `CSR_RULE_CONSTA: constA     <= csr_wdata[DATA_W-1:0];
+                    `CSR_RULE_CONSTB: constB     <= csr_wdata[DATA_W-1:0];
+                    `CSR_FLAGS: begin
+                        force_diag <= csr_wdata[0];
+                        use_micro  <= csr_wdata[1];
+                    end
+                    `CSR_STATUS: begin
+                        job_done <= job_done & ~csr_wdata[N_JOBS-1:0];
+                    end
+                    `CSR_ADAPT_CTRL: begin
+                        adapt_enable      <= csr_wdata[0];
+                        adapt_auto        <= csr_wdata[1];
+                        adapt_use_heavy   <= csr_wdata[2];
+                        manual_clamped    = clamp_steps(csr_wdata[10:3]);
+                        adapt_min_clamped = clamp_steps(csr_wdata[18:11]);
+                        adapt_max_clamped = clamp_steps(csr_wdata[26:19]);
+                        if (adapt_max_clamped < adapt_min_clamped)
+                            adapt_max_clamped = adapt_min_clamped;
+                        adapt_manual_steps <= manual_clamped;
+                        adapt_min_steps    <= adapt_min_clamped;
+                        adapt_max_steps    <= adapt_max_clamped;
+                    end
+                    `CSR_ADAPT_THRESH_LO: adapt_thresh_lo <= csr_wdata;
+                    `CSR_ADAPT_THRESH_HI: adapt_thresh_hi <= csr_wdata;
+                    `CSR_ADAPT_CAPACITY:  adapt_cycle_limit <= csr_wdata;
+                    `CSR_ADAPT_STATUS_SEL:status_job_sel <= csr_wdata[JOB_W-1:0];
+                    default: begin
+                        if (csr_addr >= `CSR_MICRO_BASE && csr_addr < (`CSR_MICRO_BASE+16)) begin
+                            micro_lut[csr_addr-`CSR_MICRO_BASE] <= csr_wdata[DATA_W-1:0];
+                        end
+                    end
+                endcase
+            end
+
+            // ---------------- Scheduler FSM ---------------------------------
+            case (st)
+                S_IDLE: begin
+                    cur_budget    <= step_budget[cur_job];
+                    eng_job_sel   <= cur_job;
+                    eng_layer_sel <= cur_layer;
+                    eng_plane_sel <= plane_sel[cur_job][cur_layer];
+                    start_frame   <= 1'b1;
+                    st            <= S_WAIT;
+                end
+
+                S_WAIT: begin
+                    if (eng_done) begin
+                        reg plane_next;
+                        reg [7:0] budget_curr;
+                        reg [7:0] budget_next;
+                        reg [7:0] min_step;
+                        reg [7:0] max_step;
+                        reg [7:0] manual_step;
+                        reg [31:0] act_lo;
+                        reg [31:0] act_hi;
+                        reg [7:0] step_cnt_inc;
+
+                        plane_next = plane_sel[cur_job][cur_layer] ^ 1'b1;
+                        plane_sel[cur_job][cur_layer] <= plane_next;
+
+                        last_activity[cur_job] <= eng_activity;
+                        last_cycles[cur_job]   <= eng_cycles;
+
+                        budget_curr = step_budget[cur_job];
+                        min_step    <= adapt_min_steps;
+                        max_step    <= adapt_max_steps;
+                        manual_step <= adapt_manual_steps;
+                        if (min_step < 1) min_step = 1;
+                        if (max_step < min_step) max_step = min_step;
+                        if (max_step > step_max_u8) max_step = step_max_u8;
+                        if (manual_step < 1) manual_step = 8'd1;
+                        if (manual_step > step_max_u8) manual_step = step_max_u8;
+                        act_lo      = adapt_thresh_lo;
+                        act_hi      = (adapt_thresh_hi < adapt_thresh_lo) ? adapt_thresh_lo : adapt_thresh_hi;
+
+                        if (!adapt_enable) begin
+                            budget_next = step_max_u8;
+                        end else if (!adapt_auto) begin
+                            budget_next = manual_step;
+                        end else begin
+                            budget_next = budget_curr;
+                            if (adapt_cycle_limit != 32'd0 && eng_cycles > adapt_cycle_limit && budget_next > min_step)
+                                budget_next = budget_next - 1'b1;
+                            else begin
+                                if (eng_activity > act_hi && budget_next < max_step)
+                                    budget_next = budget_next + 1'b1;
+                                else if (eng_activity < act_lo && budget_next > min_step)
+                                    budget_next = budget_next - 1'b1;
+                            end
+                            if (adapt_use_heavy && heavy_opcode && budget_next > min_step)
+                                budget_next = budget_next - 1'b1;
+                        end
+
+                        if (budget_next < 8'd1) budget_next = 8'd1;
+                        if (budget_next > step_max_u8) budget_next = step_max_u8;
+
+                        step_budget[cur_job] <= budget_next;
+                        cur_budget           <= budget_next;
+
+                        step_cnt_inc = step_cnt + 1'b1;
+
+                        if (step_cnt_inc < budget_next) begin
+                            step_cnt <= step_cnt_inc;
+                            st       <= S_IDLE;
+                        end else begin
+                            step_cnt <= 8'd0;
+                            if (cur_layer == (DEPTH-1)) begin
+                                job_done[cur_job] <= 1'b1;
+                                cur_layer <= {LAYER_W{1'b0}};
+                                cur_job   <= next_job;
+                                st        <= S_NEXTJ;
+                            end else begin
+                                cur_layer <= cur_layer + {{(LAYER_W-1){1'b0}},1'b1};
+                                st        <= S_NEXTL;
+                            end
+                        end
+                    end
+                end
+
+                S_NEXTL: begin
+                    st <= S_IDLE;
+                end
+
+                S_NEXTJ: begin
+                    st <= S_IDLE;
+                end
+            endcase
+        end
+    end
+
+    // Engine busy indicator (includes scheduler waiting)
+    wire engine_active = (st != S_IDLE) || eng_busy;
+
+    // -------------------------------------------------------------------------
+    // CSR read mux
+    // -------------------------------------------------------------------------
+    wire [JOB_W-1:0] status_idx = ($unsigned(status_job_sel) < N_JOBS) ? status_job_sel : {JOB_W{1'b0}};
+    wire [7:0] status_budget = step_budget[status_idx];
+    wire [31:0] status_activity = last_activity[status_idx];
+    wire [31:0] status_cycles   = last_cycles[status_idx];
+
+    always @* begin
+        csr_rdata = 32'h0;
+        if (csr_re) begin
+            case (csr_addr)
+                `CSR_STATUS: begin
+                    csr_rdata = { {(32-N_JOBS-1){1'b0}}, job_done, engine_active };
+                end
+                `CSR_ADAPT_STATUS: begin
+                    csr_rdata = { status_cycles[15:0], status_activity[15:0] };
+                end
+                `CSR_ADAPT_BUDGET: begin
+                    csr_rdata = { adapt_max_steps, adapt_min_steps, status_budget, adapt_manual_steps };
+                end
+                default: csr_rdata = 32'h0;
+            endcase
+        end
+    end
+endmodule

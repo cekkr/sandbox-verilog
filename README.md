@@ -40,44 +40,44 @@ The entire structure behaves a bit like a **machine-learning model** — one tha
 
 The project is organized into clean, layered modules:
 
-| Module                 | Description                                                                                                                                               |
-| :--------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`sand_defs.vh`**     | Global parameter file — defines word widths, grid size, number of jobs, math opcodes, and CSR addresses. Edit this first to customize your FPGA target.   |
-| **`sand_pe.v`**        | The *Processing Element* (one grain). It reads its 4–8 neighbors and applies an operation (sum, diffusion, clamp, etc.) or a user-defined microcode rule. |
-| **`sand_grid.v`**      | Instantiates a `WIDTH × HEIGHT` mesh of PEs. Handles neighbor wiring and boundary behavior (edge replication by default).                                 |
-| **`sand_jobmem.v`**    | Stores all sandboxes (jobs) and layers using BRAM. Each job can have multiple 2D layers, enabling 3D behavior.                                            |
-| **`sand_scheduler.v`** | A round-robin time-slicer. Loads a layer from BRAM, runs the grid for a few steps, stores the result, and moves to the next job/layer.                    |
-| **`sand_top.v`**       | Integration wrapper exposing a minimal CSR interface and a seeding port. Easy to connect to a CPU or testbench.                                           |
-| **`bram_dp.v`**        | Simple true dual-port BRAM behavioral model (replace with vendor primitive for synthesis).                                                                |
+| Module                      | Description                                                                                                                                                                |
+| :-------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`sand_defs.vh`**          | Global parameter file — defines word widths, grid size, number of jobs, math opcodes, and CSR addresses. Edit this first to customize your FPGA target.                    |
+| **`sand_math.vh`**          | Saturating/rounding fixed-point helpers used by the PE and raster engine.                                                                                                  |
+| **`sand_pe.v`**             | The *Processing Element* (one grain). Reads its 4–8 neighbors and applies an operation (sum, diffusion, clamp, etc.) or a user-defined microcode rule.                    |
+| **`sand_scheduler_dynamic.v`** | Adaptive round-robin scheduler. Tracks per-job activity, selects step budgets, and drives the pointer-swap raster engine (`sand_engine_raster`).                         |
+| **`src/extensions/sand_engine_raster.v`** | Streaming single-port engine that walks the grid cell-by-cell, produces activity metrics, and writes results into the opposite memory plane.                          |
+| **`src/extensions/sand_jobmem2p.v`**     | Two-plane dual-port job memory. Each job/layer owns {read,write} planes and a plane-select bit toggled by the scheduler.                                              |
+| **`sand_top.v`**            | Integration wrapper exposing the CSR bus, seeding port, and the adaptive core.                                                                                            |
+| **`src/bram_tdp_wrap.v`**   | Portable true dual-port BRAM wrapper (vendor-inferable).                                                                                                                   |
+| **`sand_grid.v` / `sand_scheduler.v` / `sand_jobmem.v`** | Legacy fully-parallel path kept for reference (instantiates an in-core `WIDTH × HEIGHT` PE mesh).                                             |
 
 ---
 
 ## 🧠 Conceptual Flow
 
 ```
-+-----------------------------------------------+
-|                 sand_top                      |
-|  +-----------------------------------------+  |
-|  |            sand_scheduler               |  |
-|  |  (LOAD -> RUN -> STORE -> NEXT job)     |  |
-|  |  +-----------------------------------+  |  |
-|  |  |           sand_grid               |  |  |
-|  |  |   (2D array of sand_pe units)     |  |  |
-|  |  +-----------------------------------+  |  |
-|  +-----------------------------------------+  |
-|         ^                       |             |
-|         |                       v             |
-|    sand_jobmem <---- BRAM ----> sand_pe        |
-+-----------------------------------------------+
++---------------------------------------------------+
+|                    sand_top                       |
+|  +---------------------------------------------+  |
+|  |         sand_scheduler_dynamic              |  |
+|  |  +---------------------------------------+  |  |
+|  |  |        sand_engine_raster            |  |  |
+|  |  |   (single-port raster update)        |  |  |
+|  |  +--------------------+------------------+  |  |
+|  |                       |                     |  |
+|  +-----------------------v---------------------+  |
+|             sand_jobmem2p (plane A/B)            |
++---------------------------------------------------+
 ```
 
 Each **tick** performs:
 
 1. The scheduler selects a job and a layer
-2. The corresponding **2D layer** is loaded from job memory
-3. Each **sand_pe** updates based on its neighbors
-4. The new state is written back (ping-pong)
-5. After several steps, the layer is stored back and the scheduler rotates jobs
+2. The scheduler points the raster engine at the correct job/layer plane
+3. Cells are streamed through the ALU; the write plane receives the new values
+4. The plane bit toggles (pointer swap) instead of copying buffers
+5. Adaptive logic decides whether to run another step or rotate to the next job/layer
 
 ---
 
@@ -625,17 +625,45 @@ Your firmware can load these and emit a series of `csr_write` and `seed_cell` ca
 
 ## Dynamic FPGA adaptation implementation
 
-> This fork adds a **pointer‑swap raster engine** and a **two‑plane job memory** so that each simulation step writes to the opposite plane and then toggles a single **plane bit** per (job,layer). This **completely removes** the O(W×H) buffer copy and scales to very large grids. Memory is provided by a **portable dual‑port wrapper** (`bram_tdp_wrap.v`) that can infer or bind to vendor primitives. Arithmetic now uses a **saturating fixed‑point shim** (`sand_math.vh`) with configurable rounding.
->
-> **Build tips:**
->
-> * Define `VENDOR_XILINX` or `VENDOR_INTEL` (or rely on inference) for the RAM wrapper.
-> * Tune clock & throughput by adding a second read port or small **line buffers** in `sand_engine_raster` to prefetch neighbors (2–4 cells/clk).
-> * Switch to **SIMD packed cells** by widening `DATA_W` and slicing lanes in the ALU.
+The default build now routes through **`sand_scheduler_dynamic`**, a telemetry-aware controller that pairs the pointer-swap job memory with the raster engine. Every frame the engine streams a job layer through the ALU, reports how many cells changed (`frame_activity`), and how long the update took (`frame_cycles`). The scheduler uses those metrics to stretch or shrink per-job step budgets on the fly, keeping hot sandboxes on the fabric longer while quickly rotating quiescent ones.
 
-### Next Steps / TODOs
+### Adaptive datapath at a glance
+- **Pointer swap by construction.** `sand_jobmem2p` keeps two planes for each job/layer. The scheduler flips a plane bit instead of copying buffers, reducing the post-step work to O(1).
+- **Streaming ALU.** `sand_engine_raster` walks the grid one cell/clk (single BRAM read port), reuses the existing `sand_math.vh` helpers, and emits activity/cycle telemetry at frame end.
+- **Budget tuner.** For every job the scheduler holds:
+  * a mutable step budget (`step_budget[j]`)
+  * the most recent activity/cycle counters
+  * a plane-select bit per depth slice
+  Using configurable thresholds it bumps the budget up when the sandbox is “busy”, backs off when it is quiet, and honours FPGA cycle limits or heavy opcodes (`MUL`, `DIV`, `MICRO`).
 
-* Add explicit **second read port** to the job memory wrapper for parallel neighbor fetch.
-* Optionally integrate **Z‑neighbors** directly in the engine (above/below layer reads via plane_sel table of z±1).
-* Provide concrete **Xilinx RAMB36E2** and **Intel altsyncram** instantiations under `ifdef`.
-* Expose plane bits via CSR for debug; add a CSR to **force plane reset** per job/layer.
+### CSR extensions
+
+| CSR | Dir | Purpose |
+| :-- | :-- | :------ |
+| `CSR_ADAPT_CTRL` (`0x18`) | W | `[0]=enable`, `[1]=auto`, `[2]=heavy-op hint`, `[10:3]` manual steps, `[18:11]` min auto steps, `[26:19]` max auto steps |
+| `CSR_ADAPT_THRESH_LO` (`0x1C`) | W | Activity threshold that triggers budget decrements |
+| `CSR_ADAPT_THRESH_HI` (`0x20`) | W | Activity threshold that triggers budget increments |
+| `CSR_ADAPT_CAPACITY` (`0x24`) | W | Optional cycle limit per frame (0 = ignore) |
+| `CSR_ADAPT_STATUS_SEL` (`0x2C`) | W | Selects which job index is reflected in the status views |
+| `CSR_ADAPT_STATUS` (`0x28`) | R | `{ cycles[15:0], activity[15:0] }` for the selected job |
+| `CSR_ADAPT_BUDGET` (`0x30`) | R | `{ max, min, current_budget, manual_default }` (8 bits each) |
+
+The legacy `CSR_STATUS` readout is unchanged (`[0]=engine_busy`, `[N_JOBS:1]=job_done`), and writing a `1` to a job bit clears it.
+
+### How to drive it
+
+1. **Manual mode:** clear bit1 in `CSR_ADAPT_CTRL`, set bits `[10:3]` to the desired slice length (1..`STEPS_PER_SLICE`). All jobs inherit that budget.
+2. **Auto mode:** set bit1, pick low/high activity thresholds, and optionally a cycle cap. The default heuristic:
+   * `activity > hi` → grow budget (until `max`)
+   * `activity < lo` → shrink budget (down to `min`)
+   * `frame_cycles > cap` (if cap != 0) → nudge budget down regardless
+   * heavy opcodes reduce the target by one extra step so slower math does not monopolise the fabric.
+3. Poll `CSR_ADAPT_STATUS`/`CSR_ADAPT_BUDGET` to observe live metrics and the scheduler’s per-job decisions. Update `CSR_ADAPT_STATUS_SEL` to inspect another sandbox.
+
+The adaptive path keeps the static, fully parallel mesh in-tree (`sand_scheduler.v` + `sand_grid.v`) so you can still synthesise the legacy architecture by instantiating it explicitly if a design needs the older behaviour.
+
+### Next steps / ideas
+
+* Feed a second read port or short line buffers into `sand_engine_raster` to raise throughput (2–4 cells/clk).
+* Surface plane-select bits via CSR for debug resets or topology changes.
+* Extend the telemetry to include per-frame min/max deltas or add a lightweight saturation counter for fixed-point guards.

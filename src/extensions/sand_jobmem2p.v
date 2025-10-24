@@ -10,19 +10,19 @@ module sand_jobmem2p #(
     input  wire                   clk,
     // Seed/host port (plane explicit)
     input  wire                   seed_we,
-    input  wire [$clog2(N_JOBS)-1:0] seed_job,
-    input  wire [$clog2(DEPTH)-1:0]  seed_layer,
+    input  wire [((N_JOBS > 1) ? $clog2(N_JOBS) : 1)-1:0] seed_job,
+    input  wire [((DEPTH  > 1) ? $clog2(DEPTH)  : 1)-1:0] seed_layer,
     input  wire                      seed_plane, // 0 or 1
-    input  wire [$clog2(WIDTH*HEIGHT)-1:0] seed_idx,
+    input  wire [(((WIDTH*HEIGHT) > 1) ? $clog2(WIDTH*HEIGHT) : 1)-1:0] seed_idx,
     input  wire [DATA_W-1:0]        seed_data,
 
     // Engine ports (two independent ports)
     input  wire                      eng_we,
-    input  wire [$clog2(N_JOBS)-1:0] eng_job,
-    input  wire [$clog2(DEPTH)-1:0]  eng_layer,
+    input  wire [((N_JOBS > 1) ? $clog2(N_JOBS) : 1)-1:0] eng_job,
+    input  wire [((DEPTH  > 1) ? $clog2(DEPTH)  : 1)-1:0] eng_layer,
     input  wire                      eng_plane_sel, // 0=planeA,1=planeB (READ plane)
     input  wire                      eng_write_other_plane, // write to !plane_sel
-    input  wire [$clog2(WIDTH*HEIGHT)-1:0] eng_idx,
+    input  wire [(((WIDTH*HEIGHT) > 1) ? $clog2(WIDTH*HEIGHT) : 1)-1:0] eng_idx,
     input  wire [DATA_W-1:0]         eng_wdata,
     output wire [DATA_W-1:0]         eng_rdata
 );
