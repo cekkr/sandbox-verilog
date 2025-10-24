@@ -42,15 +42,15 @@ The project is organized into clean, layered modules:
 
 | Module                      | Description                                                                                                                                                                |
 | :-------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`src/sand_defs.vh`**          | Global parameter file — defines word widths, grid size, number of jobs, math opcodes, and CSR addresses. Edit this first to customize your FPGA target.                    |
-| **`src/sand_math.vh`**          | Saturating/rounding fixed-point helpers used by the PE and raster engine.                                                                                                  |
-| **`src/sand_pe.v`**             | The *Processing Element* (one grain). Reads its 4–8 neighbors and applies an operation (sum, diffusion, clamp, etc.) or a user-defined microcode rule.                    |
-| **`src/sand_scheduler_dynamic.v`** | Adaptive round-robin scheduler. Tracks per-job activity, selects step budgets, and drives the pointer-swap raster engine (`sand_engine_raster`).                         |
-| **`src/sand_engine_raster.v`** | Streaming single-port engine that walks the grid cell-by-cell, produces activity metrics, and writes results into the opposite memory plane.                          |
-| **`src/sand_jobmem2p.v`**     | Two-plane dual-port job memory. Each job/layer owns {read,write} planes and a plane-select bit toggled by the scheduler.                                              |
-| **`src/sand_top.v`**            | Integration wrapper exposing the CSR bus, seeding port, and the adaptive core.                                                                                            |
-| **`src/bram_tdp_wrap.v`**   | Portable true dual-port BRAM wrapper (vendor-inferable).                                                                                                                   |
-| **`src/legacy`** / (**`sand_grid.v` / `sand_scheduler.v` / `sand_jobmem.v`**) | Legacy fully-parallel path kept for reference (instantiates an in-core `WIDTH × HEIGHT` PE mesh).                                             |
+| **`rtl/sand_defs.vh`**          | Global parameter file — defines word widths, grid size, number of jobs, math opcodes, and CSR addresses. Edit this first to customize your FPGA target.                    |
+| **`rtl/sand_math.vh`**          | Saturating/rounding fixed-point helpers used by the PE and raster engine.                                                                                                  |
+| **`rtl/sand_pe.v`**             | The *Processing Element* (one grain). Reads its 4–8 neighbors and applies an operation (sum, diffusion, clamp, etc.) or a user-defined microcode rule.                    |
+| **`rtl/sand_scheduler_dynamic.v`** | Adaptive round-robin scheduler. Tracks per-job activity, selects step budgets, and drives the pointer-swap raster engine (`sand_engine_raster`).                         |
+| **`rtl/sand_engine_raster.v`** | Streaming single-port engine that walks the grid cell-by-cell, produces activity metrics, and writes results into the opposite memory plane.                          |
+| **`rtl/sand_jobmem2p.v`**     | Two-plane dual-port job memory. Each job/layer owns {read,write} planes and a plane-select bit toggled by the scheduler.                                              |
+| **`rtl/sand_top.v`**            | Integration wrapper exposing the CSR bus, seeding port, and the adaptive core.                                                                                            |
+| **`rtl/bram_tdp_wrap.v`**   | Portable true dual-port BRAM wrapper (vendor-inferable).                                                                                                                   |
+| **`rtl/legacy`** / (**`sand_grid.v` / `sand_scheduler.v` / `sand_jobmem.v`**) | Legacy fully-parallel path kept for reference (instantiates an in-core `WIDTH × HEIGHT` PE mesh).                                             |
 
 ---
 
@@ -648,6 +648,14 @@ Your firmware can load these and emit a series of `csr_write` and `seed_cell` ca
 3. Introduce **saturating fixed-point** and **SIMD packing** for resource efficiency.
 4. (Optional) Add **floating/posit** op variants behind the `fp_*` shims.
 5. Wrap CSRs in **AXI-Lite** and add a simple **DMA** for seeding/dumps.
+
+## Examples
+
+- **`examples/galton_board/`** – behavioural Galton board built on the project’s
+  fixed-point conventions. Run `python3 examples/galton_board/run.py` to compile
+  the Icarus Verilog harness, print the deterministic bin weights (“linear”
+  distribution), and optionally draw random samples that approximate the classic
+  Gaussian profile.
 
 ## Dynamic FPGA adaptation implementation
 
