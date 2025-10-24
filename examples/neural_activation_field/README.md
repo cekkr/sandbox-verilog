@@ -122,6 +122,23 @@ Running the harness with `python3 examples/neural_activation_field/run.py
 per layer, the readout potentials, and the spike mask so you can see how the 3D
 field evolves over time while still being time-multiplexed through a 2D raster.
 
+If you want to override the “weights” on the fly, use CLI flags instead of
+editing YAML. For example:
+
+```
+python3 examples/neural_activation_field/run.py \
+    --pattern core --iterations 6 \
+    --self-gain 0.65 --planar-gain 0.25 --vertical-gain 0.15 --bias -0.05 \
+    --feedback 0.5 --damp 0.08 \
+    --learning-rate 0.2 --target 0.45 \
+    --readout-edge 0.7 --readout-raw 0.3 --readout-bias -0.05 --readout-threshold 0.35
+```
+
+This command keeps the same procedural stimulus but tweaks the neighbour mix
+weights, feedback loop, learning rate, and readout gains without touching the
+source files. The script converts each float into the fixed-point integer the
+Verilog testbench expects.
+
 ### Files
 
 | File | Description |
