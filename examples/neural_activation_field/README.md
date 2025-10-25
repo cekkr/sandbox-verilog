@@ -21,7 +21,7 @@ The Python runner generates a config header from YAML/JSON, compiles the
 testbench with Icarus Verilog, executes the simulation, and renders the 3D
 activation volume as ASCII heatmaps.
 
-## "Sandbox" vs "Mobile Sand" vs "Solid Sandbox" 
+## "Sandbox" vs "Mobile Sand" vs "Solid Sandbox"
 
 This example can be run in three different modes, each representing a different stage in the development and deployment of a neural network on the sandbox hardware:
 
@@ -30,6 +30,44 @@ This example can be run in three different modes, each representing a different 
 *   **"Mobile Sand" (Hardware-in-the-loop):** In this mode, the behavioural models are replaced with their hardware-equivalent counterparts. This allows for more accurate simulation of the neural network's behaviour on the target hardware. This mode is useful for verifying the correctness of the hardware implementation and for fine-tuning the network parameters.
 
 *   **"Solid Sandbox" (Inference):** This is the final stage, where the trained neural network is deployed on the sandbox hardware for inference. In this mode, the network is fed with real sensor data, and the output is used to drive other components of the system.
+
+## Training vs. Inference
+
+### Training
+
+During training, the goal is to learn the optimal weights for the network. This is done by providing the network with a set of training data and adjusting the weights to minimize the error between the network's output and the desired output. In this example, the `learning_rate` and `target` parameters are used to control the training process.
+
+To train the network, you need to provide a dataset. The dataset is a hex file containing the input data. The file should contain one hexadecimal value per line, in Q8.8 format. You can create your own dataset or use one of the provided patterns.
+
+```
+# Create a dummy dataset
+$ echo "0100" > dataset.hex
+$ echo "0200" >> dataset.hex
+$ echo "0300" >> dataset.hex
+$ echo "0400" >> dataset.hex
+
+# Train the network
+python3 examples/neural_activation_field/run.py \
+    --image-file dataset.hex \
+    --iterations 10 \
+    --learning-rate 0.2 --target 0.45 \
+    --json build/training_results.json
+```
+
+This command will run the simulation for 10 iterations with a learning rate of 0.2 and a target activation of 0.45. The final state of the network, including the learned bias, will be saved to `build/training_results.json`.
+
+### Inference
+
+Once the network has been trained, it can be used for inference. During inference, the network is used to make predictions on new data. In this example, the `--image-file` argument is used to provide the network with an input image. The `--learning-rate` is set to 0 to prevent the network from further learning.
+
+```
+python3 examples/neural_activation_field/run.py \
+    --image-file <path_to_image.hex> \
+    --learning-rate 0 \
+    --config build/training_results.json
+```
+
+This command will load the trained network from `build/training_results.json`, run the simulation with the input image, and output the results.
 
 ## Driving the example with an image
 
@@ -68,8 +106,7 @@ python3 examples/neural_activation_field/run.py \
 
 ## How to read the arguments
 
-The behavioural harness mirrors the way the streaming RTL walks a “3D” sandbox:
-the hardware still visits one 2D slice at a time, but every iteration the engine
+The behavioural harness mirrors the way the streaming RTL walks a “3D” sandbox:the hardware still visits one 2D slice at a time, but every iteration the engine
 automatically pulls the layer above/below so vertical interactions feel
 continuous. The example exposes two related notions of “depth”:
 
@@ -79,7 +116,7 @@ continuous. The example exposes two related notions of “depth”:
 Arguments fall into a few groups (CLI flags map straight to the plusargs passed into the testbench):
 
 | Group | Flag / YAML key | Purpose | 
-| --- | --- | --- | 
+| --- | --- | --- |
 | Volume geometry | `--window-width`, `--window-height`, `--window-depth` (`window.width/height/depth`) | Size of the sub-volume extracted from the global sandbox grid. | 
 | Stimulus pattern | `--pattern` (`pattern`) | Chooses one of the procedural base patterns (core, ripple, layered, noise). | 
 | Stimulus pattern | `--image-file` (`image_file`) | Path to a hex file containing the image data. | 
@@ -211,7 +248,7 @@ readable, but the same plumbing works for larger sandboxes (e.g. 64×64×8):
 ### Files
 
 | File | Description | 
-| --- | --- | 
+| --- | --- |
 | `neural_activation_field_tb.v` | 3D blend/activation/feedback pipeline with bias adaptation. | 
 | `run.py` | CLI wrapper that compiles the harness, runs the sim, and renders results. | 
 | `neural_activation_field_config.vh` | Seed defaults, overridden by generated headers in `build/`. | 
