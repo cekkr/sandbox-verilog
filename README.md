@@ -316,6 +316,26 @@ If you use it in a paper, demo, or project, consider referencing it as:
 
 ---
 
+## 🔬 Related Research & Architectural Parallels
+
+### The Waterfall Arithmetic Unit (WAU)
+
+A closely related architecture is the **Waterfall Arithmetic Unit (WAU)**, described in the paper [`studies/papers/waterfall-arithmetic-unit/WaterfallArithmeticUnit.en.md`](studies/papers/waterfall-arithmetic-unit/WaterfallArithmeticUnit.en.md).
+
+The Sand(box) and WAU share significant conceptual and practical similarities in their core structure:
+
+*   **Grid-Based Processing:** Both are built on a grid of parallel processing nodes (called "grains" or "PEs" in Sand(box) and "cores" in WAU).
+*   **Local & Global Control:** Sand(box) has a top-level controller for CSRs, and the WAU has a "Coordinator" that programs the cores and manages global memory.
+*   **Local State:** Each Sand(box) PE has its state, and each WAU core has its own "Local RAM" and a "Station" to manage it.
+*   **Neighbor Communication:** Sand(box) PEs read from their neighbors (N, S, E, W, etc.). WAU cores also communicate with their neighbors through "Horizontal and Vertical Highways".
+*   **Dataflow Model:** Both utilize a dataflow model where data moves between adjacent units, conceptually similar to a "waterfall" or percolation effect.
+*   **Parametric Design:** Both architectures are designed to be parametric, allowing for generation of different configurations from a base Verilog project.
+*   **Programmability:** Both systems are programmable. Sand(box) uses opcodes and a microcode LUT, while the WAU uses "flow indices" to associate data with operations.
+
+Due to these fundamental similarities, a WAU is capable of executing a Sand(box) program, as the underlying grid-based, dataflow architecture is compatible. The WAU can be seen as a more generalized implementation of the concepts explored in the Sand(box) project.
+
+---
+
 ## 🤝 Acknowledgments
 
 Inspired by:
