@@ -748,6 +748,31 @@ at the necessary primitives in `rtl/circuits/`. CLI overrides still work, so you
 can start from a preset config and sweep gains, window sizes, or patterns
 without editing RTL.
 
+### Dynamic feature configurator
+
+`tools/sand_dynamic_configurator.py` lifts the pattern to the full design
+surface. It mimics a Linux kernel-style feature configurator:
+
+- `list features|types|operations` shows what can be toggled (with dependencies/tags)
+- `build <config>` ingests YAML/JSON, resolves type/feature dependencies, and
+  emits a manifest + Verilog header describing what to pass into synthesis
+- Resource budgets under `fpga.resources` gate optional units so profiles stay
+  within LUT/DSP/BRAM limits, and new data types (float32, bfloat16, custom
+  fixed-point) automatically translate into `+define+` switches
+
+Sample configuration: `tools/sample_dynamic_config.yaml`
+
+```bash
+python3 -m tools.sand_dynamic_configurator list features
+python3 -m tools.sand_dynamic_configurator build tools/sample_dynamic_config.yaml \
+    --output build/dynamic_profile
+```
+
+The build step writes `build_plan.json` (sources, circuits, defines, feature
+trail) and `sand_dynamic_types.vh` (macro summary for each active data type).
+Feed `plan["defines"]` into `iverilog`/`yosys` via `+define+NAME=value` or copy
+the header into a project-specific include directory.
+
 ## Dynamic FPGA adaptation implementation
 
 The default build now routes through **`sand_scheduler_dynamic`**, a telemetry-aware controller that pairs the pointer-swap job memory with the raster engine. Every frame the engine streams a job layer through the ALU, reports how many cells changed (`frame_activity`), and how long the update took (`frame_cycles`). The scheduler uses those metrics to stretch or shrink per-job step budgets on the fly, keeping hot sandboxes on the fabric longer while quickly rotating quiescent ones.

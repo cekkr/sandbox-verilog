@@ -1,0 +1,60 @@
+# Example Sand dynamic configuration file.
+# Invoke via:
+#   python3 -m tools.sand_dynamic_configurator build tools/sample_dynamic_config.yaml
+
+developer:
+  profile: research
+  notes: >
+    Enable ML-centric units and richer data types for experimentation.
+
+fpga:
+  family: xczu3eg
+  resources:
+    lut: 60000
+    dsp: 220
+    bram_kb: 512
+
+features:
+  enable:
+    - core_base
+    - feature_microcode
+    - feature_water_flux
+    - unit_activation_field
+    - unit_neural_edge
+  tags:
+    include:
+      - ml
+
+types:
+  default: float32
+  custom:
+    - name: q10_6
+      kind: fixed
+      width: 16
+      frac_bits: 6
+      description: "Q10.6 narrow fixed-point type for memory-limited LUT paths."
+
+operations:
+  include:
+    - edge_detect
+    - water_flux
+    - microcode_lookup
+
+units:
+  - name: activation_core
+    description: Temporal activation unit with LUT feedback
+    feature: unit_activation_field
+    circuits:
+      - neighbor_mix
+      - activation_micro_lut
+      - neuron_relu
+    type: float16
+
+  - name: edge_pipeline
+    description: Edge magnitude extraction with ReLU gating
+    feature: unit_neural_edge
+    circuits:
+      - edge_l1
+      - neuron_relu
+    type: q8_8
+
