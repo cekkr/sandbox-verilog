@@ -1,4 +1,4 @@
-"""Run the neural activation field behavioural demo.""
+"""Run the neural activation field behavioural demo."""
 from __future__ import annotations
 
 import argparse
@@ -335,7 +335,7 @@ def run_example(
         plusargs["IMAGE_FILE"] = str(image_file)
 
     for i in range(params.window_d):
-        plusargs[f"FEEDBACK_L{i}_PCT"] = params.feedback_pct
+        plusargs[f"FEEDBACK_L{i}_PCT"] = params.feedback_pct_per_layer[i]
 
     stdout = sand_runner.run_vvp(vvp_path, plusargs=plusargs)
     sim_data = _parse_sim_output(stdout)

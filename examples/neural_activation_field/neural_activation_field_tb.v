@@ -41,6 +41,7 @@ module neural_activation_field_tb;
     integer readout_raw      [0:MAX_H-1][0:MAX_W-1];
     integer readout_relu     [0:MAX_H-1][0:MAX_W-1];
     integer readout_fire     [0:MAX_H-1][0:MAX_W-1];
+    integer image_buffer     [0:MAX_D*MAX_H*MAX_W-1];
 
     // Circuit glue
     reg  signed [`DATA_W-1:0] mix_self;
@@ -190,32 +191,41 @@ module neural_activation_field_tb;
     endfunction
 
     task init_micro_lut;
-        integer i;
-        integer val;
+        integer sign;
+        integer bucket;
+        integer frac;
+        integer idx;
+        integer q_val;
+        real sample_abs;
+        real sample_val;
+        real response;
+        real scaled;
         begin
-            // Approximate softsign: x / (1 + abs(x))
-            // Scaled for Q format
-            for (i = 0; i < 16; i = i + 1) begin
-                // This is a coarse approximation. A more accurate one could be generated.
-                case(i)
-                    8'h0: val = 0;            // 0
-                    8'h1: val = 16384 / 2;     // 0.5
-                    8'h2: val = 16384 * 3/4;   // 0.75
-                    8'h3: val = 16384 * 7/8;   // 0.875
-                    8'h4: val = 16384;         // 1
-                    8'h5: val = 16384;         // 1
-                    8'h6: val = 16384;         // 1
-                    8'h7: val = 16384;         // 1
-                    8'h8: val = 0;            // -0
-                    8'h9: val = -16384 / 2;    // -0.5
-                    8'ha: val = -16384 * 3/4;  // -0.75
-                    8'hb: val = -16384 * 7/8;  // -0.875
-                    8'hc: val = -16384;        // -1
-                    8'hd: val = -16384;        // -1
-                    8'he: val = -16384;        // -1
-                    8'hf: val = -16384;        // -1
-                endcase
-                micro_lut[i] = val;
+            // Populate the LUT with a softsign approximation in Q format.
+            for (sign = 0; sign < 2; sign = sign + 1) begin
+                for (bucket = 0; bucket < 4; bucket = bucket + 1) begin
+                    for (frac = 0; frac < 2; frac = frac + 1) begin
+                        idx = (sign << 3) | (bucket << 1) | frac;
+
+                        case (bucket)
+                            0: sample_abs = 0.25;
+                            1: sample_abs = (frac == 0) ? 1.25 : 0.75;
+                            2: sample_abs = 1.75;
+                            default: sample_abs = (frac == 0) ? 2.25 : 4.5;
+                        endcase
+
+                        sample_val = sign ? -sample_abs : sample_abs;
+                        response = sample_val / (1.0 + sample_abs);
+                        scaled = response * Q_ONE;
+
+                        if (scaled >= 0.0)
+                            q_val = $rtoi(scaled + 0.5);
+                        else
+                            q_val = -$rtoi(-scaled + 0.5);
+
+                        micro_lut[idx] = clamp_q(q_val);
+                    end
+                end
             end
         end
     endtask
@@ -246,8 +256,32 @@ module neural_activation_field_tb;
     endtask
 
     task load_image;
+        integer total_cells;
+        integer idx;
+        integer z, y, x;
         begin
-            $readmemh(image_file, base_field[0]);
+            total_cells = window_w * window_h * window_d;
+            if (total_cells > MAX_D*MAX_H*MAX_W)
+                total_cells = MAX_D*MAX_H*MAX_W;
+
+            for (idx = 0; idx < MAX_D*MAX_H*MAX_W; idx = idx + 1)
+                image_buffer[idx] = 0;
+
+            $readmemh(image_file, image_buffer);
+
+            idx = 0;
+            for (z = 0; z < window_d; z = z + 1) begin
+                for (y = 0; y < window_h; y = y + 1) begin
+                    for (x = 0; x < window_w; x = x + 1) begin
+                        if (idx < total_cells)
+                            base_field[z][y][x] = clamp_q(image_buffer[idx]);
+                        else
+                            base_field[z][y][x] = 0;
+                        state_field[z][y][x] = base_field[z][y][x];
+                        idx = idx + 1;
+                    end
+                end
+            end
         end
     endtask
 

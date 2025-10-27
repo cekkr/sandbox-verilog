@@ -13,7 +13,7 @@ aligned with the main RTL using `sand_defs.vh` and the shared circuit library:
 
 - `sand_circuit_neighbor_mix` performs 3D weighted averaging with programmable
   self/planar/vertical gains plus a bias.
-- `sand_circuit_activation_micro_lut` applies a microcode-based activation that mirrors the streaming processing element.
+- `sand_circuit_activation_micro_lut` applies a microcode-based activation that mirrors the streaming processing element, using sampled softsign values that align with the Q8.8 hardware curve.
 - `sand_circuit_neuron_relu` turns the depth-collapsed response into a
   thresholded ReLU spike map.
 
@@ -71,7 +71,7 @@ This command will load the trained network from `build/training_results.json`, r
 
 ## Driving the example with an image
 
-To drive the example with an image, you can use the `--image-file` command-line argument to specify the path to a hex file containing the image data. The hex file should be a plain text file with one hexadecimal value per line. The values should be in Q8.8 format.
+To drive the example with an image, you can use the `--image-file` command-line argument to specify the path to a hex file containing the image data. The hex file should be a plain text file with one hexadecimal value per line. The values should be in Q8.8 format. Samples are consumed in layer-major order (`z`, then `y`, then `x`) and automatically clamped to the sandbox's Q8.8 range; if the file is shorter than `depth × height × width`, the remainder is padded with zeros.
 
 For example, to load a 2x2 image, the `image.hex` file would look like this:
 
@@ -91,7 +91,7 @@ base_field[0][1][0] = 16'h0300;
 base_field[0][1][1] = 16'h0400;
 ```
 
-The "water" (activation) flows from the `base_field` upwards through the layers. The `base_field` can be thought of as the initial water level, and the weights of each LUT (look-up table) in the `sand_circuit_activation_micro_lut` as a series of gates that control the flow of water. The feedback mechanism allows water from the top layer to flow back to the bottom, creating a recurrent connection.
+The "water" (activation) flows from the `base_field` upwards through the layers. The `base_field` can be thought of as the initial water level, and the weights of each LUT (look-up table) in the `sand_circuit_activation_micro_lut` approximate a softsign response so the behavioural model tracks the streaming PE. The feedback mechanism allows water from the top layer to flow back to the bottom, creating a recurrent connection.
 
 ## Per-layer feedback gains
 

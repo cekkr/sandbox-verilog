@@ -559,6 +559,10 @@ def write_activation_field_header(
         f"localparam integer NAF_READ_BIAS_PCT      = {params.read_bias_pct};",
         f"localparam integer NAF_READ_THRESH_PCT    = {params.read_threshold_pct};",
     ]
+    if params.feedback_pct_per_layer:
+        lines.append(
+            f"localparam integer NAF_FEEDBACK_PCT      = {params.feedback_pct_per_layer[0]};"
+        )
     for i, feedback_pct in enumerate(params.feedback_pct_per_layer):
         lines.append(f"localparam integer NAF_FEEDBACK_L{i}_PCT = {feedback_pct};")
     lines.extend([

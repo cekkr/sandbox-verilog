@@ -510,16 +510,18 @@ micro_idx = { opcode[1:0], self[1:0] }  // You can change this!
 
 * `W=32, H=32, D=4` (testbench window defaults to 6×6×3)
 * Weighted neighbour mix (`sand_circuit_neighbor_mix`) with programmable gains
-* Microcode LUT activation (`sand_circuit_activation_micro_lut`) for hardware-like behavior
+* Refined microcode LUT activation (`sand_circuit_activation_micro_lut`) sampled to mirror the Q8.8 softsign curve
 * Iterative bias update nudged by a target activation level
 * Readout neuron combines depth-averaged activations into a spike heatmap
+* Optional hex dataset loader that tiles full 3D windows and clamps into range
+* Per-layer feedback plusargs so deeper stacks can react differently to the top-layer response
 
 **Run it:**  
 `python3 examples/neural_activation_field/run.py --config examples/neural_activation_field/configs/default.yaml`
 
 **What you’ll see:** Each iteration prints the evolving bias/mean activation.
 The ASCII volume shows self-organising plateaus while the readout heatmap
-highlights regions that consistently excite the stack. You can now also drive the simulation from an image file and set per-layer feedback gains.
+highlights regions that consistently excite the stack. Drive the simulation from an image file (any depth × height × width dataset in Q8.8 hex) and mix per-layer feedback to explore different convergence behaviours without editing RTL.
 
 ---
 

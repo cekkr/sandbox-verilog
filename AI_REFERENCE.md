@@ -74,13 +74,13 @@ PYTHON TOOLING (`tools/sand_runner.py`, `tools/sand_configurator.py`, `tools/__i
 - `compile_icarus`: runs `iverilog -g2012` with include dirs/defines/top; returns VVP path.
 - `run_vvp`: executes compiled simulation, returns stdout, raises on non-zero exit.
 - `q_to_float`: converts fixed-point to float.
-- `sand_configurator`: parses YAML/JSON presets, resolves neural-edge and neural-activation parameter sets, writes example-specific headers, and enumerates required `rtl/circuits/` sources for any circuit list.
+- `sand_configurator`: parses YAML/JSON presets, resolves neural-edge and neural-activation parameter sets, writes example-specific headers (including fallback `NAF_FEEDBACK_PCT` for legacy plusargs), and enumerates required `rtl/circuits/` sources for any circuit list.
 - `__init__.py`: re-exports helpers (runner + configurator) for convenience.
 
 EXAMPLE DEMOS (`examples/`):
 - `galton_board`: `galton_board_tb.v` behavioural Galton board using Q8.8 arrays; `run.py` compiles via sand_runner, applies plusargs (`LEFT_PCT`, `RIGHT_PCT`, board dims), parses `GALTON.bin` output, optional random sampling, JSON export.
 - `neural_edge_slice`: `neural_edge_slice_tb.v` now instantiates primitives from `rtl/circuits/` (edge detector + neuron). `run.py` consumes optional YAML/JSON configs (`configs/default.yaml`) through `sand_configurator`, emits a generated header, includes the required library sources, still parses stdout to grids/heatmaps, and honours CLI overrides for pattern/gains/bias/threshold/window.
-- `neural_activation_field`: `neural_activation_field_tb.v` blends 3D neighbours, applies a microcode LUT activation, adapts a bias toward a target, and feeds a ReLU readout neuron. `run.py` mirrors the other examples—reads YAML (`configs/default.yaml`), emits a header, compiles the harness with the neighbour-mix/micro-lut circuits, parses per-iteration telemetry plus the final volume/readout maps, and renders ASCII slices or dumps JSON. The example now supports loading an image from a hex file and per-layer feedback gains.
+- `neural_activation_field`: `neural_activation_field_tb.v` blends 3D neighbours, applies a microcode LUT activation, adapts a bias toward a target, and feeds a ReLU readout neuron. `run.py` mirrors the other examples—reads YAML (`configs/default.yaml`), emits a header, compiles the harness with the neighbour-mix/micro-lut circuits, parses per-iteration telemetry plus the final volume/readout maps, and renders ASCII slices or dumps JSON. The LUT is now populated from softsign samples that match the streaming Q8.8 behaviour, and the harness accepts hex datasets (with padding/clamping) plus per-layer feedback gains.
 
 WORKFLOW SNAPSHOT:
 - Edit global macros in `rtl/sand_defs.vh` to match target FPGA/sim.

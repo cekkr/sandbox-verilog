@@ -23,6 +23,5 @@ neural_activation_field:
     threshold: 0.3
   circuits:
     - neighbor_mix
-    - activation_softsign
+    - activation_micro_lut
     - neuron_relu
-
