@@ -11,7 +11,7 @@ DIRECTORY_MAP:
 - rtl/: synthesizable path (`sand_defs.vh`, `sand_math.vh`, `sand_pe.v`, `sand_engine_raster.v`, `sand_jobmem2p.v`, `sand_scheduler_dynamic.v`, `sand_top.v`, `bram_tdp_wrap.v`).
 - rtl/circuits/: reusable combinational helpers (edge detector, neuron ReLU, neighbour mix, softsign activation, micro-lut activation).
 - rtl/legacy/: legacy fully parallel architecture (`sand_grid.v`, `sand_scheduler.v`, `sand_jobmem.v`).
-- tools/: Python utilities (`sand_runner.py`, `sand_configurator.py`, `__init__.py`).
+- tools/: Python utilities (`sand_runner.py`, `sand_configurator.py`, `sand_dynamic_configurator.py`, `sample_dynamic_config.yaml`, `__init__.py`).
 - examples/: behavioural demos (`galton_board`, `neural_edge_slice`, `neural_activation_field`) with Verilog testbenches + Python runners.
 - examples/neural_edge_slice/configs/: YAML presets that drive auto-generated config headers.
 - README.md: human-friendly deep dive (mirror but more verbose).
@@ -68,13 +68,15 @@ LEGACY PIPELINE (`rtl/legacy/*`):
 - `sand_scheduler.v`: legacy scheduler matching parallel grid.
 - `sand_jobmem.v`: legacy job memory (pre pointer-swap). Retained for reference/comparison.
 
-PYTHON TOOLING (`tools/sand_runner.py`, `tools/sand_configurator.py`, `tools/__init__.py`):
+PYTHON TOOLING (`tools/sand_runner.py`, `tools/sand_configurator.py`, `tools/sand_dynamic_configurator.py`, `tools/__init__.py`):
 - `SandToolError`: exception for tool failures.
 - `IcarusBuildConfig`: dataclass describing compile inputs.
 - `compile_icarus`: runs `iverilog -g2012` with include dirs/defines/top; returns VVP path.
 - `run_vvp`: executes compiled simulation, returns stdout, raises on non-zero exit.
 - `q_to_float`: converts fixed-point to float.
 - `sand_configurator`: parses YAML/JSON presets, resolves neural-edge and neural-activation parameter sets, writes example-specific headers (including fallback `NAF_FEEDBACK_PCT` for legacy plusargs), and enumerates required `rtl/circuits/` sources for any circuit list.
+- `sand_dynamic_configurator`: kernel-style feature configurator that consumes high-level YAML/JSON, resolves feature/type/operation dependencies, checks resource budgets, emits `build_plan.json` (sources/defines/notes) plus `sand_dynamic_types.vh` summarising active data types/macros. CLI supports `list` (features/types/operations) and `build` (config → artefacts).
+- `sample_dynamic_config.yaml`: example profile enabling ML-centric features, multiple type families (float32 default, extra fixed/float options), and two composite units; use it as a template with `python3 -m tools.sand_dynamic_configurator build tools/sample_dynamic_config.yaml --output build/dynamic_profile`.
 - `__init__.py`: re-exports helpers (runner + configurator) for convenience.
 
 EXAMPLE DEMOS (`examples/`):
@@ -87,6 +89,7 @@ WORKFLOW SNAPSHOT:
 - Seed job planes via CSR or seed port (plane 0 default); pointer swap flips per frame.
 - Program opcodes, constants, microcode, unit weights via CSR writes.
 - For behavioural demos, describe high-level knobs in YAML, let `sand_configurator` mint include headers + source manifests, then tweak with CLI overrides as needed.
+- For broader synthesis profiles, drive `sand_dynamic_configurator`: run `python3 -m tools.sand_dynamic_configurator list features` to inspect knobs, craft a YAML profile (e.g. `tools/sample_dynamic_config.yaml`), then `python3 -m tools.sand_dynamic_configurator build <config> --output <dir>` to produce defines, manifests, and type headers ready for `iverilog`/FPGA flows.
 - Monitor `job_done`, `CSR_ADAPT_STATUS`, `CSR_ADAPT_BUDGET` to track activity and scheduler decisions.
 - Use example scripts for regression demos (`python3 examples/.../run.py`); requires iverilog/vvp in PATH.
 
