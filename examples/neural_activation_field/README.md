@@ -17,9 +17,115 @@ aligned with the main RTL using `sand_defs.vh` and the shared circuit library:
 - `sand_circuit_neuron_relu` turns the depth-collapsed response into a
   thresholded ReLU spike map.
 
+## Model Structure and Data Flow
+
+The activation field is a depth stack (`window.depth`) of 2D layers that run
+through the same five-stage loop each iteration. The loop mirrors the hardware
+modules that will execute the design once it leaves the behavioural sandbox:
+
+1. **Neighbour mix (`neighbor_mix`)** – every cell blends its own activation,
+   the four planar neighbours, and the two vertical neighbours. The gains
+   `aggregator.self`, `aggregator.planar`, `aggregator.vertical`, and the bias
+   term are expressed as fractions in YAML (or via CLI overrides such as
+   `--self-gain`, `--planar-gain`, etc.). Internally they become Q8.8 fixed
+   point constants shared across the whole volume for the current iteration.
+2. **Soft-saturating activation (`activation_micro_lut`)** – the mix passes
+   through the same 16-entry micro-LUT that `sand_pe` uses, giving you the Q8.8
+   softsign response you would see on hardware.
+3. **Feedback and residual loop** – each layer has an optional feedback gain.
+   `feedback.gain` in the config is either a single value broadcast to all
+   layers or an explicit list (via `--feedback-l{n}-pct` CLI flags). The gain
+   reinjects a filtered version of the current activation into the base
+   stimulus, while `feedback.damp` gradually forgets yesterday’s residual.
+4. **Bias adaptation** – the top layer’s mean activation is measured, compared
+   with `learning.target`, and the shared bias is nudged by
+   `learning.rate × (mean - target)`. This mirrors how you would slowly tune a
+   unit bias inside the streaming engine.
+5. **Readout neuron (`neuron_relu`)** – the depth stack collapses to a map of
+   logits (`readout_edge × depth_mean + readout_raw × stimulus + readout_bias`)
+   which then feed a ReLU and a binary fire mask. These outputs inform the ASCII
+   heatmaps and any JSON dumps you request.
+
+```
+base stimulus ---\
+                 +--> neighbour mix -> softsign LUT -> (activation)
+feedback --------/                               |
+        bias adaptation <- top layer stats ------/
+                    |
+                    +-> depth average -> readout neuron -> spikes
+```
+
+Because the same bias, gains, and activation LUT apply to every layer in a
+given iteration, you describe deep stacks by configuring the window depth,
+optionally overriding per-layer feedback gains, and providing a stimulus volume
+with `window.depth × window.height × window.width` samples.
+
 The Python runner generates a config header from YAML/JSON, compiles the
 testbench with Icarus Verilog, executes the simulation, and renders the 3D
 activation volume as ASCII heatmaps.
+
+## Inputs, Stimuli, and Datasets
+
+### 1. Choose the spatial window
+
+- `configs/default.yaml` (or any YAML/JSON you provide) declares
+  `window.width`, `window.height`, and `window.depth`. These drive the Verilog
+  plusargs and therefore the size of the state arrays.
+- When you override dimensions on the CLI (`--window-width`, etc.), make sure
+  that any dataset you plan to load contains exactly `depth × height × width`
+  samples. The testbench pads with zeros if the file is shorter, but that often
+  hides mistakes when you prepare multi-layer volumes.
+
+### 2. Pick a base stimulus
+
+You can bootstrap the field with one of four procedural patterns (set
+`pattern:` in YAML or pass `--pattern`):
+
+- `core` – single hot spot with soft fall-off across depth.
+- `ripple` – concentric rings that oscillate as you move upward in depth (the
+  default).
+- `layered` – alternating gradients per layer for quick multi-layer sanity
+  checks.
+- `noise` – repeatable pseudo-random seed for stress testing adaptation.
+
+These patterns are useful for quick experiments or to seed a dataset before you
+start injecting recorded data.
+
+### 3. Load external datasets when needed
+
+Provide a hex file through `--image-file path/to/volume.hex`. The loader reads
+one signed Q8.8 value per line (e.g. `0x0100` equals 1.0) and streams them in
+`z -> y -> x` order:
+
+```
+layer 0 (z=0), row 0, col 0
+layer 0, row 0, col 1
+...
+layer 0, last row, last col
+layer 1 (z=1), row 0, col 0
+...
+```
+
+A concise way to convert floats into the expected format is:
+
+```bash
+python - <<'PY'
+import numpy as np
+data = np.random.uniform(-0.5, 0.8, size=(3, 6, 6))  # depth × height × width
+q = np.clip(np.round(data * 256), -32768, 32767).astype(np.int16)
+with open("volume.hex", "w") as f:
+    for value in q.ravel(order="C"):  # matches z,y,x iteration in the testbench
+        f.write(f"{(value & 0xFFFF):04x}\n")
+PY
+# then run
+python3 examples/neural_activation_field/run.py --config configs/default.yaml \
+       --image-file volume.hex --iterations 8 --learning-rate 0.18 --target 0.4
+```
+
+If you are supplying the dataset for inference only, set `--learning-rate 0`
+to freeze the bias adaptation. For training-style loops, pair `--image-file`
+with `--json output.json` so you can inspect the resulting activations and
+re-feed them into the next pass.
 
 ## "Sandbox" vs "Mobile Sand" vs "Solid Sandbox"
 
