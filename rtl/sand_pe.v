@@ -67,6 +67,40 @@ module sand_pe #(
         end
     endfunction
 
+    function signed [EXT_W-1:0] directional_flow;
+        input [DATA_W-1:0] self_val;
+        input [DATA_W-1:0] neighbor_val;
+        input [DATA_W-1:0] channel_coeff;
+        input [DATA_W-1:0] friction_coeff;
+        reg signed [EXT_W-1:0] self_ext;
+        reg signed [EXT_W-1:0] neigh_ext;
+        reg signed [EXT_W-1:0] delta_ext;
+        reg [EXT_W-1:0]       delta_abs_ext;
+        reg [DATA_W-1:0]      delta_abs;
+        reg [DATA_W-1:0]      delta_eff;
+        reg [DATA_W-1:0]      flow_mag;
+        reg signed [EXT_W-1:0] flow_signed;
+    begin
+        self_ext  = {{(EXT_W-DATA_W){self_val[DATA_W-1]}}, self_val};
+        neigh_ext = {{(EXT_W-DATA_W){neighbor_val[DATA_W-1]}}, neighbor_val};
+        delta_ext = neigh_ext - self_ext;
+        delta_abs_ext = delta_ext[EXT_W-1] ? -delta_ext : delta_ext;
+        delta_abs = delta_abs_ext[DATA_W-1:0];
+        if (|delta_abs_ext[EXT_W-1:DATA_W])
+            delta_abs = {DATA_W{1'b1}};
+        if (delta_abs <= friction_coeff) begin
+            flow_signed = {EXT_W{1'b0}};
+        end else begin
+            delta_eff  = fp_sub(delta_abs, friction_coeff);
+            flow_mag   = fp_mul_const(delta_eff, channel_coeff);
+            flow_signed = delta_ext[EXT_W-1]
+                          ? -{{(EXT_W-DATA_W){flow_mag[DATA_W-1]}}, flow_mag}
+                          :  {{(EXT_W-DATA_W){flow_mag[DATA_W-1]}}, flow_mag};
+        end
+        directional_flow = flow_signed;
+    end
+    endfunction
+
     // Sum / Average of neighbors (4 or 8)
     reg [DATA_W+3:0] sum_nbrs;   // headroom
     reg [DATA_W-1:0] avg_nbrs;
@@ -165,14 +199,36 @@ module sand_pe #(
             `OP_CLAMP:      alu_res = (self_in < constA) ? constA :
                                        (self_in > constB) ? constB : self_in;
             `OP_WATER_FLUX: begin
-                reg [DATA_W-1:0] flux_total;
-                reg [DATA_W-1:0] overflow;
-                flux_total = fp_add(fp_mul_const(self_in, constA), sum_nbrs[DATA_W-1:0]);
-                if (flux_total > constB) begin
-                    overflow   = fp_sub(flux_total, constB);
-                    flux_total = fp_sub(flux_total, overflow);
+                reg signed [EXT_W-1:0] flux_accum;
+                reg signed [EXT_W-1:0] flow_term;
+                reg [DATA_W-1:0]       retain_val;
+                reg [EXT_W-1:0]        cap_ext;
+                reg [DATA_W-1:0]       friction_val;
+                retain_val = fp_mul_const(self_in, constA);
+                flux_accum = {{(EXT_W-DATA_W){retain_val[DATA_W-1]}}, retain_val};
+                friction_val = constD;
+                flow_term  = directional_flow(self_in, n_in, constC, friction_val);
+                flux_accum = flux_accum + flow_term;
+                flow_term  = directional_flow(self_in, s_in, constC, friction_val);
+                flux_accum = flux_accum + flow_term;
+                flow_term  = directional_flow(self_in, e_in, constC, friction_val);
+                flux_accum = flux_accum + flow_term;
+                flow_term  = directional_flow(self_in, w_in, constC, friction_val);
+                flux_accum = flux_accum + flow_term;
+                if (use_diagonals) begin
+                    flow_term = directional_flow(self_in, ne_in, constC, friction_val);
+                    flux_accum = flux_accum + flow_term;
+                    flow_term = directional_flow(self_in, nw_in, constC, friction_val);
+                    flux_accum = flux_accum + flow_term;
+                    flow_term = directional_flow(self_in, se_in, constC, friction_val);
+                    flux_accum = flux_accum + flow_term;
+                    flow_term = directional_flow(self_in, sw_in, constC, friction_val);
+                    flux_accum = flux_accum + flow_term;
                 end
-                alu_res = flux_total;
+                if (flux_accum < 0) flux_accum = {EXT_W{1'b0}};
+                cap_ext = {{(EXT_W-DATA_W){constB[DATA_W-1]}}, constB};
+                if (flux_accum > cap_ext) flux_accum = cap_ext;
+                alu_res = flux_accum[DATA_W-1:0];
             end
             `OP_PRESSURE: begin
                 reg [DATA_W-1:0] delta;

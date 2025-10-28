@@ -103,7 +103,19 @@ Additional rule coefficients are mapped at `CSR_RULE_CONSTC` and `CSR_RULE_CONST
 
 ### Unit Dynamics & Windows
 
-The enhanced **unit** pipeline lets you bias each layer like a Galton board: you can stream weighted flux from the top, relax pressure iteratively, or fold in a backprop-style correction while the raster engine walks the grid.
+The enhanced **unit** pipeline lets you bias each layer like a Galton board: you can stream weighted flux from the top, relax pressure iteratively, or fold in a backprop-style correction while the raster engine walks the grid. Each directional weight now behaves like a three-component tuple that governs how mass moves between neighbors:
+
+- `capability` — how much the local grain can hold before it starts to spill (mapped to the saturation threshold).
+- `channel` — how wide the conduit to the neighbor is; larger values let more mass cross in a single step.
+- `friction` — how much opposing pressure must be overcome to initiate or maintain flow; this is derived from the reverse/pressure coefficients.
+
+The water and pressure opcodes evaluate the tuple on both sides of an edge, so the effective transfer per step becomes:
+
+```
+flux = (min(cap_a, cap_b) * channel) - friction_diff
+```
+
+where `friction_diff` compares the local friction term with the neighbor’s counter-pressure so the dominant side dictates the net direction.
 
 Key CSRs that drive this behaviour:
 
@@ -115,6 +127,9 @@ Key CSRs that drive this behaviour:
 | `CSR_UNIT_FLUX_*` | Directional weights (`TOP`, `BOTTOM`, `SIDE`, `RETAIN`, `PREV`), a saturation threshold, and fractional coefficients for overflow feedback. |
 | `CSR_UNIT_PRESSURE_GAIN` | Fixed-point exchange rate multiplied during each pressure iteration. |
 | `CSR_UNIT_BACKPROP_*` | Learning-rate, neighbour gain, and decay factors for the gradient update primitive. |
+
+Program the tuple by pairing `CSR_UNIT_FLUX_THRESHOLD` with the directional weights for capability/channel, and use `CSR_UNIT_FLUX_REVERSE_{TOP,BOTTOM}` together with `CSR_UNIT_PRESSURE_GAIN` to model friction and counter-pressure.
+Bits 1 and 2 of `CSR_UNIT_CTRL` gate whether the reverse coefficients participate as friction; clear them to remove resistance on the corresponding vertical edges.
 
 **How the new opcodes map to the knobs**
 

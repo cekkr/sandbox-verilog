@@ -28,6 +28,7 @@ RTL_FLOW:
 CONFIG_CORE (`rtl/sand_defs.vh`):
 - Grid params: `DATA_W`, `FRAC_W` (default Q8.8), `WIDTH`, `HEIGHT`, `DEPTH`, `N_JOBS`, `STEPS_PER_SLICE`, `USE_DIAGONALS`.
 - CSR map: opcode + const registers, microcode region, adaptive control (`CSR_ADAPT_*`), enhanced flux/pressure/backprop controls (`CSR_UNIT_*`), window sizing/offset/status CSRs.
+- Unit weight tuple: `capability` (saturation threshold), `channel` (directional weights), `friction` (reverse flow fractions + pressure gain) together describe per-edge flow limits; `CSR_UNIT_CTRL[2:1]` decides whether the vertical reverse fractions act as friction.
 - Defaults: `ADAPT_DEFAULT_*` macros, opcode definitions (`OP_NOP`..`OP_MIX`).
 
 MATH_HELPERS (`rtl/sand_math.vh`):
@@ -39,6 +40,7 @@ PROCESSING_ELEMENT (`rtl/sand_pe.v`):
 - Opcodes cover diffusion, clamp, min/max, Laplacian, sharpen, edge magnitude, water flux, pressure/backprop loops, micro LUT.
 - Microcode index default `{opcode[1:0], self[1:0]}`; expects 16-entry DATA_W LUT.
 - Uses local helper functions for fixed-point math; supports diagonal toggle, vertical neighbors for 3D.
+- Flux/pressure paths evaluate the tuple `{capability, channel, friction}` for both cells on an edge before committing the transfer; planar flows reuse `CSR_UNIT_PRESSURE_GAIN` as their friction scalar while the vertical bits gate the reverse coefficients.
 
 STREAM_ENGINE (`rtl/sand_engine_raster.v`):
 - FSM drives single-port raster: READ neighbors -> ALU -> WRITE -> advance coordinates; extra state for iterative pressure.

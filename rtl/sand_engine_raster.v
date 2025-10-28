@@ -119,6 +119,42 @@ module sand_engine_raster #(
         end
     endfunction
 
+    function automatic signed [EXT_W-1:0] directional_flow;
+        input [DATA_W-1:0] self_val;
+        input [DATA_W-1:0] neighbor_val;
+        input [DATA_W-1:0] channel_coeff;
+        input [DATA_W-1:0] friction_coeff;
+        reg signed [EXT_W-1:0] self_ext;
+        reg signed [EXT_W-1:0] neigh_ext;
+        reg signed [EXT_W-1:0] delta_ext;
+        reg [EXT_W-1:0]       delta_abs_ext;
+        reg [DATA_W-1:0]      delta_abs_clamped;
+        reg [DATA_W-1:0]      delta_eff;
+        reg [DATA_W-1:0]      flow_mag;
+        reg [EXT_W-1:0]       flow_unsigned_ext;
+        reg signed [EXT_W-1:0] flow_signed;
+    begin
+        self_ext  = {{(EXT_W-DATA_W){self_val[DATA_W-1]}}, self_val};
+        neigh_ext = {{(EXT_W-DATA_W){neighbor_val[DATA_W-1]}}, neighbor_val};
+        delta_ext = neigh_ext - self_ext;
+        delta_abs_ext = delta_ext[EXT_W-1] ? -delta_ext : delta_ext;
+        delta_abs_clamped = (|delta_abs_ext[EXT_W-1:DATA_W])
+                            ? {DATA_W{1'b1}}
+                            : delta_abs_ext[DATA_W-1:0];
+        if (delta_abs_clamped <= friction_coeff) begin
+            flow_signed = {EXT_W{1'b0}};
+        end else begin
+            delta_eff  = `FP_SUB(delta_abs_clamped, friction_coeff, DATA_W);
+            flow_mag   = `FP_MUL_Q(delta_eff, channel_coeff, FRAC_W);
+            flow_unsigned_ext = {{(EXT_W-DATA_W){1'b0}}, flow_mag};
+            flow_signed = delta_ext[EXT_W-1]
+                          ? -$signed(flow_unsigned_ext)
+                          :  $signed(flow_unsigned_ext);
+        end
+        directional_flow = flow_signed;
+    end
+    endfunction
+
     // -------------------------------------------------------------------------
     // Internal state
     // -------------------------------------------------------------------------
@@ -528,49 +564,81 @@ module sand_engine_raster #(
                             `OP_CLAMP:    alu_res = (self_in < constA_reg) ? constA_reg :
                                                     (self_in > constB_reg) ? constB_reg : self_in;
                             `OP_WATER_FLUX: begin
-                                reg [DATA_W-1:0] flux_total;
-                                reg [DATA_W-1:0] side_accum;
-                                reg [DATA_W-1:0] diag_accum;
-                                reg [DATA_W-1:0] overflow;
-                                reg [DATA_W-1:0] reverse_top;
-                                reg [DATA_W-1:0] reverse_bottom;
+                                reg signed [EXT_W-1:0] flux_accum;
+                                reg signed [EXT_W-1:0] flow_term;
+                                reg [DATA_W-1:0]       retain_val;
+                                reg [DATA_W-1:0]       prev_val;
+                                reg [EXT_W-1:0]        cap_ext;
+                                reg [DATA_W-1:0]       friction_top;
+                                reg [DATA_W-1:0]       friction_bottom;
+                                reg [DATA_W-1:0]       friction_side;
                                 if (!unit_flux_enable_reg) begin
-                                    flux_total = self_in;
+                                    flux_accum = $signed({{(EXT_W-DATA_W){self_in[DATA_W-1]}}, self_in});
                                 end else begin
-                                    flux_total = `FP_MUL_Q(self_in, unit_weight_retain_reg, FRAC_W);
-                                    flux_total = `FP_ADD(flux_total,
-                                                         `FP_MUL_Q(n_in, unit_weight_top_reg, FRAC_W),
-                                                         DATA_W);
-                                    flux_total = `FP_ADD(flux_total,
-                                                         `FP_MUL_Q(s_in, unit_weight_bottom_reg, FRAC_W),
-                                                         DATA_W);
-                                    side_accum = `FP_ADD(e_in, w_in, DATA_W);
+                                    friction_top    = unit_overflow_reverse_top_reg
+                                                      ? unit_flux_reverse_top_reg
+                                                      : {DATA_W{1'b0}};
+                                    friction_bottom = unit_overflow_reverse_bottom_reg
+                                                      ? unit_flux_reverse_bottom_reg
+                                                      : {DATA_W{1'b0}};
+                                    friction_side   = unit_pressure_gain_reg;
+
+                                    retain_val = `FP_MUL_Q(self_in, unit_weight_retain_reg, FRAC_W);
+                                    flux_accum = $signed({{(EXT_W-DATA_W){retain_val[DATA_W-1]}}, retain_val});
+
+                                    flow_term  = directional_flow(self_in,
+                                                                  n_in,
+                                                                  unit_weight_top_reg,
+                                                                  friction_top);
+                                    flux_accum = flux_accum + flow_term;
+                                    flow_term  = directional_flow(self_in,
+                                                                  s_in,
+                                                                  unit_weight_bottom_reg,
+                                                                  friction_bottom);
+                                    flux_accum = flux_accum + flow_term;
+                                    flow_term  = directional_flow(self_in,
+                                                                  e_in,
+                                                                  unit_weight_side_reg,
+                                                                  friction_side);
+                                    flux_accum = flux_accum + flow_term;
+                                    flow_term  = directional_flow(self_in,
+                                                                  w_in,
+                                                                  unit_weight_side_reg,
+                                                                  friction_side);
+                                    flux_accum = flux_accum + flow_term;
                                     if (diag_active) begin
-                                        diag_accum = `FP_ADD(ne_in, nw_in, DATA_W);
-                                        diag_accum = `FP_ADD(diag_accum, se_in, DATA_W);
-                                        diag_accum = `FP_ADD(diag_accum, sw_in, DATA_W);
-                                        side_accum = `FP_ADD(side_accum, diag_accum, DATA_W);
+                                        flow_term = directional_flow(self_in,
+                                                                     ne_in,
+                                                                     unit_weight_side_reg,
+                                                                     friction_side);
+                                        flux_accum = flux_accum + flow_term;
+                                        flow_term = directional_flow(self_in,
+                                                                     nw_in,
+                                                                     unit_weight_side_reg,
+                                                                     friction_side);
+                                        flux_accum = flux_accum + flow_term;
+                                        flow_term = directional_flow(self_in,
+                                                                     se_in,
+                                                                     unit_weight_side_reg,
+                                                                     friction_side);
+                                        flux_accum = flux_accum + flow_term;
+                                        flow_term = directional_flow(self_in,
+                                                                     sw_in,
+                                                                     unit_weight_side_reg,
+                                                                     friction_side);
+                                        flux_accum = flux_accum + flow_term;
                                     end
-                                    flux_total = `FP_ADD(flux_total,
-                                                         `FP_MUL_Q(side_accum, unit_weight_side_reg, FRAC_W),
-                                                         DATA_W);
-                                    flux_total = `FP_ADD(flux_total,
-                                                         `FP_MUL_Q(constB_reg, unit_weight_prev_reg, FRAC_W),
-                                                         DATA_W);
-                                    if (flux_total > unit_flux_threshold_reg) begin
-                                        overflow = `FP_SUB(flux_total, unit_flux_threshold_reg, DATA_W);
-                                        flux_total = unit_flux_threshold_reg;
-                                        if (unit_overflow_reverse_top_reg) begin
-                                            reverse_top = `FP_MUL_Q(overflow, unit_flux_reverse_top_reg, FRAC_W);
-                                            flux_total  = `FP_SUB(flux_total, reverse_top, DATA_W);
-                                        end
-                                        if (unit_overflow_reverse_bottom_reg) begin
-                                            reverse_bottom = `FP_MUL_Q(overflow, unit_flux_reverse_bottom_reg, FRAC_W);
-                                            flux_total     = `FP_SUB(flux_total, reverse_bottom, DATA_W);
-                                        end
-                                    end
+
+                                    prev_val  = `FP_MUL_Q(constB_reg, unit_weight_prev_reg, FRAC_W);
+                                    flux_accum = flux_accum + $signed({{(EXT_W-DATA_W){prev_val[DATA_W-1]}}, prev_val});
+
+                                    if (flux_accum < $signed({EXT_W{1'b0}}))
+                                        flux_accum = $signed({EXT_W{1'b0}});
+                                    cap_ext = {{(EXT_W-DATA_W){1'b0}}, unit_flux_threshold_reg};
+                                    if (flux_accum > $signed(cap_ext))
+                                        flux_accum = $signed(cap_ext);
                                 end
-                                alu_res = flux_total;
+                                alu_res = flux_accum[DATA_W-1:0];
                             end
                             `OP_BACKPROP: begin
                                 reg [DATA_W-1:0] err_term;
