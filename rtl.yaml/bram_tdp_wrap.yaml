@@ -1,477 +1,66 @@
 version: 1
-kind: verilog_module
+kind: sand_module
+module: bram_tdp_wrap
 original_path: bram_tdp_wrap.v
-includes: []
-summary:
-  modules:
-  - name: bram_tdp_wrap
-    parameters:
-    - name: DATA_W
-      value: '16'
-      signed: false
-    - name: ADDR_W
-      value: '12'
-      signed: false
-    ports:
-    - name: clk
-      direction: input
-      signed: false
-      datatype: wire
-    - name: a_we
-      direction: input
-      signed: false
-      datatype: wire
-    - name: a_addr
-      direction: input
-      width: '[ADDR_W-1:0]'
-      signed: false
-      datatype: wire
-    - name: a_din
-      direction: input
-      width: '[DATA_W-1:0]'
-      signed: false
-      datatype: wire
-    - name: a_dout
-      direction: output
-      width: '[DATA_W-1:0]'
-      signed: false
-      datatype: reg
-    - name: b_we
-      direction: input
-      signed: false
-      datatype: wire
-    - name: b_addr
-      direction: input
-      width: '[ADDR_W-1:0]'
-      signed: false
-      datatype: wire
-    - name: b_din
-      direction: input
-      width: '[DATA_W-1:0]'
-      signed: false
-      datatype: wire
-    - name: b_dout
-      direction: output
-      width: '[DATA_W-1:0]'
-      signed: false
-      datatype: reg
-ast:
-  _type: Source
-  name: ''
-  description:
-    _type: Description
-    definitions:
-      _tuple:
-      - _type: ModuleDef
-        name: bram_tdp_wrap
-        paramlist:
-          _type: Paramlist
-          params:
-            _tuple:
-            - _type: Decl
-              list:
-                _tuple:
-                - _type: Parameter
-                  name: DATA_W
-                  value:
-                    _type: Rvalue
-                    var:
-                      _type: IntConst
-                      value: '16'
-                  signed: false
-            - _type: Decl
-              list:
-                _tuple:
-                - _type: Parameter
-                  name: ADDR_W
-                  value:
-                    _type: Rvalue
-                    var:
-                      _type: IntConst
-                      value: '12'
-                  signed: false
-        portlist:
-          _type: Portlist
-          ports:
-            _tuple:
-            - _type: Ioport
-              first:
-                _type: Input
-                name: clk
-                signed: false
-              second:
-                _type: Wire
-                name: clk
-                signed: false
-            - _type: Ioport
-              first:
-                _type: Input
-                name: a_we
-                signed: false
-              second:
-                _type: Wire
-                name: a_we
-                signed: false
-            - _type: Ioport
-              first:
-                _type: Input
-                name: a_addr
-                width:
-                  _type: Width
-                  msb:
-                    _type: Minus
-                    left:
-                      _type: Identifier
-                      name: ADDR_W
-                    right:
-                      _type: IntConst
-                      value: '1'
-                  lsb:
-                    _type: IntConst
-                    value: '0'
-                signed: false
-              second:
-                _type: Wire
-                name: a_addr
-                width:
-                  _type: Width
-                  msb:
-                    _type: Minus
-                    left:
-                      _type: Identifier
-                      name: ADDR_W
-                    right:
-                      _type: IntConst
-                      value: '1'
-                  lsb:
-                    _type: IntConst
-                    value: '0'
-                signed: false
-            - _type: Ioport
-              first:
-                _type: Input
-                name: a_din
-                width:
-                  _type: Width
-                  msb:
-                    _type: Minus
-                    left:
-                      _type: Identifier
-                      name: DATA_W
-                    right:
-                      _type: IntConst
-                      value: '1'
-                  lsb:
-                    _type: IntConst
-                    value: '0'
-                signed: false
-              second:
-                _type: Wire
-                name: a_din
-                width:
-                  _type: Width
-                  msb:
-                    _type: Minus
-                    left:
-                      _type: Identifier
-                      name: DATA_W
-                    right:
-                      _type: IntConst
-                      value: '1'
-                  lsb:
-                    _type: IntConst
-                    value: '0'
-                signed: false
-            - _type: Ioport
-              first:
-                _type: Output
-                name: a_dout
-                width:
-                  _type: Width
-                  msb:
-                    _type: Minus
-                    left:
-                      _type: Identifier
-                      name: DATA_W
-                    right:
-                      _type: IntConst
-                      value: '1'
-                  lsb:
-                    _type: IntConst
-                    value: '0'
-                signed: false
-              second:
-                _type: Reg
-                name: a_dout
-                width:
-                  _type: Width
-                  msb:
-                    _type: Minus
-                    left:
-                      _type: Identifier
-                      name: DATA_W
-                    right:
-                      _type: IntConst
-                      value: '1'
-                  lsb:
-                    _type: IntConst
-                    value: '0'
-                signed: false
-            - _type: Ioport
-              first:
-                _type: Input
-                name: b_we
-                signed: false
-              second:
-                _type: Wire
-                name: b_we
-                signed: false
-            - _type: Ioport
-              first:
-                _type: Input
-                name: b_addr
-                width:
-                  _type: Width
-                  msb:
-                    _type: Minus
-                    left:
-                      _type: Identifier
-                      name: ADDR_W
-                    right:
-                      _type: IntConst
-                      value: '1'
-                  lsb:
-                    _type: IntConst
-                    value: '0'
-                signed: false
-              second:
-                _type: Wire
-                name: b_addr
-                width:
-                  _type: Width
-                  msb:
-                    _type: Minus
-                    left:
-                      _type: Identifier
-                      name: ADDR_W
-                    right:
-                      _type: IntConst
-                      value: '1'
-                  lsb:
-                    _type: IntConst
-                    value: '0'
-                signed: false
-            - _type: Ioport
-              first:
-                _type: Input
-                name: b_din
-                width:
-                  _type: Width
-                  msb:
-                    _type: Minus
-                    left:
-                      _type: Identifier
-                      name: DATA_W
-                    right:
-                      _type: IntConst
-                      value: '1'
-                  lsb:
-                    _type: IntConst
-                    value: '0'
-                signed: false
-              second:
-                _type: Wire
-                name: b_din
-                width:
-                  _type: Width
-                  msb:
-                    _type: Minus
-                    left:
-                      _type: Identifier
-                      name: DATA_W
-                    right:
-                      _type: IntConst
-                      value: '1'
-                  lsb:
-                    _type: IntConst
-                    value: '0'
-                signed: false
-            - _type: Ioport
-              first:
-                _type: Output
-                name: b_dout
-                width:
-                  _type: Width
-                  msb:
-                    _type: Minus
-                    left:
-                      _type: Identifier
-                      name: DATA_W
-                    right:
-                      _type: IntConst
-                      value: '1'
-                  lsb:
-                    _type: IntConst
-                    value: '0'
-                signed: false
-              second:
-                _type: Reg
-                name: b_dout
-                width:
-                  _type: Width
-                  msb:
-                    _type: Minus
-                    left:
-                      _type: Identifier
-                      name: DATA_W
-                    right:
-                      _type: IntConst
-                      value: '1'
-                  lsb:
-                    _type: IntConst
-                    value: '0'
-                signed: false
-        items:
-          _tuple:
-          - _type: Decl
-            list:
-              _tuple:
-              - _type: Localparam
-                name: DEPTH
-                value:
-                  _type: Rvalue
-                  var:
-                    _type: Sll
-                    left:
-                      _type: IntConst
-                      value: '1'
-                    right:
-                      _type: Identifier
-                      name: ADDR_W
-                signed: false
-          - _type: Decl
-            list:
-              _tuple:
-              - _type: Reg
-                name: mem
-                width:
-                  _type: Width
-                  msb:
-                    _type: Minus
-                    left:
-                      _type: Identifier
-                      name: DATA_W
-                    right:
-                      _type: IntConst
-                      value: '1'
-                  lsb:
-                    _type: IntConst
-                    value: '0'
-                signed: false
-                dimensions:
-                  _type: Dimensions
-                  lengths:
-                  - _type: Length
-                    msb:
-                      _type: IntConst
-                      value: '0'
-                    lsb:
-                      _type: Minus
-                      left:
-                        _type: Identifier
-                        name: DEPTH
-                      right:
-                        _type: IntConst
-                        value: '1'
-          - _type: Always
-            sens_list:
-              _type: SensList
-              list:
-                _tuple:
-                - _type: Sens
-                  sig:
-                    _type: Identifier
-                    name: clk
-                  type: posedge
-            statement:
-              _type: Block
-              statements:
-                _tuple:
-                - _type: IfStatement
-                  cond:
-                    _type: Identifier
-                    name: a_we
-                  true_statement:
-                    _type: NonblockingSubstitution
-                    left:
-                      _type: Lvalue
-                      var:
-                        _type: Pointer
-                        var:
-                          _type: Identifier
-                          name: mem
-                        ptr:
-                          _type: Identifier
-                          name: a_addr
-                    right:
-                      _type: Rvalue
-                      var:
-                        _type: Identifier
-                        name: a_din
-                - _type: NonblockingSubstitution
-                  left:
-                    _type: Lvalue
-                    var:
-                      _type: Identifier
-                      name: a_dout
-                  right:
-                    _type: Rvalue
-                    var:
-                      _type: Pointer
-                      var:
-                        _type: Identifier
-                        name: mem
-                      ptr:
-                        _type: Identifier
-                        name: a_addr
-                - _type: IfStatement
-                  cond:
-                    _type: Identifier
-                    name: b_we
-                  true_statement:
-                    _type: NonblockingSubstitution
-                    left:
-                      _type: Lvalue
-                      var:
-                        _type: Pointer
-                        var:
-                          _type: Identifier
-                          name: mem
-                        ptr:
-                          _type: Identifier
-                          name: b_addr
-                    right:
-                      _type: Rvalue
-                      var:
-                        _type: Identifier
-                        name: b_din
-                - _type: NonblockingSubstitution
-                  left:
-                    _type: Lvalue
-                    var:
-                      _type: Identifier
-                      name: b_dout
-                  right:
-                    _type: Rvalue
-                    var:
-                      _type: Pointer
-                      var:
-                        _type: Identifier
-                        name: mem
-                      ptr:
-                        _type: Identifier
-                        name: b_addr
-        default_nettype: wire
-        end_lineno: 44
-parse_hints:
-  functions: {}
+tags:
+- memory
+- utility
+interface:
+  parameters:
+  - name: DATA_W
+    default: '16'
+    signed: false
+  - name: ADDR_W
+    default: '12'
+    signed: false
+  ports:
+  - name: clk
+    direction: input
+    datatype: wire
+    signed: false
+  - name: a_we
+    direction: input
+    datatype: wire
+    signed: false
+  - name: a_addr
+    direction: input
+    datatype: wire
+    width: '[ADDR_W-1:0]'
+    signed: false
+  - name: a_din
+    direction: input
+    datatype: wire
+    width: '[DATA_W-1:0]'
+    signed: false
+  - name: a_dout
+    direction: output
+    datatype: reg
+    width: '[DATA_W-1:0]'
+    signed: false
+  - name: b_we
+    direction: input
+    datatype: wire
+    signed: false
+  - name: b_addr
+    direction: input
+    datatype: wire
+    width: '[ADDR_W-1:0]'
+    signed: false
+  - name: b_din
+    direction: input
+    datatype: wire
+    width: '[DATA_W-1:0]'
+    signed: false
+  - name: b_dout
+    direction: output
+    datatype: reg
+    width: '[DATA_W-1:0]'
+    signed: false
+behaviour:
+  overview: Technology-agnostic true dual-port RAM model with optional vendor primitive
+    hooks.
+  notes:
+  - Use behavioural RAMs in simulation; replace with vendor macros in production.
+implementation:
+  machine_path: machine/bram_tdp_wrap.yaml
+  kind: verilog_module

@@ -1,0 +1,731 @@
+version: 1
+kind: verilog_module_machine
+original_path: circuits/sand_circuit_neuron_relu.v
+includes:
+- sand_defs.vh
+summary:
+  modules:
+  - name: sand_circuit_neuron_relu
+    parameters:
+    - name: DATA_W
+      value: '16'
+      signed: false
+    - name: FRAC_W
+      value: '8'
+      signed: false
+    ports:
+    - name: edge_in
+      signed: false
+    - name: raw_in
+      signed: false
+    - name: edge_gain_q
+      signed: false
+    - name: raw_gain_q
+      signed: false
+    - name: bias_q
+      signed: false
+    - name: threshold_q
+      signed: false
+    - name: raw_out
+      signed: false
+    - name: relu_out
+      signed: false
+    - name: fire
+      signed: false
+ast:
+  _type: Source
+  name: ''
+  description:
+    _type: Description
+    definitions:
+      _tuple:
+      - _type: ModuleDef
+        name: sand_circuit_neuron_relu
+        paramlist:
+          _type: Paramlist
+          params:
+            _tuple:
+            - _type: Decl
+              list:
+                _tuple:
+                - _type: Parameter
+                  name: DATA_W
+                  value:
+                    _type: Rvalue
+                    var:
+                      _type: IntConst
+                      value: '16'
+                  signed: false
+            - _type: Decl
+              list:
+                _tuple:
+                - _type: Parameter
+                  name: FRAC_W
+                  value:
+                    _type: Rvalue
+                    var:
+                      _type: IntConst
+                      value: '8'
+                  signed: false
+        portlist:
+          _type: Portlist
+          ports:
+            _tuple:
+            - _type: Port
+              name: edge_in
+            - _type: Port
+              name: raw_in
+            - _type: Port
+              name: edge_gain_q
+            - _type: Port
+              name: raw_gain_q
+            - _type: Port
+              name: bias_q
+            - _type: Port
+              name: threshold_q
+            - _type: Port
+              name: raw_out
+            - _type: Port
+              name: relu_out
+            - _type: Port
+              name: fire
+        items:
+          _tuple:
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Input
+                name: edge_in
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: Identifier
+                      name: DATA_W
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Input
+                name: raw_in
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: Identifier
+                      name: DATA_W
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Input
+                name: edge_gain_q
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: Identifier
+                      name: DATA_W
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Input
+                name: raw_gain_q
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: Identifier
+                      name: DATA_W
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Input
+                name: bias_q
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: Identifier
+                      name: DATA_W
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Input
+                name: threshold_q
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: Identifier
+                      name: DATA_W
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Output
+                name: raw_out
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: Identifier
+                      name: DATA_W
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+              - _type: Reg
+                name: raw_out
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: Identifier
+                      name: DATA_W
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Output
+                name: relu_out
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: Identifier
+                      name: DATA_W
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+              - _type: Reg
+                name: relu_out
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: Identifier
+                      name: DATA_W
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Output
+                name: fire
+                signed: false
+              - _type: Reg
+                name: fire
+                signed: false
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Localparam
+                name: Q_MAX
+                value:
+                  _type: Rvalue
+                  var:
+                    _type: Minus
+                    left:
+                      _type: Sll
+                      left:
+                        _type: IntConst
+                        value: '1'
+                      right:
+                        _type: Minus
+                        left:
+                          _type: Identifier
+                          name: DATA_W
+                        right:
+                          _type: IntConst
+                          value: '1'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                signed: false
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Localparam
+                name: Q_MIN
+                value:
+                  _type: Rvalue
+                  var:
+                    _type: Uminus
+                    right:
+                      _type: Sll
+                      left:
+                        _type: IntConst
+                        value: '1'
+                      right:
+                        _type: Minus
+                        left:
+                          _type: Identifier
+                          name: DATA_W
+                        right:
+                          _type: IntConst
+                          value: '1'
+                signed: false
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Integer
+                name: edge_term
+                width:
+                  _type: Width
+                  msb:
+                    _type: IntConst
+                    value: '31'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Integer
+                name: raw_term
+                width:
+                  _type: Width
+                  msb:
+                    _type: IntConst
+                    value: '31'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Integer
+                name: combined
+                width:
+                  _type: Width
+                  msb:
+                    _type: IntConst
+                    value: '31'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Function
+            name: clamp_signed
+            retwidth:
+              _type: Width
+              msb:
+                _type: IntConst
+                value: '31'
+              lsb:
+                _type: IntConst
+                value: '0'
+            statement:
+              _tuple:
+              - _type: Decl
+                list:
+                  _tuple:
+                  - _type: Input
+                    name: value
+                    width:
+                      _type: Width
+                      msb:
+                        _type: IntConst
+                        value: '31'
+                      lsb:
+                        _type: IntConst
+                        value: '0'
+                    signed: false
+              - _type: Block
+                statements:
+                  _tuple:
+                  - _type: IfStatement
+                    cond:
+                      _type: GreaterThan
+                      left:
+                        _type: Identifier
+                        name: value
+                      right:
+                        _type: Identifier
+                        name: Q_MAX
+                    true_statement:
+                      _type: BlockingSubstitution
+                      left:
+                        _type: Lvalue
+                        var:
+                          _type: Identifier
+                          name: clamp_signed
+                      right:
+                        _type: Rvalue
+                        var:
+                          _type: Identifier
+                          name: Q_MAX
+                    false_statement:
+                      _type: IfStatement
+                      cond:
+                        _type: LessThan
+                        left:
+                          _type: Identifier
+                          name: value
+                        right:
+                          _type: Identifier
+                          name: Q_MIN
+                      true_statement:
+                        _type: BlockingSubstitution
+                        left:
+                          _type: Lvalue
+                          var:
+                            _type: Identifier
+                            name: clamp_signed
+                        right:
+                          _type: Rvalue
+                          var:
+                            _type: Identifier
+                            name: Q_MIN
+                      false_statement:
+                        _type: BlockingSubstitution
+                        left:
+                          _type: Lvalue
+                          var:
+                            _type: Identifier
+                            name: clamp_signed
+                        right:
+                          _type: Rvalue
+                          var:
+                            _type: Identifier
+                            name: value
+          - _type: Function
+            name: clamp_positive
+            retwidth:
+              _type: Width
+              msb:
+                _type: IntConst
+                value: '31'
+              lsb:
+                _type: IntConst
+                value: '0'
+            statement:
+              _tuple:
+              - _type: Decl
+                list:
+                  _tuple:
+                  - _type: Input
+                    name: value
+                    width:
+                      _type: Width
+                      msb:
+                        _type: IntConst
+                        value: '31'
+                      lsb:
+                        _type: IntConst
+                        value: '0'
+                    signed: false
+              - _type: Block
+                statements:
+                  _tuple:
+                  - _type: IfStatement
+                    cond:
+                      _type: LessThan
+                      left:
+                        _type: Identifier
+                        name: value
+                      right:
+                        _type: IntConst
+                        value: '0'
+                    true_statement:
+                      _type: BlockingSubstitution
+                      left:
+                        _type: Lvalue
+                        var:
+                          _type: Identifier
+                          name: clamp_positive
+                      right:
+                        _type: Rvalue
+                        var:
+                          _type: IntConst
+                          value: '0'
+                    false_statement:
+                      _type: IfStatement
+                      cond:
+                        _type: GreaterThan
+                        left:
+                          _type: Identifier
+                          name: value
+                        right:
+                          _type: Identifier
+                          name: Q_MAX
+                      true_statement:
+                        _type: BlockingSubstitution
+                        left:
+                          _type: Lvalue
+                          var:
+                            _type: Identifier
+                            name: clamp_positive
+                        right:
+                          _type: Rvalue
+                          var:
+                            _type: Identifier
+                            name: Q_MAX
+                      false_statement:
+                        _type: BlockingSubstitution
+                        left:
+                          _type: Lvalue
+                          var:
+                            _type: Identifier
+                            name: clamp_positive
+                        right:
+                          _type: Rvalue
+                          var:
+                            _type: Identifier
+                            name: value
+          - _type: Always
+            sens_list:
+              _type: SensList
+              list:
+                _tuple:
+                - _type: Sens
+                  type: all
+            statement:
+              _type: Block
+              statements:
+                _tuple:
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: edge_term
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: Sra
+                      left:
+                        _type: Times
+                        left:
+                          _type: SystemCall
+                          syscall: signed
+                          args:
+                            _tuple:
+                            - _type: Identifier
+                              name: edge_gain_q
+                        right:
+                          _type: SystemCall
+                          syscall: signed
+                          args:
+                            _tuple:
+                            - _type: Identifier
+                              name: edge_in
+                      right:
+                        _type: Identifier
+                        name: FRAC_W
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: raw_term
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: Sra
+                      left:
+                        _type: Times
+                        left:
+                          _type: SystemCall
+                          syscall: signed
+                          args:
+                            _tuple:
+                            - _type: Identifier
+                              name: raw_gain_q
+                        right:
+                          _type: SystemCall
+                          syscall: signed
+                          args:
+                            _tuple:
+                            - _type: Identifier
+                              name: raw_in
+                      right:
+                        _type: Identifier
+                        name: FRAC_W
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: combined
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: Plus
+                      left:
+                        _type: Plus
+                        left:
+                          _type: Identifier
+                          name: edge_term
+                        right:
+                          _type: Identifier
+                          name: raw_term
+                      right:
+                        _type: SystemCall
+                        syscall: signed
+                        args:
+                          _tuple:
+                          - _type: Identifier
+                            name: bias_q
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: raw_out
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: FunctionCall
+                      name:
+                        _type: Identifier
+                        name: clamp_signed
+                      args:
+                        _tuple:
+                        - _type: Identifier
+                          name: combined
+                - _type: IfStatement
+                  cond:
+                    _type: GreaterThan
+                    left:
+                      _type: Identifier
+                      name: combined
+                    right:
+                      _type: IntConst
+                      value: '0'
+                  true_statement:
+                    _type: BlockingSubstitution
+                    left:
+                      _type: Lvalue
+                      var:
+                        _type: Identifier
+                        name: relu_out
+                    right:
+                      _type: Rvalue
+                      var:
+                        _type: FunctionCall
+                        name:
+                          _type: Identifier
+                          name: clamp_positive
+                        args:
+                          _tuple:
+                          - _type: Identifier
+                            name: combined
+                  false_statement:
+                    _type: BlockingSubstitution
+                    left:
+                      _type: Lvalue
+                      var:
+                        _type: Identifier
+                        name: relu_out
+                    right:
+                      _type: Rvalue
+                      var:
+                        _type: Repeat
+                        value:
+                          _type: Concat
+                          list:
+                            _tuple:
+                            - _type: IntConst
+                              value: 1'b0
+                        times:
+                          _type: Identifier
+                          name: DATA_W
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: fire
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: GreaterEq
+                      left:
+                        _type: Identifier
+                        name: combined
+                      right:
+                        _type: Identifier
+                        name: threshold_q
+        default_nettype: wire
+        end_lineno: 171
+parse_hints:
+  functions:
+    clamp_signed:
+      automatic: false
+      integer_return: true
+      signed_return: false
+    clamp_positive:
+      automatic: false
+      integer_return: true
+      signed_return: false

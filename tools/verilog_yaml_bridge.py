@@ -672,6 +672,57 @@ def restore_module_fallback(record: Dict[str, Any], rtl_root: Path) -> None:
     save_text(destination, body)
 
 
+def _resolve_machine_path(yaml_path: Path, implementation: Dict[str, Any]) -> Path:
+    machine_rel = implementation.get("ast_path") or implementation.get("machine_path")
+    if not machine_rel:
+        raise ValueError(f"{yaml_path} missing implementation.ast_path or implementation.machine_path")
+    machine_path = (yaml_path.parent / machine_rel).resolve()
+    if not machine_path.is_file():
+        raise FileNotFoundError(f"Machine definition not found: {machine_path}")
+    return machine_path
+
+
+def restore_sand_module(record: Dict[str, Any], yaml_path: Path, rtl_root: Path) -> None:
+    implementation = record.get("implementation", {})
+    machine_path = _resolve_machine_path(yaml_path, implementation)
+    machine_record = yaml.safe_load(machine_path.read_text(encoding="utf-8"))
+    kind = machine_record.get("kind")
+    if kind not in {"verilog_module", "verilog_module_machine", "verilog_module_fallback"}:
+        raise ValueError(f"{machine_path} has unsupported module kind: {kind}")
+    merged: Dict[str, Any] = {
+        "version": machine_record.get("version", record.get("version", YAML_VERSION)),
+        "kind": "verilog_module",
+        "original_path": record.get(
+            "original_path", machine_record.get("original_path")
+        ),
+        "includes": record.get("includes", machine_record.get("includes", [])),
+        "summary": record.get("summary", machine_record.get("summary")),
+    }
+    if kind in {"verilog_module", "verilog_module_machine"}:
+        merged["ast"] = machine_record.get("ast")
+        merged["parse_hints"] = machine_record.get("parse_hints", {})
+        if merged["ast"] is None:
+            raise ValueError(f"{machine_path} does not supply an AST")
+        restore_module(merged, yaml_path, rtl_root)
+    else:
+        fallback_record = {
+            **merged,
+            "kind": "verilog_module_fallback",
+            "body_text": machine_record.get("body_text", ""),
+            "parse_error": machine_record.get("parse_error"),
+        }
+        restore_module_fallback(fallback_record, rtl_root)
+
+
+def restore_sand_header(record: Dict[str, Any], yaml_path: Path, rtl_root: Path) -> None:
+    implementation = record.get("implementation", {})
+    machine_path = _resolve_machine_path(yaml_path, implementation)
+    machine_record = yaml.safe_load(machine_path.read_text(encoding="utf-8"))
+    if machine_record.get("kind") != "verilog_header":
+        raise ValueError(f"{machine_path} expected verilog_header, found {machine_record.get('kind')}")
+    restore_header(machine_record, rtl_root)
+
+
 def restore_header(record: Dict[str, Any], rtl_root: Path) -> None:
     statements = [
         Statement(
@@ -691,7 +742,14 @@ def restore_header(record: Dict[str, Any], rtl_root: Path) -> None:
 def restore_tree(yaml_root: Path, rtl_root: Path) -> None:
     yaml_root = yaml_root.resolve()
     rtl_root = rtl_root.resolve()
+    machine_root = yaml_root / "machine"
     for yaml_path in sorted(yaml_root.rglob("*.yaml")):
+        try:
+            yaml_path.relative_to(machine_root)
+        except ValueError:
+            pass
+        else:
+            continue
         record = yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
         kind = record.get("kind")
         if kind == "verilog_module":
@@ -700,6 +758,12 @@ def restore_tree(yaml_root: Path, rtl_root: Path) -> None:
             restore_module_fallback(record, rtl_root)
         elif kind == "verilog_header":
             restore_header(record, rtl_root)
+        elif kind == "sand_module":
+            restore_sand_module(record, yaml_path, rtl_root)
+        elif kind == "sand_header":
+            restore_sand_header(record, yaml_path, rtl_root)
+        elif kind == "verilog_module_machine":
+            continue
         else:
             raise ValueError(f"{yaml_path} has unsupported kind: {kind}")
 

@@ -33,17 +33,18 @@
 +---------------------------------------------------+
 ```
 
-| Module | Role |
+| Asset | Role |
 | :-- | :-- |
-| `rtl/sand_defs.vh` | Global parameter map for widths, grid geometry, job count, CSR layout, and default adaptive knobs. |
-| `rtl/sand_math.vh` | Fixed-point helpers (saturating add/sub, mul/div, rounding) reused by the PE and raster engine. |
-| `rtl/sand_pe.v` | Processing element (one grain). Evaluates opcodes, blends neighbours, consults microcode. |
-| `rtl/sand_engine_raster.v` | Streams the grid through a single-port ALU, reports activity/cycle telemetry. |
-| `rtl/sand_scheduler_dynamic.v` | Adaptive round-robin controller with plane flips, windowing, and per-job step budgets. |
-| `rtl/sand_jobmem2p.v` + `rtl/bram_tdp_wrap.v` | Dual-plane memory with O(1) pointer swaps; replace wrapper with vendor RAM. |
-| `rtl/circuits/` | Reusable combinational shims (edge detector, ReLU, neighbour mix, micro-LUT activation). |
-| `rtl.yaml/` | YAML mirror of synthesizable RTL (minus `rtl/legacy/`) for Python-side exploration and regeneration. |
-| `rtl/legacy/` | Reference parallel mesh (`sand_grid`, `sand_scheduler`, `sand_jobmem`) kept for comparison. |
+| `rtl.yaml/` | Canonical module descriptors; human-facing files (e.g. `sand_pe.yaml`) link to machine snapshots for regeneration. |
+| `rtl.yaml/sand_defs.yaml` | Global parameter map for widths, grid geometry, job count, CSR layout, and default adaptive knobs. |
+| `rtl.yaml/sand_math.yaml` | Fixed-point helper corpus (saturating add/sub, mul/div, rounding) referenced by the PE and raster engine. |
+| `rtl.yaml/sand_pe.yaml` | Processing-element descriptor. Documents the interface/behaviour and references `machine/sand_pe.yaml` for AST regeneration. |
+| `rtl.yaml/sand_engine_raster.yaml` | Streaming raster engine descriptor with machine snapshot for restore. |
+| `rtl.yaml/sand_scheduler_dynamic.yaml` | Adaptive scheduler descriptor (round-robin budgets, telemetry, windowing). |
+| `rtl.yaml/sand_jobmem2p.yaml` + `rtl.yaml/bram_tdp_wrap.yaml` | Dual-plane memory + vendor wrapper descriptors. |
+| `rtl.yaml/circuits/` | Reusable combinational shims (edge detector, ReLU, neighbour mix, micro-LUT activation). |
+| `rtl.yaml/machine/` | Auto-generated PyVerilog AST mirrors consumed during restore; edit via companion human files. |
+| `old/rtl/` | Archived Verilog tree kept for reference; regenerate fresh RTL via `tools/verilog_yaml_bridge.py restore`. |
 
 ---
 
@@ -58,7 +59,7 @@
 
 ## Configuration Surfaces
 
-- **Compile-time:** Edit `rtl/sand_defs.vh` to pick data width (`DATA_W`/`FRAC_W`), grid geometry (`WIDTH`, `HEIGHT`, `DEPTH`), job count, and default adaptive limits. `rtl/sand_math.vh` centralises arithmetic behaviour (saturation, rounding).
+- **Compile-time:** Edit `rtl.yaml/sand_defs.yaml` to pick data width (`DATA_W`/`FRAC_W`), grid geometry (`WIDTH`, `HEIGHT`, `DEPTH`), job count, and default adaptive limits. Companion machine snapshots regenerate the Verilog headers via the bridge.
 - **CSR bus:** `sand_top` exposes a simple register file for host control. Key registers include:
 
   | CSR macro | Purpose |
@@ -84,7 +85,7 @@
 
 ### RTL YAML mirror
 
-- `tools/verilog_yaml_bridge.py` consumes the contents of `rtl/` (excluding `rtl/legacy/`) and writes structured YAML artefacts into `rtl.yaml/`.
+- `tools/verilog_yaml_bridge.py` now treats the YAML descriptors as the source of truth. Use `python3 tools/verilog_yaml_bridge.py restore --yaml-root rtl.yaml --rtl-root build/rtl` to regenerate synthesizable Verilog (the legacy tree lives under `old/rtl/`).
 - Modules that fit within PyVerilog's syntax support are exported as full ASTs (`kind: verilog_module`) so Python tooling can round-trip edits back into Verilog.
 - For complex SystemVerilog blocks (`sand_engine_raster`, `sand_pe`, `sand_scheduler_dynamic`) the bridge currently falls back to a header summary plus the original body text (`kind: verilog_module_fallback`) because PyVerilog cannot parse their block-scoped declarations yet. The bridge still preserves their includes and interface metadata.
 - Run `python3 tools/verilog_yaml_bridge.py restore` to regenerate RTL from the YAML mirror after editing.
@@ -106,14 +107,14 @@ Each script generates a build directory containing the auto-produced headers and
 - **Opcodes:** `sand_pe` covers diffusion, Laplacian, sharpen, edge magnitude, programmable mix, water flux, pressure relaxation, backprop, and microcode lookups. Mix operations consume four CSR-configurable coefficients; Laplacian/min/max automatically include vertical neighbours.
 - **Microcode LUT:** Use `CSR_MICRO_BASE` to stream 16 Q-format entries that encode bespoke activations, symbolic rules, or learned responses. The default index combines opcode/self bits but can be reassigned inside the RTL if you prefer average-based addressing.
 - **Unit weights:** `CSR_UNIT_*` registers describe capability, directional weights, and friction for water-flux/pressure primitives. Pair them with the adaptive scheduler to prioritise hot sandboxes—the streaming engine and legacy `sand_pe` now honour the tuple whenever `unit_flux_enable` is asserted (and fall back to the classic constant-driven flow otherwise).
-- **Numeric formats:** Adjust `DATA_W`/`FRAC_W`, enable saturation/rounding macros, or swap in alternative arithmetic (float, bfloat16, packed fixed-point) via the helper templates in `sand_math.vh`.
+- **Numeric formats:** Adjust `DATA_W`/`FRAC_W`, enable saturation/rounding macros, or swap in alternative arithmetic (float, bfloat16, packed fixed-point) via the descriptors in `rtl.yaml/sand_defs.yaml` and `rtl.yaml/sand_math.yaml` (then regenerate the headers).
 
 ---
 
 ## Integration Guide
 
 - **Simulation loop:** Instantiate `sand_top` in a testbench, drive CSR writes through small helper tasks, seed BRAM via the seed port, and step the clock. Examples show minimal scaffolding for iverilog/vvp.
-- **FPGA bring-up:** Swap `rtl/bram_tdp_wrap.v` for vendor-specific true dual-port RAM, keep the two-plane pointer swap, connect the CSR bus to your host interface (AXI-Lite, simple MMIO, soft CPU), and monitor `job_done` plus adaptive status registers.
+- **FPGA bring-up:** After restoring Verilog into (for example) `build/rtl/`, swap `build/rtl/bram_tdp_wrap.v` for a vendor-specific true dual-port RAM, keep the two-plane pointer swap, connect the CSR bus to your host interface (AXI-Lite, simple MMIO, soft CPU), and monitor `job_done` plus adaptive status registers.
 - **Performance knobs:** Narrow the active window via CSR offsets, tweak adaptive thresholds, or extend the raster engine with extra read ports if you need >1 cell/clk throughput.
 
 ---
@@ -172,19 +173,19 @@ The entire structure behaves a bit like a **machine-learning model** — one tha
 
 The project is organized into clean, layered modules:
 
-| Module                      | Description                                                                                                                                                                |
-| :-------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`rtl/sand_defs.vh`**          | Global parameter file — defines word widths, grid size, number of jobs, math opcodes, and CSR addresses. Edit this first to customize your FPGA target.                    |
-| **`rtl/sand_math.vh`**          | Saturating/rounding fixed-point helpers used by the PE and raster engine.                                                                                                  |
-| **`rtl/circuits/`**             | Reusable combinational building blocks (edge detectors, neural shims, etc.) that examples can stitch together without rewriting Verilog.                                   |
-| **`rtl.yaml/`**                 | YAML mirror of synthesizable RTL (excluding legacy) for Python-side introspection and regeneration.                                                                         |
-| **`rtl/sand_pe.v`**             | The *Processing Element* (one grain). Reads its 4–8 neighbors and applies an operation (sum, diffusion, clamp, etc.) or a user-defined microcode rule.                    |
-| **`rtl/sand_scheduler_dynamic.v`** | Adaptive round-robin scheduler. Tracks per-job activity, selects step budgets, and drives the pointer-swap raster engine (`sand_engine_raster`).                         |
-| **`rtl/sand_engine_raster.v`** | Streaming single-port engine that walks the grid cell-by-cell, produces activity metrics, and writes results into the opposite memory plane.                          |
-| **`rtl/sand_jobmem2p.v`**     | Two-plane dual-port job memory. Each job/layer owns {read,write} planes and a plane-select bit toggled by the scheduler.                                              |
-| **`rtl/sand_top.v`**            | Integration wrapper exposing the CSR bus, seeding port, and the adaptive core.                                                                                            |
-| **`rtl/bram_tdp_wrap.v`**   | Portable true dual-port BRAM wrapper (vendor-inferable).                                                                                                                   |
-| **`rtl/legacy`** / (**`sand_grid.v` / `sand_scheduler.v` / `sand_jobmem.v`**) | Legacy fully-parallel path kept for reference (instantiates an in-core `WIDTH × HEIGHT` PE mesh).                                             |
+| Asset | Description |
+| :-- | :-- |
+| **`rtl.yaml/sand_defs.yaml`** | Parameter descriptor covering grid geometry, opcodes, CSR map, and adaptive defaults. Edit this YAML, then regenerate Verilog to update `sand_defs.vh`. |
+| **`rtl.yaml/sand_math.yaml`** | Documentation for shared fixed-point helpers; governs saturation/rounding macros used across the design. |
+| **`rtl.yaml/sand_pe.yaml`** | Processing-element descriptor capturing interface and behaviour, pointing to the machine AST snapshot. |
+| **`rtl.yaml/sand_engine_raster.yaml`** | Streaming raster engine descriptor (windowing, micro-LUT writes, telemetry). Restores from a preserved Verilog body. |
+| **`rtl.yaml/sand_scheduler_dynamic.yaml`** | Adaptive scheduler descriptor covering telemetry-driven budgets and window programming. |
+| **`rtl.yaml/sand_jobmem2p.yaml`** | Dual-plane job memory descriptor with pointer swap semantics. |
+| **`rtl.yaml/sand_top.yaml`** | Top-level integration descriptor for the CSR bus, seeding, and fabric orchestration. |
+| **`rtl.yaml/bram_tdp_wrap.yaml`** | Portable true dual-port RAM descriptor; swap the restored Verilog for a vendor primitive as needed. |
+| **`rtl.yaml/circuits/`** | Combinational helper descriptors (edge detector, activations, neighbour mix, neuron). Each links to its machine definition under `machine/`. |
+| **`rtl.yaml/machine/`** | Auto-generated PyVerilog snapshots (modules or fallback bodies). Do not hand-edit; regenerate with the bridge. |
+| **`old/rtl/`** | Archived Verilog tree kept for reference. Use `restore` to emit a fresh RTL workspace (legacy mesh still lives under `old/rtl/legacy/`). |
 
 ---
 
@@ -217,7 +218,7 @@ Each **tick** performs:
 
 ## 🔧 Configuration
 
-All parameters are centralized in [`sand_defs.vh`](sand_defs.vh):
+All parameters are centralized in [`rtl.yaml/sand_defs.yaml`](rtl.yaml/sand_defs.yaml) — edit the YAML, then regenerate headers via the bridge:
 
 | Parameter                  | Meaning                                              |
 | :------------------------- | :--------------------------------------------------- |
@@ -403,8 +404,8 @@ Additionally, a **seeding interface** allows you to preload any job/layer/cell w
 
 ### 1. Synthesize on FPGA
 
-* Set your desired parameters in `sand_defs.vh`
-* Replace `bram_dp.v` with your FPGA vendor’s true dual-port BRAM primitive
+* Adjust `rtl.yaml/sand_defs.yaml` (and other descriptors) for your target, then regenerate RTL: `python3 tools/verilog_yaml_bridge.py restore --yaml-root rtl.yaml --rtl-root build/rtl`
+* Replace `build/rtl/bram_tdp_wrap.v` with your FPGA vendor’s true dual-port BRAM primitive
 * Instantiate `sand_top` in your top-level HDL or SoC wrapper
 * Connect CSR lines to a soft CPU (MicroBlaze, PicoRV32, etc.) or AXI-Lite bridge
 
@@ -536,7 +537,7 @@ Below are **ready-to-run presets** you can load via CSR writes and simple seedin
 **Interpretation:** Dye diffusing on a plate.
 **Use case:** Blurring, smoothing fields, gentle consensus.
 
-**Params (sand_defs.vh):**
+**Params (`rtl.yaml/sand_defs.yaml` → restore):**
 
 * `W=64, H=64, D=1, USE_DIAGONALS=1`
 * `DATA_W=16, FRAC_W=8`
@@ -796,7 +797,7 @@ To future-proof the engine, isolate arithmetic in **utility functions** inside `
 
 ## 2) Wider/Smaller Fixed-Point
 
-* Change `DATA_W` and `FRAC_W` in `sand_defs.vh`.
+* Change `DATA_W` and `FRAC_W` in `rtl.yaml/sand_defs.yaml`, then regenerate RTL.
 * Ensure BRAM depth/width constraints are met (vendor RAMs have native widths).
 
 ## 3) Floating-Point (FP16 / bfloat16 / FP32)
@@ -882,8 +883,8 @@ Your firmware can load these and emit a series of `csr_write` and `seed_cell` ca
 - **`examples/neural_edge_slice/`** – Edge Detector slice (`OP_EDGE`) coupled to
   a tiny ReLU neuron. Run
   `python3 examples/neural_edge_slice/run.py --config examples/neural_edge_slice/configs/default.yaml`
-  to generate a config header from YAML, pull in the reusable circuits from
-  `rtl/circuits/`, compile the harness, and inspect which cells fire when edge
+  to generate a config header from YAML, pull in the reusable circuit descriptors from
+  `rtl.yaml/circuits/` (restored into `build/rtl/circuits/`), compile the harness, and inspect which cells fire when edge
   energy plus raw intensity crosses a threshold.
 - **`examples/neural_activation_field/`** – 3D neighbour blend with an optional
   activation bypass, adaptive bias learning, and a ReLU readout. Run
@@ -895,7 +896,7 @@ Your firmware can load these and emit a series of `csr_write` and `seed_cell` ca
 The Python side now understands YAML/JSON descriptors via
 `tools.sand_configurator`. Each description expands into a light-weight Verilog
 header (dropped into `examples/<name>/build/`) and a source manifest that points
-at the necessary primitives in `rtl/circuits/`. CLI overrides still work, so you
+at the necessary primitives restored from `rtl.yaml/circuits/`. CLI overrides still work, so you
 can start from a preset config and sweep gains, window sizes, or patterns
 without editing RTL.
 
@@ -930,7 +931,7 @@ The default build now routes through **`sand_scheduler_dynamic`**, a telemetry-a
 
 ### Adaptive datapath at a glance
 - **Pointer swap by construction.** `sand_jobmem2p` keeps two planes for each job/layer. The scheduler flips a plane bit instead of copying buffers, reducing the post-step work to O(1).
-- **Streaming ALU.** `sand_engine_raster` walks the grid one cell/clk (single BRAM read port), reuses the existing `sand_math.vh` helpers, and emits activity/cycle telemetry at frame end.
+- **Streaming ALU.** `sand_engine_raster` walks the grid one cell/clk (single BRAM read port), reuses the restored `sand_math.vh` helpers, and emits activity/cycle telemetry at frame end.
 - **Budget tuner.** For every job the scheduler holds:
   * a mutable step budget (`step_budget[j]`)
   * the most recent activity/cycle counters
