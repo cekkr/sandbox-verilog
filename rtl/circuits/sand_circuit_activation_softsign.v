@@ -2,6 +2,7 @@
 
 `include "sand_defs.vh"
 
+// Preface: better without it...
 // Smooth, saturating activation based on the softsign function.
 module sand_circuit_activation_softsign (
     input  signed [`DATA_W-1:0] value_in,
