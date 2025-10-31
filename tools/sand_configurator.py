@@ -159,6 +159,7 @@ class ActivationFieldParams:
     read_bias_pct: int
     read_threshold_pct: int
     circuits: Sequence[str]
+    activation_passthrough: bool
 
     def override(
         self,
@@ -181,6 +182,7 @@ class ActivationFieldParams:
         read_bias_pct: int | None = None,
         read_threshold_pct: int | None = None,
         layer: int | None = None,
+        activation_passthrough: bool | None = None,
     ) -> "ActivationFieldParams":
         """Return a copy with selected fields overridden."""
         feedback_pct_per_layer = self.feedback_pct_per_layer.copy()
@@ -213,6 +215,9 @@ class ActivationFieldParams:
             read_bias_pct=read_bias_pct if read_bias_pct is not None else self.read_bias_pct,
             read_threshold_pct=read_threshold_pct if read_threshold_pct is not None else self.read_threshold_pct,
             circuits=self.circuits,
+            activation_passthrough=self.activation_passthrough
+            if activation_passthrough is None
+            else activation_passthrough,
         )
 
 
@@ -493,6 +498,13 @@ def resolve_activation_field_params(
                 f"Unknown circuit '{name}'. Known: {', '.join(sorted(CIRCUIT_LIBRARY))}"
             )
 
+    if "activation_passthrough" in merged:
+        activation_passthrough = bool(merged["activation_passthrough"])
+    else:
+        activation_passthrough = bool(
+            merged.get("activation", {}).get("bypass", False)
+        )
+
     return ActivationFieldParams(
         window_w=window_w,
         window_h=window_h,
@@ -513,6 +525,7 @@ def resolve_activation_field_params(
         read_bias_pct=read_bias_pct,
         read_threshold_pct=read_threshold_pct,
         circuits=circuits,
+        activation_passthrough=activation_passthrough,
     )
 
 
@@ -558,6 +571,7 @@ def write_activation_field_header(
         f"localparam integer NAF_READ_RAW_PCT       = {params.read_raw_pct};",
         f"localparam integer NAF_READ_BIAS_PCT      = {params.read_bias_pct};",
         f"localparam integer NAF_READ_THRESH_PCT    = {params.read_threshold_pct};",
+        f"localparam integer NAF_ACTIVATION_BYPASS  = {1 if params.activation_passthrough else 0};",
     ]
     if params.feedback_pct_per_layer:
         lines.append(

@@ -31,12 +31,29 @@ module sand_pe #(
     // Config
     input  wire [`OPCODE_W-1:0]   opcode,
     input  wire                   use_diagonals, // 0 => 4-neigh, 1 => 8-neigh
-    //todo: what's capability, channel and friction? Make it evident, in malleable case are not constant.
-    //.. check for friction_val
-    input  wire [DATA_W-1:0]      constA,     
+    input  wire [DATA_W-1:0]      constA,
     input  wire [DATA_W-1:0]      constB,
     input  wire [DATA_W-1:0]      constC,
     input  wire [DATA_W-1:0]      constD,
+
+    // Enhanced unit tuple — mirrors sand_engine_raster so legacy grid stays feature-parity
+    input  wire                   unit_flux_enable,
+    input  wire                   unit_overflow_reverse_top,
+    input  wire                   unit_overflow_reverse_bottom,
+    input  wire                   unit_pressure_diag_override,
+    input  wire [7:0]             unit_pressure_iters,
+    input  wire [DATA_W-1:0]      unit_weight_top,
+    input  wire [DATA_W-1:0]      unit_weight_bottom,
+    input  wire [DATA_W-1:0]      unit_weight_side,
+    input  wire [DATA_W-1:0]      unit_weight_retain,
+    input  wire [DATA_W-1:0]      unit_weight_prev,
+    input  wire [DATA_W-1:0]      unit_flux_threshold,
+    input  wire [DATA_W-1:0]      unit_flux_reverse_top,
+    input  wire [DATA_W-1:0]      unit_flux_reverse_bottom,
+    input  wire [DATA_W-1:0]      unit_pressure_gain,
+    input  wire [DATA_W-1:0]      unit_backprop_lr,
+    input  wire [DATA_W-1:0]      unit_backprop_neigh,
+    input  wire [DATA_W-1:0]      unit_backprop_decay,
 
     // Microcode table (16 entries x DATA_W), supplied by grid (shared ROM/RAM)
     input  wire [DATA_W-1:0]      micro_lut [0:15],
@@ -116,6 +133,9 @@ module sand_pe #(
     assign nb8[0]=n_in;  assign nb8[1]=s_in;  assign nb8[2]=e_in;  assign nb8[3]=w_in;
     assign nb8[4]=ne_in; assign nb8[5]=nw_in; assign nb8[6]=se_in; assign nb8[7]=sw_in;
 
+    wire diag_active = use_diagonals ||
+                       (unit_pressure_diag_override && (opcode == `OP_PRESSURE));
+
     integer i;
     always @* begin
         sum_nbrs = { (DATA_W+4){1'b0} };
@@ -129,7 +149,7 @@ module sand_pe #(
             if (nb4[i] > max_nbr) max_nbr = nb4[i];
         end
 
-        if (!use_diagonals) begin
+        if (!diag_active) begin
             sum_nbrs = {1'b0, sum4_only};
             avg_nbrs = sum4_only[DATA_W-1:0] >> 2; // /4
         end else begin
@@ -204,45 +224,138 @@ module sand_pe #(
                 reg signed [EXT_W-1:0] flux_accum;
                 reg signed [EXT_W-1:0] flow_term;
                 reg [DATA_W-1:0]       retain_val;
+                reg [DATA_W-1:0]       prev_val;
                 reg [EXT_W-1:0]        cap_ext;
-                reg [DATA_W-1:0]       friction_val;
-                retain_val = fp_mul_const(self_in, constA);
-                flux_accum = {{(EXT_W-DATA_W){retain_val[DATA_W-1]}}, retain_val};
-                friction_val = constD;
-                flow_term  = directional_flow(self_in, n_in, constC, friction_val);
-                flux_accum = flux_accum + flow_term;
-                flow_term  = directional_flow(self_in, s_in, constC, friction_val);
-                flux_accum = flux_accum + flow_term;
-                flow_term  = directional_flow(self_in, e_in, constC, friction_val);
-                flux_accum = flux_accum + flow_term;
-                flow_term  = directional_flow(self_in, w_in, constC, friction_val);
-                flux_accum = flux_accum + flow_term;
-                if (use_diagonals) begin
-                    flow_term = directional_flow(self_in, ne_in, constC, friction_val);
+                reg [DATA_W-1:0]       friction_top;
+                reg [DATA_W-1:0]       friction_bottom;
+                reg [DATA_W-1:0]       friction_side;
+                if (!unit_flux_enable) begin
+                    // Legacy behaviour: rely solely on constA..constD
+                    retain_val = fp_mul_const(self_in, constA);
+                    flux_accum = {{(EXT_W-DATA_W){retain_val[DATA_W-1]}}, retain_val};
+                    flow_term  = directional_flow(self_in, n_in, constC, constD);
                     flux_accum = flux_accum + flow_term;
-                    flow_term = directional_flow(self_in, nw_in, constC, friction_val);
+                    flow_term  = directional_flow(self_in, s_in, constC, constD);
                     flux_accum = flux_accum + flow_term;
-                    flow_term = directional_flow(self_in, se_in, constC, friction_val);
+                    flow_term  = directional_flow(self_in, e_in, constC, constD);
                     flux_accum = flux_accum + flow_term;
-                    flow_term = directional_flow(self_in, sw_in, constC, friction_val);
+                    flow_term  = directional_flow(self_in, w_in, constC, constD);
                     flux_accum = flux_accum + flow_term;
-                end
-                if (flux_accum < 0) flux_accum = {EXT_W{1'b0}};
-                cap_ext = {{(EXT_W-DATA_W){constB[DATA_W-1]}}, constB};
-                if (flux_accum > cap_ext) flux_accum = cap_ext;
-                alu_res = flux_accum[DATA_W-1:0];
+                    if (diag_active) begin
+                        flow_term = directional_flow(self_in, ne_in, constC, constD);
+                        flux_accum = flux_accum + flow_term;
+                        flow_term = directional_flow(self_in, nw_in, constC, constD);
+                        flux_accum = flux_accum + flow_term;
+                        flow_term = directional_flow(self_in, se_in, constC, constD);
+                        flux_accum = flux_accum + flow_term;
+                        flow_term = directional_flow(self_in, sw_in, constC, constD);
+                        flux_accum = flux_accum + flow_term;
+                    end
+                    if (flux_accum < 0) flux_accum = {EXT_W{1'b0}};
+                    cap_ext = {{(EXT_W-DATA_W){constB[DATA_W-1]}}, constB};
+                    if (flux_accum > cap_ext) flux_accum = cap_ext;
+                end else begin
+                    friction_top    = unit_overflow_reverse_top
+                                      ? unit_flux_reverse_top
+                                      : {DATA_W{1'b0}};
+                    friction_bottom = unit_overflow_reverse_bottom
+                                      ? unit_flux_reverse_bottom
+                                      : {DATA_W{1'b0}};
+                    friction_side   = unit_pressure_gain;
 
-                //todo: Implement "malleable sand", so in runtime sand's units changes weights by flux * X (for pressure too)                
+                    retain_val = fp_mul_const(self_in, unit_weight_retain);
+                    flux_accum = {{(EXT_W-DATA_W){retain_val[DATA_W-1]}}, retain_val};
+
+                    flow_term  = directional_flow(self_in,
+                                                  n_in,
+                                                  unit_weight_top,
+                                                  friction_top);
+                    flux_accum = flux_accum + flow_term;
+                    flow_term  = directional_flow(self_in,
+                                                  s_in,
+                                                  unit_weight_bottom,
+                                                  friction_bottom);
+                    flux_accum = flux_accum + flow_term;
+                    flow_term  = directional_flow(self_in,
+                                                  e_in,
+                                                  unit_weight_side,
+                                                  friction_side);
+                    flux_accum = flux_accum + flow_term;
+                    flow_term  = directional_flow(self_in,
+                                                  w_in,
+                                                  unit_weight_side,
+                                                  friction_side);
+                    flux_accum = flux_accum + flow_term;
+                    if (diag_active) begin
+                        flow_term = directional_flow(self_in,
+                                                     ne_in,
+                                                     unit_weight_side,
+                                                     friction_side);
+                        flux_accum = flux_accum + flow_term;
+                        flow_term = directional_flow(self_in,
+                                                     nw_in,
+                                                     unit_weight_side,
+                                                     friction_side);
+                        flux_accum = flux_accum + flow_term;
+                        flow_term = directional_flow(self_in,
+                                                     se_in,
+                                                     unit_weight_side,
+                                                     friction_side);
+                        flux_accum = flux_accum + flow_term;
+                        flow_term = directional_flow(self_in,
+                                                     sw_in,
+                                                     unit_weight_side,
+                                                     friction_side);
+                        flux_accum = flux_accum + flow_term;
+                    end
+
+                    prev_val  = fp_mul_const(constB, unit_weight_prev);
+                    flux_accum = flux_accum + $signed({{(EXT_W-DATA_W){prev_val[DATA_W-1]}}, prev_val});
+
+                    if (flux_accum < $signed({EXT_W{1'b0}}))
+                        flux_accum = $signed({EXT_W{1'b0}});
+
+                    cap_ext = {{(EXT_W-DATA_W){1'b0}}, unit_flux_threshold};
+                    if (flux_accum > $signed(cap_ext))
+                        flux_accum = $signed(cap_ext);
+                end
+                alu_res = flux_accum[DATA_W-1:0];
             end
             `OP_PRESSURE: begin
-                reg [DATA_W-1:0] delta;
-                delta   = fp_sub(avg_nbrs, self_in);
-                alu_res = fp_add(self_in, fp_mul_const(delta, constA));
+                integer iter;
+                reg [7:0]        iter_limit;
+                reg [DATA_W-1:0] gain_sel;
+                reg [DATA_W-1:0] delta_val;
+                reg [DATA_W-1:0] pressure_val;
+                gain_sel = (unit_pressure_gain != {DATA_W{1'b0}}) ? unit_pressure_gain : constA;
+                iter_limit = (unit_pressure_iters < 8'd1) ? 8'd1 :
+                             (unit_pressure_iters > 8'd8) ? 8'd8 :
+                             unit_pressure_iters;
+                pressure_val = self_in;
+                for (iter = 0; iter < iter_limit; iter = iter + 1) begin
+                    delta_val    = fp_sub(avg_nbrs, pressure_val);
+                    pressure_val = fp_add(pressure_val, fp_mul_const(delta_val, gain_sel));
+                end
+                alu_res = pressure_val;
             end
             `OP_BACKPROP: begin
+                reg [DATA_W-1:0] lr_sel;
+                reg [DATA_W-1:0] neigh_sel;
+                reg [DATA_W-1:0] decay_sel;
                 reg [DATA_W-1:0] err;
-                err     = fp_sub(constB, self_in);
-                alu_res = fp_add(self_in, fp_mul_const(err, constA));
+                reg [DATA_W-1:0] grad_term;
+                reg [DATA_W-1:0] neigh_term;
+                reg [DATA_W-1:0] decay_term;
+                reg [DATA_W-1:0] update_term;
+                lr_sel    = (unit_backprop_lr    != {DATA_W{1'b0}}) ? unit_backprop_lr    : constA;
+                neigh_sel = (unit_backprop_neigh != {DATA_W{1'b0}}) ? unit_backprop_neigh : constC;
+                decay_sel = (unit_backprop_decay != {DATA_W{1'b0}}) ? unit_backprop_decay : constD;
+                err        = fp_sub(constB, self_in);
+                grad_term  = fp_mul_const(err, lr_sel);
+                neigh_term = fp_mul_const(avg_nbrs, neigh_sel);
+                decay_term = fp_mul_const(self_in, decay_sel);
+                update_term = fp_sub(fp_add(grad_term, neigh_term), decay_term);
+                alu_res     = fp_add(self_in, update_term);
             end
             `OP_MICRO:      alu_res = micro_val;
             `OP_LAPLACIAN:  alu_res = laplacian;

@@ -453,6 +453,19 @@ def main() -> None:
     parser.add_argument(
         "--readout-threshold", type=float, help="Override readout threshold"
     )
+    parser.add_argument(
+        "--activation-bypass",
+        dest="activation_bypass",
+        action="store_true",
+        help="Bypass the activation LUT and forward the neighbour mix directly",
+    )
+    parser.add_argument(
+        "--activation-micro",
+        dest="activation_bypass",
+        action="store_false",
+        help="Force the activation LUT even if the config requests a bypass",
+    )
+    parser.set_defaults(activation_bypass=None)
     parser.add_argument("--json", type=pathlib.Path, help="Dump raw Q data as JSON")
 
     args, remaining_args = parser.parse_known_args()
@@ -491,6 +504,8 @@ def main() -> None:
         params = params.override(read_bias_pct=int(round(args.readout_bias * 1000.0)))
     if args.readout_threshold is not None:
         params = params.override(read_threshold_pct=int(round(args.readout_threshold * 1000.0)))
+    if args.activation_bypass is not None:
+        params = params.override(activation_passthrough=args.activation_bypass)
 
     # Handle per-layer feedback gains
     for i in range(params.window_d):

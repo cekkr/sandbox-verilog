@@ -130,6 +130,7 @@ Key CSRs that drive this behaviour:
 
 Program the tuple by pairing `CSR_UNIT_FLUX_THRESHOLD` with the directional weights for capability/channel, and use `CSR_UNIT_FLUX_REVERSE_{TOP,BOTTOM}` together with `CSR_UNIT_PRESSURE_GAIN` to model friction and counter-pressure.
 Bits 1 and 2 of `CSR_UNIT_CTRL` gate whether the reverse coefficients participate as friction; clear them to remove resistance on the corresponding vertical edges.
+Legacy `sand_pe` now mirrors the same tuple-driven flow whenever `unit_flux_enable` is asserted, keeping the fully parallel fabric in lock-step with the streaming raster engine. Clear the bit to retain the historical constA/constB/constC/constD behaviour.
 
 **How the new opcodes map to the knobs**
 
@@ -172,6 +173,8 @@ next = f(self, neighbors, constA…constD, opcode)
 | `OP_MICRO`        | Look up a user-defined rule from a 16-entry LUT                          |
 
 `OP_MIX` consumes four fixed-point coefficients sourced from `CSR_RULE_CONSTA…CONSTD`, letting you blend the current value, the neighbor average, the aggregated (planar + vertical) sum, and a constant bias in one pass. Vertical neighbors (`above_in`/`below_in`) are now available in the PE and the raster engine fetches them automatically every cell, so Laplacian, Min/Max, and mix operations react to layer-to-layer coupling out of the box.
+
+When `unit_flux_enable` is high the flux/pressure/backprop paths pull the `{capability, channel, friction}` tuple directly from `CSR_UNIT_*`, apply per-edge friction (top/bottom honour the overflow coefficients, planar/diagonal flows reuse `CSR_UNIT_PRESSURE_GAIN`), and add the previous-layer feedback tap. If the bit is low the legacy const-driven implementation remains in place, so existing sandboxes stay functional while newer ones gain the richer tuple semantics.
 
 ### Microcode LUT
 
@@ -749,8 +752,8 @@ Your firmware can load these and emit a series of `csr_write` and `seed_cell` ca
   to generate a config header from YAML, pull in the reusable circuits from
   `rtl/circuits/`, compile the harness, and inspect which cells fire when edge
   energy plus raw intensity crosses a threshold.
-- **`examples/neural_activation_field/`** – 3D neighbour blend with softsign
-  activation, adaptive bias learning, and a ReLU readout. Run
+- **`examples/neural_activation_field/`** – 3D neighbour blend with an optional
+  activation bypass, adaptive bias learning, and a ReLU readout. Run
   `python3 examples/neural_activation_field/run.py --config examples/neural_activation_field/configs/default.yaml`
   to generate the activation-field header, compile the harness with the new
   circuit shims, and visualise the layered activation plates alongside the

@@ -40,6 +40,23 @@ module sand_scheduler #(
     reg [DATA_W-1:0]    constA, constB, constC, constD;
     reg                 force_diag, use_micro;
     reg [$clog2(N_JOBS)-1:0] forced_job_sel;
+    reg                 unit_flux_enable;
+    reg                 unit_overflow_reverse_top;
+    reg                 unit_overflow_reverse_bottom;
+    reg                 unit_pressure_diag_override;
+    reg [7:0]           unit_pressure_iters;
+    reg [DATA_W-1:0]    unit_weight_top;
+    reg [DATA_W-1:0]    unit_weight_bottom;
+    reg [DATA_W-1:0]    unit_weight_side;
+    reg [DATA_W-1:0]    unit_weight_retain;
+    reg [DATA_W-1:0]    unit_weight_prev;
+    reg [DATA_W-1:0]    unit_flux_threshold;
+    reg [DATA_W-1:0]    unit_flux_reverse_top;
+    reg [DATA_W-1:0]    unit_flux_reverse_bottom;
+    reg [DATA_W-1:0]    unit_pressure_gain;
+    reg [DATA_W-1:0]    unit_backprop_lr;
+    reg [DATA_W-1:0]    unit_backprop_neigh;
+    reg [DATA_W-1:0]    unit_backprop_decay;
 
     // Microcode LUT shared (16 entries)
     reg [DATA_W-1:0] micro_lut [0:15];
@@ -56,6 +73,23 @@ module sand_scheduler #(
             force_diag <= `USE_DIAGONALS[0];
             use_micro  <= 1'b0;
             forced_job_sel <= {($clog2(N_JOBS)){1'b0}};
+            unit_flux_enable            <= 1'b0;
+            unit_overflow_reverse_top   <= 1'b0;
+            unit_overflow_reverse_bottom<= 1'b0;
+            unit_pressure_diag_override <= 1'b0;
+            unit_pressure_iters         <= 8'd1;
+            unit_weight_top             <= {DATA_W{1'b0}};
+            unit_weight_bottom          <= {DATA_W{1'b0}};
+            unit_weight_side            <= {DATA_W{1'b0}};
+            unit_weight_retain          <= {DATA_W{1'b0}};
+            unit_weight_prev            <= {DATA_W{1'b0}};
+            unit_flux_threshold         <= {DATA_W{1'b1}};
+            unit_flux_reverse_top       <= {DATA_W{1'b0}};
+            unit_flux_reverse_bottom    <= {DATA_W{1'b0}};
+            unit_pressure_gain          <= {DATA_W{1'b0}};
+            unit_backprop_lr            <= {DATA_W{1'b0}};
+            unit_backprop_neigh         <= {DATA_W{1'b0}};
+            unit_backprop_decay         <= {DATA_W{1'b0}};
             for (mi=0; mi<16; mi=mi+1) micro_lut[mi] <= {DATA_W{1'b0}};
         end else if (csr_we) begin
             case (csr_addr)
@@ -69,6 +103,30 @@ module sand_scheduler #(
                                     force_diag    <= csr_wdata[0];
                                     use_micro     <= csr_wdata[1];
                                    end
+                `CSR_UNIT_CTRL: begin
+                                    unit_flux_enable            <= csr_wdata[0];
+                                    unit_overflow_reverse_top   <= csr_wdata[1];
+                                    unit_overflow_reverse_bottom<= csr_wdata[2];
+                                    unit_pressure_diag_override <= csr_wdata[3];
+                                    if (csr_wdata[15:8] == 8'd0)
+                                        unit_pressure_iters <= 8'd1;
+                                    else if (csr_wdata[15:8] > 8'd32)
+                                        unit_pressure_iters <= 8'd32;
+                                    else
+                                        unit_pressure_iters <= csr_wdata[15:8];
+                                end
+                `CSR_UNIT_FLUX_WEIGHT_TOP:     unit_weight_top    <= csr_wdata[DATA_W-1:0];
+                `CSR_UNIT_FLUX_WEIGHT_BOTTOM:  unit_weight_bottom <= csr_wdata[DATA_W-1:0];
+                `CSR_UNIT_FLUX_WEIGHT_SIDE:    unit_weight_side   <= csr_wdata[DATA_W-1:0];
+                `CSR_UNIT_FLUX_WEIGHT_RETAIN:  unit_weight_retain <= csr_wdata[DATA_W-1:0];
+                `CSR_UNIT_FLUX_WEIGHT_PREV:    unit_weight_prev   <= csr_wdata[DATA_W-1:0];
+                `CSR_UNIT_FLUX_THRESHOLD:      unit_flux_threshold     <= csr_wdata[DATA_W-1:0];
+                `CSR_UNIT_FLUX_REVERSE_TOP:    unit_flux_reverse_top   <= csr_wdata[DATA_W-1:0];
+                `CSR_UNIT_FLUX_REVERSE_BOTTOM: unit_flux_reverse_bottom<= csr_wdata[DATA_W-1:0];
+                `CSR_UNIT_PRESSURE_GAIN:       unit_pressure_gain      <= csr_wdata[DATA_W-1:0];
+                `CSR_UNIT_BACKPROP_LR:         unit_backprop_lr         <= csr_wdata[DATA_W-1:0];
+                `CSR_UNIT_BACKPROP_NEIGH:      unit_backprop_neigh      <= csr_wdata[DATA_W-1:0];
+                `CSR_UNIT_BACKPROP_DECAY:      unit_backprop_decay      <= csr_wdata[DATA_W-1:0];
                 default: begin
                     if (csr_addr >= `CSR_MICRO_BASE && csr_addr < (`CSR_MICRO_BASE+16)) begin
                         micro_lut[csr_addr-`CSR_MICRO_BASE] <= csr_wdata[DATA_W-1:0];
@@ -127,6 +185,23 @@ module sand_scheduler #(
         .constB(constB),
         .constC(constC),
         .constD(constD),
+        .unit_flux_enable(unit_flux_enable),
+        .unit_overflow_reverse_top(unit_overflow_reverse_top),
+        .unit_overflow_reverse_bottom(unit_overflow_reverse_bottom),
+        .unit_pressure_diag_override(unit_pressure_diag_override),
+        .unit_pressure_iters(unit_pressure_iters),
+        .unit_weight_top(unit_weight_top),
+        .unit_weight_bottom(unit_weight_bottom),
+        .unit_weight_side(unit_weight_side),
+        .unit_weight_retain(unit_weight_retain),
+        .unit_weight_prev(unit_weight_prev),
+        .unit_flux_threshold(unit_flux_threshold),
+        .unit_flux_reverse_top(unit_flux_reverse_top),
+        .unit_flux_reverse_bottom(unit_flux_reverse_bottom),
+        .unit_pressure_gain(unit_pressure_gain),
+        .unit_backprop_lr(unit_backprop_lr),
+        .unit_backprop_neigh(unit_backprop_neigh),
+        .unit_backprop_decay(unit_backprop_decay),
         .micro_lut(micro_lut)
     );
 

@@ -10,6 +10,8 @@ neural_activation_field:
     planar: 0.35
     vertical: 0.25
     bias: -0.12
+  activation:
+    bypass: true
   feedback:
     gain: 0.4
     damp: 0.1

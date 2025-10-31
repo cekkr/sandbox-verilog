@@ -85,7 +85,7 @@
 
 - `examples/galton_board/` — deterministic + stochastic Galton board. Run `python3 examples/galton_board/run.py` to compile and inspect the distribution.
 - `examples/neural_edge_slice/` — edge detector + ReLU shim driven from YAML. Run `python3 examples/neural_edge_slice/run.py --config examples/neural_edge_slice/configs/default.yaml`.
-- `examples/neural_activation_field/` — 3D neighbour mix with softsign LUT and adaptive bias/readout. Run `python3 examples/neural_activation_field/run.py --config examples/neural_activation_field/configs/default.yaml`.
+- `examples/neural_activation_field/` — 3D neighbour mix with optional activation bypass and adaptive bias/readout. Run `python3 examples/neural_activation_field/run.py --config examples/neural_activation_field/configs/default.yaml`.
 
 Each script generates a build directory containing the auto-produced headers and source manifests before launching simulation.
 
@@ -95,7 +95,7 @@ Each script generates a build directory containing the auto-produced headers and
 
 - **Opcodes:** `sand_pe` covers diffusion, Laplacian, sharpen, edge magnitude, programmable mix, water flux, pressure relaxation, backprop, and microcode lookups. Mix operations consume four CSR-configurable coefficients; Laplacian/min/max automatically include vertical neighbours.
 - **Microcode LUT:** Use `CSR_MICRO_BASE` to stream 16 Q-format entries that encode bespoke activations, symbolic rules, or learned responses. The default index combines opcode/self bits but can be reassigned inside the RTL if you prefer average-based addressing.
-- **Unit weights:** `CSR_UNIT_*` registers describe capability, directional weights, and friction for water-flux/pressure primitives. Pair them with the adaptive scheduler to prioritise hot sandboxes.
+- **Unit weights:** `CSR_UNIT_*` registers describe capability, directional weights, and friction for water-flux/pressure primitives. Pair them with the adaptive scheduler to prioritise hot sandboxes—the streaming engine and legacy `sand_pe` now honour the tuple whenever `unit_flux_enable` is asserted (and fall back to the classic constant-driven flow otherwise).
 - **Numeric formats:** Adjust `DATA_W`/`FRAC_W`, enable saturation/rounding macros, or swap in alternative arithmetic (float, bfloat16, packed fixed-point) via the helper templates in `sand_math.vh`.
 
 ---

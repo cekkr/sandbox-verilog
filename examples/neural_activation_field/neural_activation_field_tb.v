@@ -32,6 +32,7 @@ module neural_activation_field_tb;
     integer read_raw_pct      = NAF_READ_RAW_PCT;
     integer read_bias_pct     = NAF_READ_BIAS_PCT;
     integer read_thresh_pct   = NAF_READ_THRESH_PCT;
+    integer activation_passthrough = NAF_ACTIVATION_BYPASS;
 
     integer base_field       [0:MAX_D-1][0:MAX_H-1][0:MAX_W-1];
     integer state_field      [0:MAX_D-1][0:MAX_H-1][0:MAX_W-1];
@@ -387,8 +388,12 @@ module neural_activation_field_tb;
                 for (y = 0; y < window_h; y = y + 1) begin
                     for (x = 0; x < window_w; x = x + 1) begin
                         act_in = mix_field[z][y][x];
-                        #0;
-                        activation_field[z][y][x] = act_out;
+                        if (activation_passthrough != 0) begin
+                            activation_field[z][y][x] = act_in;
+                        end else begin
+                            #0;
+                            activation_field[z][y][x] = act_out;
+                        end
                     end
                 end
             end
