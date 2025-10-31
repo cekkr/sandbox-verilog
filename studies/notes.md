@@ -1,6 +1,8 @@
 Author's notes file
 
 Next steps:
+- Remember "malleable sandbox" while execution checking
+- Convert rtl to yaml with python script(?)
 - Improve examples/neutal_activation_field: efficiency with "not used" units, like for cone-shaped models, where the grid size changes belong the layers, in practice "de-activating" some units for smaller grids.
 
 
