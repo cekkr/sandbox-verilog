@@ -2,7 +2,10 @@
 
 `include "sand_defs.vh"
 
-// Preface: better without it...
+// Preface: better without it: in a sandbox the pressure of a grain unit is related to neighborhood
+// if a pressure it's excessive, the sandbox is simply broken. A softsign is useful to avoid this case
+// but brokes the complex flux concept. So could be used ad "grain explosion" checker.
+
 // Smooth, saturating activation based on the softsign function.
 module sand_circuit_activation_softsign (
     input  signed [`DATA_W-1:0] value_in,
