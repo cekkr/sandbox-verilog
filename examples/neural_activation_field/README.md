@@ -127,13 +127,13 @@ to freeze the bias adaptation. For training-style loops, pair `--image-file`
 with `--json output.json` so you can inspect the resulting activations and
 re-feed them into the next pass.
 
-## "Sandbox" vs "Mobile Sand" vs "Solid Sandbox"
+## "Sandbox" vs "Malleable Sand" vs "Solid Sandbox"
 
 This example can be run in three different modes, each representing a different stage in the development and deployment of a neural network on the sandbox hardware:
 
 *   **"Sandbox" (Training/Exploration):** This is the default mode of operation. In this mode, the testbench uses behavioural models for the different components of the neural network. This allows for rapid prototyping and exploration of different network architectures and parameters. The `run.py` script is used to compile and run the simulation, and to visualize the results.
 
-*   **"Mobile Sand" (Hardware-in-the-loop):** In this mode, the behavioural models are replaced with their hardware-equivalent counterparts. This allows for more accurate simulation of the neural network's behaviour on the target hardware. This mode is useful for verifying the correctness of the hardware implementation and for fine-tuning the network parameters.
+*   **"Malleable Sand" (Hardware-in-the-loop):** In this mode, the behavioural models are replaced with their hardware-equivalent counterparts. This allows for more accurate simulation of the neural network's behaviour on the target hardware. This mode is useful for verifying the correctness of the hardware implementation and for fine-tuning the network parameters.
 
 *   **"Solid Sandbox" (Inference):** This is the final stage, where the trained neural network is deployed on the sandbox hardware for inference. In this mode, the network is fed with real sensor data, and the output is used to drive other components of the system.
 
