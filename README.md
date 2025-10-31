@@ -42,6 +42,7 @@
 | `rtl/sand_scheduler_dynamic.v` | Adaptive round-robin controller with plane flips, windowing, and per-job step budgets. |
 | `rtl/sand_jobmem2p.v` + `rtl/bram_tdp_wrap.v` | Dual-plane memory with O(1) pointer swaps; replace wrapper with vendor RAM. |
 | `rtl/circuits/` | Reusable combinational shims (edge detector, ReLU, neighbour mix, micro-LUT activation). |
+| `rtl.yaml/` | YAML mirror of synthesizable RTL (minus `rtl/legacy/`) for Python-side exploration and regeneration. |
 | `rtl/legacy/` | Reference parallel mesh (`sand_grid`, `sand_scheduler`, `sand_jobmem`) kept for comparison. |
 
 ---
@@ -78,6 +79,14 @@
 - `python3 tools/sand_runner.py` — convenience wrapper to compile (`iverilog`) and run (`vvp`) simulations.
 - `python3 tools/sand_configurator.py --config examples/<demo>/configs/<name>.yaml` — expands YAML/JSON presets into Verilog headers plus circuit manifests for example harnesses.
 - `python3 -m tools.sand_dynamic_configurator <command>` — kernel-style feature configurator that resolves dependencies, enforces resource budgets, and emits `build_plan.json` + `sand_dynamic_types.vh`.
+- `python3 tools/verilog_yaml_bridge.py export --rtl-root rtl --yaml-root rtl.yaml` — mirrors synthesizable RTL into YAML (and `restore` rebuilds the Verilog).
+
+### RTL YAML mirror
+
+- `tools/verilog_yaml_bridge.py` consumes the contents of `rtl/` (excluding `rtl/legacy/`) and writes structured YAML artefacts into `rtl.yaml/`.
+- Modules that fit within PyVerilog's syntax support are exported as full ASTs (`kind: verilog_module`) so Python tooling can round-trip edits back into Verilog.
+- For complex SystemVerilog blocks (`sand_engine_raster`, `sand_pe`, `sand_scheduler_dynamic`) the bridge currently falls back to a header summary plus the original body text (`kind: verilog_module_fallback`) because PyVerilog cannot parse their block-scoped declarations yet. The bridge still preserves their includes and interface metadata.
+- Run `python3 tools/verilog_yaml_bridge.py restore` to regenerate RTL from the YAML mirror after editing.
 
 ---
 
@@ -167,6 +176,7 @@ The project is organized into clean, layered modules:
 | **`rtl/sand_defs.vh`**          | Global parameter file — defines word widths, grid size, number of jobs, math opcodes, and CSR addresses. Edit this first to customize your FPGA target.                    |
 | **`rtl/sand_math.vh`**          | Saturating/rounding fixed-point helpers used by the PE and raster engine.                                                                                                  |
 | **`rtl/circuits/`**             | Reusable combinational building blocks (edge detectors, neural shims, etc.) that examples can stitch together without rewriting Verilog.                                   |
+| **`rtl.yaml/`**                 | YAML mirror of synthesizable RTL (excluding legacy) for Python-side introspection and regeneration.                                                                         |
 | **`rtl/sand_pe.v`**             | The *Processing Element* (one grain). Reads its 4–8 neighbors and applies an operation (sum, diffusion, clamp, etc.) or a user-defined microcode rule.                    |
 | **`rtl/sand_scheduler_dynamic.v`** | Adaptive round-robin scheduler. Tracks per-job activity, selects step budgets, and drives the pointer-swap raster engine (`sand_engine_raster`).                         |
 | **`rtl/sand_engine_raster.v`** | Streaming single-port engine that walks the grid cell-by-cell, produces activity metrics, and writes results into the opposite memory plane.                          |

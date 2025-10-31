@@ -1,0 +1,2107 @@
+version: 1
+kind: verilog_module
+original_path: sand_jobmem2p.v
+includes:
+- sand_defs.vh
+summary:
+  modules:
+  - name: sand_jobmem2p
+    parameters:
+    - name: DATA_W
+      value: '16'
+      signed: false
+    - name: WIDTH
+      value: '32'
+      signed: false
+    - name: HEIGHT
+      value: '32'
+      signed: false
+    - name: DEPTH
+      value: '4'
+      signed: false
+    - name: N_JOBS
+      value: '4'
+      signed: false
+    ports:
+    - name: clk
+      direction: input
+      width: null
+      signed: false
+      datatype: wire
+    - name: seed_we
+      direction: input
+      width: null
+      signed: false
+      datatype: wire
+    - name: seed_job
+      direction: input
+      width: '[((N_JOBS>1)?$clog2(N_JOBS):1)-1:0]'
+      signed: false
+      datatype: wire
+    - name: seed_layer
+      direction: input
+      width: '[((DEPTH>1)?$clog2(DEPTH):1)-1:0]'
+      signed: false
+      datatype: wire
+    - name: seed_plane
+      direction: input
+      width: null
+      signed: false
+      datatype: wire
+    - name: seed_idx
+      direction: input
+      width: '[((WIDTH*HEIGHT>1)?$clog2((WIDTH*HEIGHT)):1)-1:0]'
+      signed: false
+      datatype: wire
+    - name: seed_data
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: eng_we
+      direction: input
+      width: null
+      signed: false
+      datatype: wire
+    - name: eng_job
+      direction: input
+      width: '[((N_JOBS>1)?$clog2(N_JOBS):1)-1:0]'
+      signed: false
+      datatype: wire
+    - name: eng_layer
+      direction: input
+      width: '[((DEPTH>1)?$clog2(DEPTH):1)-1:0]'
+      signed: false
+      datatype: wire
+    - name: eng_plane_sel
+      direction: input
+      width: null
+      signed: false
+      datatype: wire
+    - name: eng_write_other_plane
+      direction: input
+      width: null
+      signed: false
+      datatype: wire
+    - name: eng_idx
+      direction: input
+      width: '[((WIDTH*HEIGHT>1)?$clog2((WIDTH*HEIGHT)):1)-1:0]'
+      signed: false
+      datatype: wire
+    - name: eng_wdata
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: eng_rdata
+      direction: output
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+ast:
+  _type: Source
+  args:
+    name: ''
+    description:
+      _type: Description
+      args:
+        definitions:
+          _tuple:
+          - _type: ModuleDef
+            args:
+              name: sand_jobmem2p
+              paramlist:
+                _type: Paramlist
+                args:
+                  params:
+                    _tuple:
+                    - _type: Decl
+                      args:
+                        list:
+                          _tuple:
+                          - _type: Parameter
+                            args:
+                              name: DATA_W
+                              value:
+                                _type: Rvalue
+                                args:
+                                  var:
+                                    _type: IntConst
+                                    args:
+                                      value: '16'
+                                      lineno: 91
+                                  lineno: 91
+                              width: null
+                              signed: false
+                              lineno: 91
+                            extras:
+                              dimensions: null
+                        lineno: 91
+                    - _type: Decl
+                      args:
+                        list:
+                          _tuple:
+                          - _type: Parameter
+                            args:
+                              name: WIDTH
+                              value:
+                                _type: Rvalue
+                                args:
+                                  var:
+                                    _type: IntConst
+                                    args:
+                                      value: '32'
+                                      lineno: 92
+                                  lineno: 92
+                              width: null
+                              signed: false
+                              lineno: 92
+                            extras:
+                              dimensions: null
+                        lineno: 92
+                    - _type: Decl
+                      args:
+                        list:
+                          _tuple:
+                          - _type: Parameter
+                            args:
+                              name: HEIGHT
+                              value:
+                                _type: Rvalue
+                                args:
+                                  var:
+                                    _type: IntConst
+                                    args:
+                                      value: '32'
+                                      lineno: 93
+                                  lineno: 93
+                              width: null
+                              signed: false
+                              lineno: 93
+                            extras:
+                              dimensions: null
+                        lineno: 93
+                    - _type: Decl
+                      args:
+                        list:
+                          _tuple:
+                          - _type: Parameter
+                            args:
+                              name: DEPTH
+                              value:
+                                _type: Rvalue
+                                args:
+                                  var:
+                                    _type: IntConst
+                                    args:
+                                      value: '4'
+                                      lineno: 94
+                                  lineno: 94
+                              width: null
+                              signed: false
+                              lineno: 94
+                            extras:
+                              dimensions: null
+                        lineno: 94
+                    - _type: Decl
+                      args:
+                        list:
+                          _tuple:
+                          - _type: Parameter
+                            args:
+                              name: N_JOBS
+                              value:
+                                _type: Rvalue
+                                args:
+                                  var:
+                                    _type: IntConst
+                                    args:
+                                      value: '4'
+                                      lineno: 95
+                                  lineno: 95
+                              width: null
+                              signed: false
+                              lineno: 95
+                            extras:
+                              dimensions: null
+                        lineno: 95
+                  lineno: 90
+              portlist:
+                _type: Portlist
+                args:
+                  ports:
+                    _tuple:
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: clk
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 97
+                        second:
+                          _type: Wire
+                          args:
+                            name: clk
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 97
+                        lineno: 97
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: seed_we
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 99
+                        second:
+                          _type: Wire
+                          args:
+                            name: seed_we
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 99
+                        lineno: 99
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: seed_job
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: Cond
+                                      args:
+                                        cond:
+                                          _type: GreaterThan
+                                          args:
+                                            left:
+                                              _type: Identifier
+                                              args:
+                                                name: N_JOBS
+                                                scope: null
+                                                lineno: 100
+                                            right:
+                                              _type: IntConst
+                                              args:
+                                                value: '1'
+                                                lineno: 100
+                                            lineno: 100
+                                        true_value:
+                                          _type: SystemCall
+                                          args:
+                                            syscall: clog2
+                                            args:
+                                              _tuple:
+                                              - _type: Identifier
+                                                args:
+                                                  name: N_JOBS
+                                                  scope: null
+                                                  lineno: 100
+                                            lineno: 100
+                                        false_value:
+                                          _type: IntConst
+                                          args:
+                                            value: '1'
+                                            lineno: 100
+                                        lineno: 100
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 100
+                                    lineno: 100
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 100
+                                lineno: 100
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 100
+                        second:
+                          _type: Wire
+                          args:
+                            name: seed_job
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: Cond
+                                      args:
+                                        cond:
+                                          _type: GreaterThan
+                                          args:
+                                            left:
+                                              _type: Identifier
+                                              args:
+                                                name: N_JOBS
+                                                scope: null
+                                                lineno: 100
+                                            right:
+                                              _type: IntConst
+                                              args:
+                                                value: '1'
+                                                lineno: 100
+                                            lineno: 100
+                                        true_value:
+                                          _type: SystemCall
+                                          args:
+                                            syscall: clog2
+                                            args:
+                                              _tuple:
+                                              - _type: Identifier
+                                                args:
+                                                  name: N_JOBS
+                                                  scope: null
+                                                  lineno: 100
+                                            lineno: 100
+                                        false_value:
+                                          _type: IntConst
+                                          args:
+                                            value: '1'
+                                            lineno: 100
+                                        lineno: 100
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 100
+                                    lineno: 100
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 100
+                                lineno: 100
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 100
+                        lineno: 100
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: seed_layer
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: Cond
+                                      args:
+                                        cond:
+                                          _type: GreaterThan
+                                          args:
+                                            left:
+                                              _type: Identifier
+                                              args:
+                                                name: DEPTH
+                                                scope: null
+                                                lineno: 101
+                                            right:
+                                              _type: IntConst
+                                              args:
+                                                value: '1'
+                                                lineno: 101
+                                            lineno: 101
+                                        true_value:
+                                          _type: SystemCall
+                                          args:
+                                            syscall: clog2
+                                            args:
+                                              _tuple:
+                                              - _type: Identifier
+                                                args:
+                                                  name: DEPTH
+                                                  scope: null
+                                                  lineno: 101
+                                            lineno: 101
+                                        false_value:
+                                          _type: IntConst
+                                          args:
+                                            value: '1'
+                                            lineno: 101
+                                        lineno: 101
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 101
+                                    lineno: 101
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 101
+                                lineno: 101
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 101
+                        second:
+                          _type: Wire
+                          args:
+                            name: seed_layer
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: Cond
+                                      args:
+                                        cond:
+                                          _type: GreaterThan
+                                          args:
+                                            left:
+                                              _type: Identifier
+                                              args:
+                                                name: DEPTH
+                                                scope: null
+                                                lineno: 101
+                                            right:
+                                              _type: IntConst
+                                              args:
+                                                value: '1'
+                                                lineno: 101
+                                            lineno: 101
+                                        true_value:
+                                          _type: SystemCall
+                                          args:
+                                            syscall: clog2
+                                            args:
+                                              _tuple:
+                                              - _type: Identifier
+                                                args:
+                                                  name: DEPTH
+                                                  scope: null
+                                                  lineno: 101
+                                            lineno: 101
+                                        false_value:
+                                          _type: IntConst
+                                          args:
+                                            value: '1'
+                                            lineno: 101
+                                        lineno: 101
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 101
+                                    lineno: 101
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 101
+                                lineno: 101
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 101
+                        lineno: 101
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: seed_plane
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 102
+                        second:
+                          _type: Wire
+                          args:
+                            name: seed_plane
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 102
+                        lineno: 102
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: seed_idx
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: Cond
+                                      args:
+                                        cond:
+                                          _type: GreaterThan
+                                          args:
+                                            left:
+                                              _type: Times
+                                              args:
+                                                left:
+                                                  _type: Identifier
+                                                  args:
+                                                    name: WIDTH
+                                                    scope: null
+                                                    lineno: 103
+                                                right:
+                                                  _type: Identifier
+                                                  args:
+                                                    name: HEIGHT
+                                                    scope: null
+                                                    lineno: 103
+                                                lineno: 103
+                                            right:
+                                              _type: IntConst
+                                              args:
+                                                value: '1'
+                                                lineno: 103
+                                            lineno: 103
+                                        true_value:
+                                          _type: SystemCall
+                                          args:
+                                            syscall: clog2
+                                            args:
+                                              _tuple:
+                                              - _type: Times
+                                                args:
+                                                  left:
+                                                    _type: Identifier
+                                                    args:
+                                                      name: WIDTH
+                                                      scope: null
+                                                      lineno: 103
+                                                  right:
+                                                    _type: Identifier
+                                                    args:
+                                                      name: HEIGHT
+                                                      scope: null
+                                                      lineno: 103
+                                                  lineno: 103
+                                            lineno: 103
+                                        false_value:
+                                          _type: IntConst
+                                          args:
+                                            value: '1'
+                                            lineno: 103
+                                        lineno: 103
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 103
+                                    lineno: 103
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 103
+                                lineno: 103
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 103
+                        second:
+                          _type: Wire
+                          args:
+                            name: seed_idx
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: Cond
+                                      args:
+                                        cond:
+                                          _type: GreaterThan
+                                          args:
+                                            left:
+                                              _type: Times
+                                              args:
+                                                left:
+                                                  _type: Identifier
+                                                  args:
+                                                    name: WIDTH
+                                                    scope: null
+                                                    lineno: 103
+                                                right:
+                                                  _type: Identifier
+                                                  args:
+                                                    name: HEIGHT
+                                                    scope: null
+                                                    lineno: 103
+                                                lineno: 103
+                                            right:
+                                              _type: IntConst
+                                              args:
+                                                value: '1'
+                                                lineno: 103
+                                            lineno: 103
+                                        true_value:
+                                          _type: SystemCall
+                                          args:
+                                            syscall: clog2
+                                            args:
+                                              _tuple:
+                                              - _type: Times
+                                                args:
+                                                  left:
+                                                    _type: Identifier
+                                                    args:
+                                                      name: WIDTH
+                                                      scope: null
+                                                      lineno: 103
+                                                  right:
+                                                    _type: Identifier
+                                                    args:
+                                                      name: HEIGHT
+                                                      scope: null
+                                                      lineno: 103
+                                                  lineno: 103
+                                            lineno: 103
+                                        false_value:
+                                          _type: IntConst
+                                          args:
+                                            value: '1'
+                                            lineno: 103
+                                        lineno: 103
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 103
+                                    lineno: 103
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 103
+                                lineno: 103
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 103
+                        lineno: 103
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: seed_data
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: Identifier
+                                      args:
+                                        name: DATA_W
+                                        scope: null
+                                        lineno: 104
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 104
+                                    lineno: 104
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 104
+                                lineno: 104
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 104
+                        second:
+                          _type: Wire
+                          args:
+                            name: seed_data
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: Identifier
+                                      args:
+                                        name: DATA_W
+                                        scope: null
+                                        lineno: 104
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 104
+                                    lineno: 104
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 104
+                                lineno: 104
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 104
+                        lineno: 104
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: eng_we
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 107
+                        second:
+                          _type: Wire
+                          args:
+                            name: eng_we
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 107
+                        lineno: 107
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: eng_job
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: Cond
+                                      args:
+                                        cond:
+                                          _type: GreaterThan
+                                          args:
+                                            left:
+                                              _type: Identifier
+                                              args:
+                                                name: N_JOBS
+                                                scope: null
+                                                lineno: 108
+                                            right:
+                                              _type: IntConst
+                                              args:
+                                                value: '1'
+                                                lineno: 108
+                                            lineno: 108
+                                        true_value:
+                                          _type: SystemCall
+                                          args:
+                                            syscall: clog2
+                                            args:
+                                              _tuple:
+                                              - _type: Identifier
+                                                args:
+                                                  name: N_JOBS
+                                                  scope: null
+                                                  lineno: 108
+                                            lineno: 108
+                                        false_value:
+                                          _type: IntConst
+                                          args:
+                                            value: '1'
+                                            lineno: 108
+                                        lineno: 108
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 108
+                                    lineno: 108
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 108
+                                lineno: 108
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 108
+                        second:
+                          _type: Wire
+                          args:
+                            name: eng_job
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: Cond
+                                      args:
+                                        cond:
+                                          _type: GreaterThan
+                                          args:
+                                            left:
+                                              _type: Identifier
+                                              args:
+                                                name: N_JOBS
+                                                scope: null
+                                                lineno: 108
+                                            right:
+                                              _type: IntConst
+                                              args:
+                                                value: '1'
+                                                lineno: 108
+                                            lineno: 108
+                                        true_value:
+                                          _type: SystemCall
+                                          args:
+                                            syscall: clog2
+                                            args:
+                                              _tuple:
+                                              - _type: Identifier
+                                                args:
+                                                  name: N_JOBS
+                                                  scope: null
+                                                  lineno: 108
+                                            lineno: 108
+                                        false_value:
+                                          _type: IntConst
+                                          args:
+                                            value: '1'
+                                            lineno: 108
+                                        lineno: 108
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 108
+                                    lineno: 108
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 108
+                                lineno: 108
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 108
+                        lineno: 108
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: eng_layer
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: Cond
+                                      args:
+                                        cond:
+                                          _type: GreaterThan
+                                          args:
+                                            left:
+                                              _type: Identifier
+                                              args:
+                                                name: DEPTH
+                                                scope: null
+                                                lineno: 109
+                                            right:
+                                              _type: IntConst
+                                              args:
+                                                value: '1'
+                                                lineno: 109
+                                            lineno: 109
+                                        true_value:
+                                          _type: SystemCall
+                                          args:
+                                            syscall: clog2
+                                            args:
+                                              _tuple:
+                                              - _type: Identifier
+                                                args:
+                                                  name: DEPTH
+                                                  scope: null
+                                                  lineno: 109
+                                            lineno: 109
+                                        false_value:
+                                          _type: IntConst
+                                          args:
+                                            value: '1'
+                                            lineno: 109
+                                        lineno: 109
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 109
+                                    lineno: 109
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 109
+                                lineno: 109
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 109
+                        second:
+                          _type: Wire
+                          args:
+                            name: eng_layer
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: Cond
+                                      args:
+                                        cond:
+                                          _type: GreaterThan
+                                          args:
+                                            left:
+                                              _type: Identifier
+                                              args:
+                                                name: DEPTH
+                                                scope: null
+                                                lineno: 109
+                                            right:
+                                              _type: IntConst
+                                              args:
+                                                value: '1'
+                                                lineno: 109
+                                            lineno: 109
+                                        true_value:
+                                          _type: SystemCall
+                                          args:
+                                            syscall: clog2
+                                            args:
+                                              _tuple:
+                                              - _type: Identifier
+                                                args:
+                                                  name: DEPTH
+                                                  scope: null
+                                                  lineno: 109
+                                            lineno: 109
+                                        false_value:
+                                          _type: IntConst
+                                          args:
+                                            value: '1'
+                                            lineno: 109
+                                        lineno: 109
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 109
+                                    lineno: 109
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 109
+                                lineno: 109
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 109
+                        lineno: 109
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: eng_plane_sel
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 110
+                        second:
+                          _type: Wire
+                          args:
+                            name: eng_plane_sel
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 110
+                        lineno: 110
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: eng_write_other_plane
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 111
+                        second:
+                          _type: Wire
+                          args:
+                            name: eng_write_other_plane
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 111
+                        lineno: 111
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: eng_idx
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: Cond
+                                      args:
+                                        cond:
+                                          _type: GreaterThan
+                                          args:
+                                            left:
+                                              _type: Times
+                                              args:
+                                                left:
+                                                  _type: Identifier
+                                                  args:
+                                                    name: WIDTH
+                                                    scope: null
+                                                    lineno: 112
+                                                right:
+                                                  _type: Identifier
+                                                  args:
+                                                    name: HEIGHT
+                                                    scope: null
+                                                    lineno: 112
+                                                lineno: 112
+                                            right:
+                                              _type: IntConst
+                                              args:
+                                                value: '1'
+                                                lineno: 112
+                                            lineno: 112
+                                        true_value:
+                                          _type: SystemCall
+                                          args:
+                                            syscall: clog2
+                                            args:
+                                              _tuple:
+                                              - _type: Times
+                                                args:
+                                                  left:
+                                                    _type: Identifier
+                                                    args:
+                                                      name: WIDTH
+                                                      scope: null
+                                                      lineno: 112
+                                                  right:
+                                                    _type: Identifier
+                                                    args:
+                                                      name: HEIGHT
+                                                      scope: null
+                                                      lineno: 112
+                                                  lineno: 112
+                                            lineno: 112
+                                        false_value:
+                                          _type: IntConst
+                                          args:
+                                            value: '1'
+                                            lineno: 112
+                                        lineno: 112
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 112
+                                    lineno: 112
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 112
+                                lineno: 112
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 112
+                        second:
+                          _type: Wire
+                          args:
+                            name: eng_idx
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: Cond
+                                      args:
+                                        cond:
+                                          _type: GreaterThan
+                                          args:
+                                            left:
+                                              _type: Times
+                                              args:
+                                                left:
+                                                  _type: Identifier
+                                                  args:
+                                                    name: WIDTH
+                                                    scope: null
+                                                    lineno: 112
+                                                right:
+                                                  _type: Identifier
+                                                  args:
+                                                    name: HEIGHT
+                                                    scope: null
+                                                    lineno: 112
+                                                lineno: 112
+                                            right:
+                                              _type: IntConst
+                                              args:
+                                                value: '1'
+                                                lineno: 112
+                                            lineno: 112
+                                        true_value:
+                                          _type: SystemCall
+                                          args:
+                                            syscall: clog2
+                                            args:
+                                              _tuple:
+                                              - _type: Times
+                                                args:
+                                                  left:
+                                                    _type: Identifier
+                                                    args:
+                                                      name: WIDTH
+                                                      scope: null
+                                                      lineno: 112
+                                                  right:
+                                                    _type: Identifier
+                                                    args:
+                                                      name: HEIGHT
+                                                      scope: null
+                                                      lineno: 112
+                                                  lineno: 112
+                                            lineno: 112
+                                        false_value:
+                                          _type: IntConst
+                                          args:
+                                            value: '1'
+                                            lineno: 112
+                                        lineno: 112
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 112
+                                    lineno: 112
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 112
+                                lineno: 112
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 112
+                        lineno: 112
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: eng_wdata
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: Identifier
+                                      args:
+                                        name: DATA_W
+                                        scope: null
+                                        lineno: 113
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 113
+                                    lineno: 113
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 113
+                                lineno: 113
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 113
+                        second:
+                          _type: Wire
+                          args:
+                            name: eng_wdata
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: Identifier
+                                      args:
+                                        name: DATA_W
+                                        scope: null
+                                        lineno: 113
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 113
+                                    lineno: 113
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 113
+                                lineno: 113
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 113
+                        lineno: 113
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Output
+                          args:
+                            name: eng_rdata
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: Identifier
+                                      args:
+                                        name: DATA_W
+                                        scope: null
+                                        lineno: 114
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 114
+                                    lineno: 114
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 114
+                                lineno: 114
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 114
+                        second:
+                          _type: Wire
+                          args:
+                            name: eng_rdata
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: Identifier
+                                      args:
+                                        name: DATA_W
+                                        scope: null
+                                        lineno: 114
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 114
+                                    lineno: 114
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 114
+                                lineno: 114
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 114
+                        lineno: 114
+                  lineno: 96
+              items:
+                _tuple:
+                - _type: Decl
+                  args:
+                    list:
+                      _tuple:
+                      - _type: Localparam
+                        args:
+                          name: CELLS
+                          value:
+                            _type: Rvalue
+                            args:
+                              var:
+                                _type: Times
+                                args:
+                                  left:
+                                    _type: Identifier
+                                    args:
+                                      name: WIDTH
+                                      scope: null
+                                      lineno: 116
+                                  right:
+                                    _type: Identifier
+                                    args:
+                                      name: HEIGHT
+                                      scope: null
+                                      lineno: 116
+                                  lineno: 116
+                              lineno: 116
+                          width: null
+                          signed: false
+                          lineno: 116
+                        extras:
+                          dimensions: null
+                    lineno: 116
+                - _type: Decl
+                  args:
+                    list:
+                      _tuple:
+                      - _type: Localparam
+                        args:
+                          name: PLANES
+                          value:
+                            _type: Rvalue
+                            args:
+                              var:
+                                _type: IntConst
+                                args:
+                                  value: '2'
+                                  lineno: 117
+                              lineno: 117
+                          width: null
+                          signed: false
+                          lineno: 117
+                        extras:
+                          dimensions: null
+                    lineno: 117
+                - _type: Decl
+                  args:
+                    list:
+                      _tuple:
+                      - _type: Localparam
+                        args:
+                          name: ADDR_W
+                          value:
+                            _type: Rvalue
+                            args:
+                              var:
+                                _type: SystemCall
+                                args:
+                                  syscall: clog2
+                                  args:
+                                    _tuple:
+                                    - _type: Times
+                                      args:
+                                        left:
+                                          _type: Times
+                                          args:
+                                            left:
+                                              _type: Times
+                                              args:
+                                                left:
+                                                  _type: Identifier
+                                                  args:
+                                                    name: N_JOBS
+                                                    scope: null
+                                                    lineno: 118
+                                                right:
+                                                  _type: Identifier
+                                                  args:
+                                                    name: DEPTH
+                                                    scope: null
+                                                    lineno: 118
+                                                lineno: 118
+                                            right:
+                                              _type: Identifier
+                                              args:
+                                                name: PLANES
+                                                scope: null
+                                                lineno: 118
+                                            lineno: 118
+                                        right:
+                                          _type: Identifier
+                                          args:
+                                            name: CELLS
+                                            scope: null
+                                            lineno: 118
+                                        lineno: 118
+                                  lineno: 118
+                              lineno: 118
+                          width: null
+                          signed: false
+                          lineno: 118
+                        extras:
+                          dimensions: null
+                    lineno: 118
+                - _type: Decl
+                  args:
+                    list:
+                      _tuple:
+                      - _type: Wire
+                        args:
+                          name: seed_addr
+                          width:
+                            _type: Width
+                            args:
+                              msb:
+                                _type: Minus
+                                args:
+                                  left:
+                                    _type: Identifier
+                                    args:
+                                      name: ADDR_W
+                                      scope: null
+                                      lineno: 120
+                                  right:
+                                    _type: IntConst
+                                    args:
+                                      value: '1'
+                                      lineno: 120
+                                  lineno: 120
+                              lsb:
+                                _type: IntConst
+                                args:
+                                  value: '0'
+                                  lineno: 120
+                              lineno: 120
+                          signed: false
+                          dimensions: null
+                          value: null
+                          lineno: 120
+                      - _type: Assign
+                        args:
+                          left:
+                            _type: Lvalue
+                            args:
+                              var:
+                                _type: Identifier
+                                args:
+                                  name: seed_addr
+                                  scope: null
+                                  lineno: 120
+                              lineno: 120
+                          right:
+                            _type: Rvalue
+                            args:
+                              var:
+                                _type: Plus
+                                args:
+                                  left:
+                                    _type: Times
+                                    args:
+                                      left:
+                                        _type: Plus
+                                        args:
+                                          left:
+                                            _type: Times
+                                            args:
+                                              left:
+                                                _type: Plus
+                                                args:
+                                                  left:
+                                                    _type: Times
+                                                    args:
+                                                      left:
+                                                        _type: Identifier
+                                                        args:
+                                                          name: seed_job
+                                                          scope: null
+                                                          lineno: 120
+                                                      right:
+                                                        _type: Identifier
+                                                        args:
+                                                          name: DEPTH
+                                                          scope: null
+                                                          lineno: 120
+                                                      lineno: 120
+                                                  right:
+                                                    _type: Identifier
+                                                    args:
+                                                      name: seed_layer
+                                                      scope: null
+                                                      lineno: 120
+                                                  lineno: 120
+                                              right:
+                                                _type: Identifier
+                                                args:
+                                                  name: PLANES
+                                                  scope: null
+                                                  lineno: 120
+                                              lineno: 120
+                                          right:
+                                            _type: Identifier
+                                            args:
+                                              name: seed_plane
+                                              scope: null
+                                              lineno: 120
+                                          lineno: 120
+                                      right:
+                                        _type: Identifier
+                                        args:
+                                          name: CELLS
+                                          scope: null
+                                          lineno: 120
+                                      lineno: 120
+                                  right:
+                                    _type: Identifier
+                                    args:
+                                      name: seed_idx
+                                      scope: null
+                                      lineno: 120
+                                  lineno: 120
+                              lineno: 120
+                          ldelay: null
+                          rdelay: null
+                          lineno: 120
+                    lineno: 120
+                - _type: Decl
+                  args:
+                    list:
+                      _tuple:
+                      - _type: Wire
+                        args:
+                          name: eng_raddr
+                          width:
+                            _type: Width
+                            args:
+                              msb:
+                                _type: Minus
+                                args:
+                                  left:
+                                    _type: Identifier
+                                    args:
+                                      name: ADDR_W
+                                      scope: null
+                                      lineno: 121
+                                  right:
+                                    _type: IntConst
+                                    args:
+                                      value: '1'
+                                      lineno: 121
+                                  lineno: 121
+                              lsb:
+                                _type: IntConst
+                                args:
+                                  value: '0'
+                                  lineno: 121
+                              lineno: 121
+                          signed: false
+                          dimensions: null
+                          value: null
+                          lineno: 121
+                      - _type: Assign
+                        args:
+                          left:
+                            _type: Lvalue
+                            args:
+                              var:
+                                _type: Identifier
+                                args:
+                                  name: eng_raddr
+                                  scope: null
+                                  lineno: 121
+                              lineno: 121
+                          right:
+                            _type: Rvalue
+                            args:
+                              var:
+                                _type: Plus
+                                args:
+                                  left:
+                                    _type: Times
+                                    args:
+                                      left:
+                                        _type: Plus
+                                        args:
+                                          left:
+                                            _type: Times
+                                            args:
+                                              left:
+                                                _type: Plus
+                                                args:
+                                                  left:
+                                                    _type: Times
+                                                    args:
+                                                      left:
+                                                        _type: Identifier
+                                                        args:
+                                                          name: eng_job
+                                                          scope: null
+                                                          lineno: 121
+                                                      right:
+                                                        _type: Identifier
+                                                        args:
+                                                          name: DEPTH
+                                                          scope: null
+                                                          lineno: 121
+                                                      lineno: 121
+                                                  right:
+                                                    _type: Identifier
+                                                    args:
+                                                      name: eng_layer
+                                                      scope: null
+                                                      lineno: 121
+                                                  lineno: 121
+                                              right:
+                                                _type: Identifier
+                                                args:
+                                                  name: PLANES
+                                                  scope: null
+                                                  lineno: 121
+                                              lineno: 121
+                                          right:
+                                            _type: Identifier
+                                            args:
+                                              name: eng_plane_sel
+                                              scope: null
+                                              lineno: 121
+                                          lineno: 121
+                                      right:
+                                        _type: Identifier
+                                        args:
+                                          name: CELLS
+                                          scope: null
+                                          lineno: 121
+                                      lineno: 121
+                                  right:
+                                    _type: Identifier
+                                    args:
+                                      name: eng_idx
+                                      scope: null
+                                      lineno: 121
+                                  lineno: 121
+                              lineno: 121
+                          ldelay: null
+                          rdelay: null
+                          lineno: 121
+                    lineno: 121
+                - _type: Decl
+                  args:
+                    list:
+                      _tuple:
+                      - _type: Wire
+                        args:
+                          name: eng_waddr
+                          width:
+                            _type: Width
+                            args:
+                              msb:
+                                _type: Minus
+                                args:
+                                  left:
+                                    _type: Identifier
+                                    args:
+                                      name: ADDR_W
+                                      scope: null
+                                      lineno: 122
+                                  right:
+                                    _type: IntConst
+                                    args:
+                                      value: '1'
+                                      lineno: 122
+                                  lineno: 122
+                              lsb:
+                                _type: IntConst
+                                args:
+                                  value: '0'
+                                  lineno: 122
+                              lineno: 122
+                          signed: false
+                          dimensions: null
+                          value: null
+                          lineno: 122
+                      - _type: Assign
+                        args:
+                          left:
+                            _type: Lvalue
+                            args:
+                              var:
+                                _type: Identifier
+                                args:
+                                  name: eng_waddr
+                                  scope: null
+                                  lineno: 122
+                              lineno: 122
+                          right:
+                            _type: Rvalue
+                            args:
+                              var:
+                                _type: Plus
+                                args:
+                                  left:
+                                    _type: Times
+                                    args:
+                                      left:
+                                        _type: Plus
+                                        args:
+                                          left:
+                                            _type: Times
+                                            args:
+                                              left:
+                                                _type: Plus
+                                                args:
+                                                  left:
+                                                    _type: Times
+                                                    args:
+                                                      left:
+                                                        _type: Identifier
+                                                        args:
+                                                          name: eng_job
+                                                          scope: null
+                                                          lineno: 122
+                                                      right:
+                                                        _type: Identifier
+                                                        args:
+                                                          name: DEPTH
+                                                          scope: null
+                                                          lineno: 122
+                                                      lineno: 122
+                                                  right:
+                                                    _type: Identifier
+                                                    args:
+                                                      name: eng_layer
+                                                      scope: null
+                                                      lineno: 122
+                                                  lineno: 122
+                                              right:
+                                                _type: Identifier
+                                                args:
+                                                  name: PLANES
+                                                  scope: null
+                                                  lineno: 122
+                                              lineno: 122
+                                          right:
+                                            _type: Ulnot
+                                            args:
+                                              right:
+                                                _type: Identifier
+                                                args:
+                                                  name: eng_plane_sel
+                                                  scope: null
+                                                  lineno: 122
+                                              lineno: 122
+                                          lineno: 122
+                                      right:
+                                        _type: Identifier
+                                        args:
+                                          name: CELLS
+                                          scope: null
+                                          lineno: 122
+                                      lineno: 122
+                                  right:
+                                    _type: Identifier
+                                    args:
+                                      name: eng_idx
+                                      scope: null
+                                      lineno: 122
+                                  lineno: 122
+                              lineno: 122
+                          ldelay: null
+                          rdelay: null
+                          lineno: 122
+                    lineno: 122
+                - _type: InstanceList
+                  args:
+                    module: bram_tdp_wrap
+                    parameterlist:
+                      _tuple:
+                      - _type: ParamArg
+                        args:
+                          paramname: DATA_W
+                          argname:
+                            _type: Identifier
+                            args:
+                              name: DATA_W
+                              scope: null
+                              lineno: 125
+                          lineno: 125
+                      - _type: ParamArg
+                        args:
+                          paramname: ADDR_W
+                          argname:
+                            _type: Identifier
+                            args:
+                              name: ADDR_W
+                              scope: null
+                              lineno: 125
+                          lineno: 125
+                    instances:
+                      _tuple:
+                      - _type: Instance
+                        args:
+                          module: bram_tdp_wrap
+                          name: u_mem
+                          portlist:
+                            _tuple:
+                            - _type: PortArg
+                              args:
+                                portname: clk
+                                argname:
+                                  _type: Identifier
+                                  args:
+                                    name: clk
+                                    scope: null
+                                    lineno: 126
+                                lineno: 126
+                            - _type: PortArg
+                              args:
+                                portname: a_we
+                                argname:
+                                  _type: Cond
+                                  args:
+                                    cond:
+                                      _type: Identifier
+                                      args:
+                                        name: seed_we
+                                        scope: null
+                                        lineno: 128
+                                    true_value:
+                                      _type: IntConst
+                                      args:
+                                        value: 1'b1
+                                        lineno: 128
+                                    false_value:
+                                      _type: And
+                                      args:
+                                        left:
+                                          _type: Identifier
+                                          args:
+                                            name: eng_we
+                                            scope: null
+                                            lineno: 128
+                                        right:
+                                          _type: Identifier
+                                          args:
+                                            name: eng_write_other_plane
+                                            scope: null
+                                            lineno: 128
+                                        lineno: 128
+                                    lineno: 128
+                                lineno: 128
+                            - _type: PortArg
+                              args:
+                                portname: a_addr
+                                argname:
+                                  _type: Cond
+                                  args:
+                                    cond:
+                                      _type: Identifier
+                                      args:
+                                        name: seed_we
+                                        scope: null
+                                        lineno: 129
+                                    true_value:
+                                      _type: Identifier
+                                      args:
+                                        name: seed_addr
+                                        scope: null
+                                        lineno: 129
+                                    false_value:
+                                      _type: Identifier
+                                      args:
+                                        name: eng_waddr
+                                        scope: null
+                                        lineno: 129
+                                    lineno: 129
+                                lineno: 129
+                            - _type: PortArg
+                              args:
+                                portname: a_din
+                                argname:
+                                  _type: Cond
+                                  args:
+                                    cond:
+                                      _type: Identifier
+                                      args:
+                                        name: seed_we
+                                        scope: null
+                                        lineno: 130
+                                    true_value:
+                                      _type: Identifier
+                                      args:
+                                        name: seed_data
+                                        scope: null
+                                        lineno: 130
+                                    false_value:
+                                      _type: Identifier
+                                      args:
+                                        name: eng_wdata
+                                        scope: null
+                                        lineno: 130
+                                    lineno: 130
+                                lineno: 130
+                            - _type: PortArg
+                              args:
+                                portname: a_dout
+                                argname: null
+                                lineno: 131
+                            - _type: PortArg
+                              args:
+                                portname: b_we
+                                argname:
+                                  _type: IntConst
+                                  args:
+                                    value: 1'b0
+                                    lineno: 133
+                                lineno: 133
+                            - _type: PortArg
+                              args:
+                                portname: b_addr
+                                argname:
+                                  _type: Identifier
+                                  args:
+                                    name: eng_raddr
+                                    scope: null
+                                    lineno: 134
+                                lineno: 134
+                            - _type: PortArg
+                              args:
+                                portname: b_din
+                                argname:
+                                  _type: Repeat
+                                  args:
+                                    value:
+                                      _type: Concat
+                                      args:
+                                        list:
+                                          _tuple:
+                                          - _type: IntConst
+                                            args:
+                                              value: 1'b0
+                                              lineno: 135
+                                        lineno: 135
+                                    times:
+                                      _type: Identifier
+                                      args:
+                                        name: DATA_W
+                                        scope: null
+                                        lineno: 135
+                                    lineno: 135
+                                lineno: 135
+                            - _type: PortArg
+                              args:
+                                portname: b_dout
+                                argname:
+                                  _type: Identifier
+                                  args:
+                                    name: eng_rdata
+                                    scope: null
+                                    lineno: 136
+                                lineno: 136
+                          parameterlist:
+                            _tuple:
+                            - _type: ParamArg
+                              args:
+                                paramname: DATA_W
+                                argname:
+                                  _type: Identifier
+                                  args:
+                                    name: DATA_W
+                                    scope: null
+                                    lineno: 125
+                                lineno: 125
+                            - _type: ParamArg
+                              args:
+                                paramname: ADDR_W
+                                argname:
+                                  _type: Identifier
+                                  args:
+                                    name: ADDR_W
+                                    scope: null
+                                    lineno: 125
+                                lineno: 125
+                          array: null
+                          lineno: 125
+                    lineno: 125
+              default_nettype: wire
+              lineno: 90
+            extras:
+              end_lineno: 138
+        lineno: 90
+    lineno: 90
+parse_hints:
+  functions: {}

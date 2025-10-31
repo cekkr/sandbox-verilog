@@ -1,0 +1,972 @@
+version: 1
+kind: verilog_module
+original_path: sand_top.v
+includes:
+- sand_defs.vh
+summary:
+  modules:
+  - name: sand_top
+    parameters: []
+    ports:
+    - name: clk
+      direction: input
+      width: null
+      signed: false
+      datatype: wire
+    - name: rst
+      direction: input
+      width: null
+      signed: false
+      datatype: wire
+    - name: csr_we
+      direction: input
+      width: null
+      signed: false
+      datatype: wire
+    - name: csr_re
+      direction: input
+      width: null
+      signed: false
+      datatype: wire
+    - name: csr_addr
+      direction: input
+      width: '[7:0]'
+      signed: false
+      datatype: wire
+    - name: csr_wdata
+      direction: input
+      width: '[31:0]'
+      signed: false
+      datatype: wire
+    - name: csr_rdata
+      direction: output
+      width: '[31:0]'
+      signed: false
+      datatype: wire
+    - name: seed_we
+      direction: input
+      width: null
+      signed: false
+      datatype: wire
+    - name: seed_job
+      direction: input
+      width: '[$clog2(4)-1:0]'
+      signed: false
+      datatype: wire
+    - name: seed_layer
+      direction: input
+      width: '[$clog2(4)-1:0]'
+      signed: false
+      datatype: wire
+    - name: seed_idx
+      direction: input
+      width: '[$clog2((32*32))-1:0]'
+      signed: false
+      datatype: wire
+    - name: seed_data
+      direction: input
+      width: '[16-1:0]'
+      signed: false
+      datatype: wire
+    - name: job_done
+      direction: output
+      width: '[4-1:0]'
+      signed: false
+      datatype: wire
+ast:
+  _type: Source
+  args:
+    name: ''
+    description:
+      _type: Description
+      args:
+        definitions:
+          _tuple:
+          - _type: ModuleDef
+            args:
+              name: sand_top
+              paramlist:
+                _type: Paramlist
+                args:
+                  params:
+                    _tuple: []
+                  lineno: 0
+              portlist:
+                _type: Portlist
+                args:
+                  ports:
+                    _tuple:
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: clk
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 97
+                        second:
+                          _type: Wire
+                          args:
+                            name: clk
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 97
+                        lineno: 97
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: rst
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 98
+                        second:
+                          _type: Wire
+                          args:
+                            name: rst
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 98
+                        lineno: 98
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: csr_we
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 101
+                        second:
+                          _type: Wire
+                          args:
+                            name: csr_we
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 101
+                        lineno: 101
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: csr_re
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 102
+                        second:
+                          _type: Wire
+                          args:
+                            name: csr_re
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 102
+                        lineno: 102
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: csr_addr
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: IntConst
+                                  args:
+                                    value: '7'
+                                    lineno: 103
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 103
+                                lineno: 103
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 103
+                        second:
+                          _type: Wire
+                          args:
+                            name: csr_addr
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: IntConst
+                                  args:
+                                    value: '7'
+                                    lineno: 103
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 103
+                                lineno: 103
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 103
+                        lineno: 103
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: csr_wdata
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: IntConst
+                                  args:
+                                    value: '31'
+                                    lineno: 104
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 104
+                                lineno: 104
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 104
+                        second:
+                          _type: Wire
+                          args:
+                            name: csr_wdata
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: IntConst
+                                  args:
+                                    value: '31'
+                                    lineno: 104
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 104
+                                lineno: 104
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 104
+                        lineno: 104
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Output
+                          args:
+                            name: csr_rdata
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: IntConst
+                                  args:
+                                    value: '31'
+                                    lineno: 105
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 105
+                                lineno: 105
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 105
+                        second:
+                          _type: Wire
+                          args:
+                            name: csr_rdata
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: IntConst
+                                  args:
+                                    value: '31'
+                                    lineno: 105
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 105
+                                lineno: 105
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 105
+                        lineno: 105
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: seed_we
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 108
+                        second:
+                          _type: Wire
+                          args:
+                            name: seed_we
+                            width: null
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 108
+                        lineno: 108
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: seed_job
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: SystemCall
+                                      args:
+                                        syscall: clog2
+                                        args:
+                                          _tuple:
+                                          - _type: IntConst
+                                            args:
+                                              value: '4'
+                                              lineno: 109
+                                        lineno: 109
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 109
+                                    lineno: 109
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 109
+                                lineno: 109
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 109
+                        second:
+                          _type: Wire
+                          args:
+                            name: seed_job
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: SystemCall
+                                      args:
+                                        syscall: clog2
+                                        args:
+                                          _tuple:
+                                          - _type: IntConst
+                                            args:
+                                              value: '4'
+                                              lineno: 109
+                                        lineno: 109
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 109
+                                    lineno: 109
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 109
+                                lineno: 109
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 109
+                        lineno: 109
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: seed_layer
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: SystemCall
+                                      args:
+                                        syscall: clog2
+                                        args:
+                                          _tuple:
+                                          - _type: IntConst
+                                            args:
+                                              value: '4'
+                                              lineno: 110
+                                        lineno: 110
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 110
+                                    lineno: 110
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 110
+                                lineno: 110
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 110
+                        second:
+                          _type: Wire
+                          args:
+                            name: seed_layer
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: SystemCall
+                                      args:
+                                        syscall: clog2
+                                        args:
+                                          _tuple:
+                                          - _type: IntConst
+                                            args:
+                                              value: '4'
+                                              lineno: 110
+                                        lineno: 110
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 110
+                                    lineno: 110
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 110
+                                lineno: 110
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 110
+                        lineno: 110
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: seed_idx
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: SystemCall
+                                      args:
+                                        syscall: clog2
+                                        args:
+                                          _tuple:
+                                          - _type: Times
+                                            args:
+                                              left:
+                                                _type: IntConst
+                                                args:
+                                                  value: '32'
+                                                  lineno: 111
+                                              right:
+                                                _type: IntConst
+                                                args:
+                                                  value: '32'
+                                                  lineno: 111
+                                              lineno: 111
+                                        lineno: 111
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 111
+                                    lineno: 111
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 111
+                                lineno: 111
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 111
+                        second:
+                          _type: Wire
+                          args:
+                            name: seed_idx
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: SystemCall
+                                      args:
+                                        syscall: clog2
+                                        args:
+                                          _tuple:
+                                          - _type: Times
+                                            args:
+                                              left:
+                                                _type: IntConst
+                                                args:
+                                                  value: '32'
+                                                  lineno: 111
+                                              right:
+                                                _type: IntConst
+                                                args:
+                                                  value: '32'
+                                                  lineno: 111
+                                              lineno: 111
+                                        lineno: 111
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 111
+                                    lineno: 111
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 111
+                                lineno: 111
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 111
+                        lineno: 111
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Input
+                          args:
+                            name: seed_data
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: IntConst
+                                      args:
+                                        value: '16'
+                                        lineno: 112
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 112
+                                    lineno: 112
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 112
+                                lineno: 112
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 112
+                        second:
+                          _type: Wire
+                          args:
+                            name: seed_data
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: IntConst
+                                      args:
+                                        value: '16'
+                                        lineno: 112
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 112
+                                    lineno: 112
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 112
+                                lineno: 112
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 112
+                        lineno: 112
+                    - _type: Ioport
+                      args:
+                        first:
+                          _type: Output
+                          args:
+                            name: job_done
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: IntConst
+                                      args:
+                                        value: '4'
+                                        lineno: 114
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 114
+                                    lineno: 114
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 114
+                                lineno: 114
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 114
+                        second:
+                          _type: Wire
+                          args:
+                            name: job_done
+                            width:
+                              _type: Width
+                              args:
+                                msb:
+                                  _type: Minus
+                                  args:
+                                    left:
+                                      _type: IntConst
+                                      args:
+                                        value: '4'
+                                        lineno: 114
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '1'
+                                        lineno: 114
+                                    lineno: 114
+                                lsb:
+                                  _type: IntConst
+                                  args:
+                                    value: '0'
+                                    lineno: 114
+                                lineno: 114
+                            signed: false
+                            dimensions: null
+                            value: null
+                            lineno: 114
+                        lineno: 114
+                  lineno: 96
+              items:
+                _tuple:
+                - _type: InstanceList
+                  args:
+                    module: sand_scheduler_dynamic
+                    parameterlist:
+                      _tuple:
+                      - _type: ParamArg
+                        args:
+                          paramname: DATA_W
+                          argname:
+                            _type: IntConst
+                            args:
+                              value: '16'
+                              lineno: 118
+                          lineno: 118
+                      - _type: ParamArg
+                        args:
+                          paramname: WIDTH
+                          argname:
+                            _type: IntConst
+                            args:
+                              value: '32'
+                              lineno: 118
+                          lineno: 118
+                      - _type: ParamArg
+                        args:
+                          paramname: HEIGHT
+                          argname:
+                            _type: IntConst
+                            args:
+                              value: '32'
+                              lineno: 118
+                          lineno: 118
+                      - _type: ParamArg
+                        args:
+                          paramname: DEPTH
+                          argname:
+                            _type: IntConst
+                            args:
+                              value: '4'
+                              lineno: 119
+                          lineno: 119
+                      - _type: ParamArg
+                        args:
+                          paramname: N_JOBS
+                          argname:
+                            _type: IntConst
+                            args:
+                              value: '4'
+                              lineno: 119
+                          lineno: 119
+                    instances:
+                      _tuple:
+                      - _type: Instance
+                        args:
+                          module: sand_scheduler_dynamic
+                          name: u_sched
+                          portlist:
+                            _tuple:
+                            - _type: PortArg
+                              args:
+                                portname: clk
+                                argname:
+                                  _type: Identifier
+                                  args:
+                                    name: clk
+                                    scope: null
+                                    lineno: 121
+                                lineno: 121
+                            - _type: PortArg
+                              args:
+                                portname: rst
+                                argname:
+                                  _type: Identifier
+                                  args:
+                                    name: rst
+                                    scope: null
+                                    lineno: 121
+                                lineno: 121
+                            - _type: PortArg
+                              args:
+                                portname: csr_we
+                                argname:
+                                  _type: Identifier
+                                  args:
+                                    name: csr_we
+                                    scope: null
+                                    lineno: 122
+                                lineno: 122
+                            - _type: PortArg
+                              args:
+                                portname: csr_addr
+                                argname:
+                                  _type: Identifier
+                                  args:
+                                    name: csr_addr
+                                    scope: null
+                                    lineno: 122
+                                lineno: 122
+                            - _type: PortArg
+                              args:
+                                portname: csr_wdata
+                                argname:
+                                  _type: Identifier
+                                  args:
+                                    name: csr_wdata
+                                    scope: null
+                                    lineno: 122
+                                lineno: 122
+                            - _type: PortArg
+                              args:
+                                portname: csr_re
+                                argname:
+                                  _type: Identifier
+                                  args:
+                                    name: csr_re
+                                    scope: null
+                                    lineno: 123
+                                lineno: 123
+                            - _type: PortArg
+                              args:
+                                portname: csr_rdata
+                                argname:
+                                  _type: Identifier
+                                  args:
+                                    name: csr_rdata
+                                    scope: null
+                                    lineno: 123
+                                lineno: 123
+                            - _type: PortArg
+                              args:
+                                portname: seed_we
+                                argname:
+                                  _type: Identifier
+                                  args:
+                                    name: seed_we
+                                    scope: null
+                                    lineno: 124
+                                lineno: 124
+                            - _type: PortArg
+                              args:
+                                portname: seed_job
+                                argname:
+                                  _type: Identifier
+                                  args:
+                                    name: seed_job
+                                    scope: null
+                                    lineno: 124
+                                lineno: 124
+                            - _type: PortArg
+                              args:
+                                portname: seed_layer
+                                argname:
+                                  _type: Identifier
+                                  args:
+                                    name: seed_layer
+                                    scope: null
+                                    lineno: 124
+                                lineno: 124
+                            - _type: PortArg
+                              args:
+                                portname: seed_idx
+                                argname:
+                                  _type: Identifier
+                                  args:
+                                    name: seed_idx
+                                    scope: null
+                                    lineno: 125
+                                lineno: 125
+                            - _type: PortArg
+                              args:
+                                portname: seed_data
+                                argname:
+                                  _type: Identifier
+                                  args:
+                                    name: seed_data
+                                    scope: null
+                                    lineno: 125
+                                lineno: 125
+                            - _type: PortArg
+                              args:
+                                portname: job_done
+                                argname:
+                                  _type: Identifier
+                                  args:
+                                    name: job_done
+                                    scope: null
+                                    lineno: 126
+                                lineno: 126
+                          parameterlist:
+                            _tuple:
+                            - _type: ParamArg
+                              args:
+                                paramname: DATA_W
+                                argname:
+                                  _type: IntConst
+                                  args:
+                                    value: '16'
+                                    lineno: 118
+                                lineno: 118
+                            - _type: ParamArg
+                              args:
+                                paramname: WIDTH
+                                argname:
+                                  _type: IntConst
+                                  args:
+                                    value: '32'
+                                    lineno: 118
+                                lineno: 118
+                            - _type: ParamArg
+                              args:
+                                paramname: HEIGHT
+                                argname:
+                                  _type: IntConst
+                                  args:
+                                    value: '32'
+                                    lineno: 118
+                                lineno: 118
+                            - _type: ParamArg
+                              args:
+                                paramname: DEPTH
+                                argname:
+                                  _type: IntConst
+                                  args:
+                                    value: '4'
+                                    lineno: 119
+                                lineno: 119
+                            - _type: ParamArg
+                              args:
+                                paramname: N_JOBS
+                                argname:
+                                  _type: IntConst
+                                  args:
+                                    value: '4'
+                                    lineno: 119
+                                lineno: 119
+                          array: null
+                          lineno: 117
+                    lineno: 117
+              default_nettype: wire
+              lineno: 96
+            extras:
+              end_lineno: 129
+        lineno: 96
+    lineno: 96
+parse_hints:
+  functions: {}

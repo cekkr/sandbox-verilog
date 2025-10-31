@@ -12,6 +12,7 @@ DIRECTORY_MAP:
 - rtl/: synthesizable path (`sand_defs.vh`, `sand_math.vh`, `sand_pe.v`, `sand_engine_raster.v`, `sand_jobmem2p.v`, `sand_scheduler_dynamic.v`, `sand_top.v`, `bram_tdp_wrap.v`).
 - rtl/circuits/: reusable combinational helpers (edge detector, neuron ReLU, neighbour mix, softsign activation, micro-lut activation).
 - rtl/legacy/: legacy fully parallel architecture (`sand_grid.v`, `sand_scheduler.v`, `sand_jobmem.v`).
+- rtl.yaml/: YAML mirror of synthesizable RTL (`tools/verilog_yaml_bridge.py` output; core modules expose ASTs, streaming blocks currently fall back to body text + metadata until the parser supports their SV features).
 - tools/: Python utilities (`sand_runner.py`, `sand_configurator.py`, `sand_dynamic_configurator.py`, `sample_dynamic_config.yaml`, `__init__.py`).
 - examples/: behavioural demos (`galton_board`, `neural_edge_slice`, `neural_activation_field`) with Verilog testbenches + Python runners.
 - examples/neural_edge_slice/configs/: YAML presets that drive auto-generated config headers.
@@ -71,7 +72,7 @@ LEGACY PIPELINE (`rtl/legacy/*`):
 - `sand_scheduler.v`: legacy scheduler matching parallel grid.
 - `sand_jobmem.v`: legacy job memory (pre pointer-swap). Retained for reference/comparison.
 
-PYTHON TOOLING (`tools/sand_runner.py`, `tools/sand_configurator.py`, `tools/sand_dynamic_configurator.py`, `tools/__init__.py`):
+PYTHON TOOLING (`tools/sand_runner.py`, `tools/sand_configurator.py`, `tools/sand_dynamic_configurator.py`, `tools/verilog_yaml_bridge.py`, `tools/__init__.py`):
 - `SandToolError`: exception for tool failures.
 - `IcarusBuildConfig`: dataclass describing compile inputs.
 - `compile_icarus`: runs `iverilog -g2012` with include dirs/defines/top; returns VVP path.
@@ -80,6 +81,7 @@ PYTHON TOOLING (`tools/sand_runner.py`, `tools/sand_configurator.py`, `tools/san
 - `sand_configurator`: parses YAML/JSON presets, resolves neural-edge and neural-activation parameter sets (including the new `activation.bypass` knob), writes example-specific headers (including fallback `NAF_FEEDBACK_PCT` for legacy plusargs), and enumerates required `rtl/circuits/` sources for any circuit list.
 - `sand_dynamic_configurator`: kernel-style feature configurator that consumes high-level YAML/JSON, resolves feature/type/operation dependencies, checks resource budgets, emits `build_plan.json` (sources/defines/notes) plus `sand_dynamic_types.vh` summarising active data types/macros. CLI supports `list` (features/types/operations) and `build` (config → artefacts).
 - `sample_dynamic_config.yaml`: example profile enabling ML-centric features, multiple type families (float32 default, extra fixed/float options), and two composite units; use it as a template with `python3 -m tools.sand_dynamic_configurator build tools/sample_dynamic_config.yaml --output build/dynamic_profile`.
+- `verilog_yaml_bridge`: exports RTL into structured YAML (`export`) and regenerates RTL (`restore`). PyVerilog drives the AST path; the streaming RTL blocks still emit `kind: verilog_module_fallback` records (original text + interface summary) until the bridge grows full SystemVerilog coverage.
 - `__init__.py`: re-exports helpers (runner + configurator) for convenience.
 
 EXAMPLE DEMOS (`examples/`):

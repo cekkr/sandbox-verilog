@@ -1,0 +1,1442 @@
+version: 1
+kind: verilog_module
+original_path: circuits/sand_circuit_neuron_relu.v
+includes:
+- sand_defs.vh
+summary:
+  modules:
+  - name: sand_circuit_neuron_relu
+    parameters:
+    - name: DATA_W
+      value: '16'
+      signed: false
+    - name: FRAC_W
+      value: '8'
+      signed: false
+    ports:
+    - name: edge_in
+      direction: null
+      width: null
+      signed: false
+      datatype: null
+    - name: raw_in
+      direction: null
+      width: null
+      signed: false
+      datatype: null
+    - name: edge_gain_q
+      direction: null
+      width: null
+      signed: false
+      datatype: null
+    - name: raw_gain_q
+      direction: null
+      width: null
+      signed: false
+      datatype: null
+    - name: bias_q
+      direction: null
+      width: null
+      signed: false
+      datatype: null
+    - name: threshold_q
+      direction: null
+      width: null
+      signed: false
+      datatype: null
+    - name: raw_out
+      direction: null
+      width: null
+      signed: false
+      datatype: null
+    - name: relu_out
+      direction: null
+      width: null
+      signed: false
+      datatype: null
+    - name: fire
+      direction: null
+      width: null
+      signed: false
+      datatype: null
+ast:
+  _type: Source
+  args:
+    name: ''
+    description:
+      _type: Description
+      args:
+        definitions:
+          _tuple:
+          - _type: ModuleDef
+            args:
+              name: sand_circuit_neuron_relu
+              paramlist:
+                _type: Paramlist
+                args:
+                  params:
+                    _tuple:
+                    - _type: Decl
+                      args:
+                        list:
+                          _tuple:
+                          - _type: Parameter
+                            args:
+                              name: DATA_W
+                              value:
+                                _type: Rvalue
+                                args:
+                                  var:
+                                    _type: IntConst
+                                    args:
+                                      value: '16'
+                                      lineno: 103
+                                  lineno: 103
+                              width: null
+                              signed: false
+                              lineno: 103
+                            extras:
+                              dimensions: null
+                        lineno: 103
+                    - _type: Decl
+                      args:
+                        list:
+                          _tuple:
+                          - _type: Parameter
+                            args:
+                              name: FRAC_W
+                              value:
+                                _type: Rvalue
+                                args:
+                                  var:
+                                    _type: IntConst
+                                    args:
+                                      value: '8'
+                                      lineno: 104
+                                  lineno: 104
+                              width: null
+                              signed: false
+                              lineno: 104
+                            extras:
+                              dimensions: null
+                        lineno: 104
+                  lineno: 102
+              portlist:
+                _type: Portlist
+                args:
+                  ports:
+                    _tuple:
+                    - _type: Port
+                      args:
+                        name: edge_in
+                        width: null
+                        dimensions: null
+                        type: null
+                        lineno: 106
+                    - _type: Port
+                      args:
+                        name: raw_in
+                        width: null
+                        dimensions: null
+                        type: null
+                        lineno: 106
+                    - _type: Port
+                      args:
+                        name: edge_gain_q
+                        width: null
+                        dimensions: null
+                        type: null
+                        lineno: 106
+                    - _type: Port
+                      args:
+                        name: raw_gain_q
+                        width: null
+                        dimensions: null
+                        type: null
+                        lineno: 106
+                    - _type: Port
+                      args:
+                        name: bias_q
+                        width: null
+                        dimensions: null
+                        type: null
+                        lineno: 106
+                    - _type: Port
+                      args:
+                        name: threshold_q
+                        width: null
+                        dimensions: null
+                        type: null
+                        lineno: 106
+                    - _type: Port
+                      args:
+                        name: raw_out
+                        width: null
+                        dimensions: null
+                        type: null
+                        lineno: 106
+                    - _type: Port
+                      args:
+                        name: relu_out
+                        width: null
+                        dimensions: null
+                        type: null
+                        lineno: 106
+                    - _type: Port
+                      args:
+                        name: fire
+                        width: null
+                        dimensions: null
+                        type: null
+                        lineno: 106
+                  lineno: 105
+              items:
+                _tuple:
+                - _type: Decl
+                  args:
+                    list:
+                      _tuple:
+                      - _type: Input
+                        args:
+                          name: edge_in
+                          width:
+                            _type: Width
+                            args:
+                              msb:
+                                _type: Minus
+                                args:
+                                  left:
+                                    _type: Identifier
+                                    args:
+                                      name: DATA_W
+                                      scope: null
+                                      lineno: 116
+                                  right:
+                                    _type: IntConst
+                                    args:
+                                      value: '1'
+                                      lineno: 116
+                                  lineno: 116
+                              lsb:
+                                _type: IntConst
+                                args:
+                                  value: '0'
+                                  lineno: 116
+                              lineno: 116
+                          signed: true
+                          dimensions: null
+                          value: null
+                          lineno: 116
+                    lineno: 116
+                - _type: Decl
+                  args:
+                    list:
+                      _tuple:
+                      - _type: Input
+                        args:
+                          name: raw_in
+                          width:
+                            _type: Width
+                            args:
+                              msb:
+                                _type: Minus
+                                args:
+                                  left:
+                                    _type: Identifier
+                                    args:
+                                      name: DATA_W
+                                      scope: null
+                                      lineno: 117
+                                  right:
+                                    _type: IntConst
+                                    args:
+                                      value: '1'
+                                      lineno: 117
+                                  lineno: 117
+                              lsb:
+                                _type: IntConst
+                                args:
+                                  value: '0'
+                                  lineno: 117
+                              lineno: 117
+                          signed: true
+                          dimensions: null
+                          value: null
+                          lineno: 117
+                    lineno: 117
+                - _type: Decl
+                  args:
+                    list:
+                      _tuple:
+                      - _type: Input
+                        args:
+                          name: edge_gain_q
+                          width:
+                            _type: Width
+                            args:
+                              msb:
+                                _type: Minus
+                                args:
+                                  left:
+                                    _type: Identifier
+                                    args:
+                                      name: DATA_W
+                                      scope: null
+                                      lineno: 118
+                                  right:
+                                    _type: IntConst
+                                    args:
+                                      value: '1'
+                                      lineno: 118
+                                  lineno: 118
+                              lsb:
+                                _type: IntConst
+                                args:
+                                  value: '0'
+                                  lineno: 118
+                              lineno: 118
+                          signed: true
+                          dimensions: null
+                          value: null
+                          lineno: 118
+                    lineno: 118
+                - _type: Decl
+                  args:
+                    list:
+                      _tuple:
+                      - _type: Input
+                        args:
+                          name: raw_gain_q
+                          width:
+                            _type: Width
+                            args:
+                              msb:
+                                _type: Minus
+                                args:
+                                  left:
+                                    _type: Identifier
+                                    args:
+                                      name: DATA_W
+                                      scope: null
+                                      lineno: 119
+                                  right:
+                                    _type: IntConst
+                                    args:
+                                      value: '1'
+                                      lineno: 119
+                                  lineno: 119
+                              lsb:
+                                _type: IntConst
+                                args:
+                                  value: '0'
+                                  lineno: 119
+                              lineno: 119
+                          signed: true
+                          dimensions: null
+                          value: null
+                          lineno: 119
+                    lineno: 119
+                - _type: Decl
+                  args:
+                    list:
+                      _tuple:
+                      - _type: Input
+                        args:
+                          name: bias_q
+                          width:
+                            _type: Width
+                            args:
+                              msb:
+                                _type: Minus
+                                args:
+                                  left:
+                                    _type: Identifier
+                                    args:
+                                      name: DATA_W
+                                      scope: null
+                                      lineno: 120
+                                  right:
+                                    _type: IntConst
+                                    args:
+                                      value: '1'
+                                      lineno: 120
+                                  lineno: 120
+                              lsb:
+                                _type: IntConst
+                                args:
+                                  value: '0'
+                                  lineno: 120
+                              lineno: 120
+                          signed: true
+                          dimensions: null
+                          value: null
+                          lineno: 120
+                    lineno: 120
+                - _type: Decl
+                  args:
+                    list:
+                      _tuple:
+                      - _type: Input
+                        args:
+                          name: threshold_q
+                          width:
+                            _type: Width
+                            args:
+                              msb:
+                                _type: Minus
+                                args:
+                                  left:
+                                    _type: Identifier
+                                    args:
+                                      name: DATA_W
+                                      scope: null
+                                      lineno: 121
+                                  right:
+                                    _type: IntConst
+                                    args:
+                                      value: '1'
+                                      lineno: 121
+                                  lineno: 121
+                              lsb:
+                                _type: IntConst
+                                args:
+                                  value: '0'
+                                  lineno: 121
+                              lineno: 121
+                          signed: true
+                          dimensions: null
+                          value: null
+                          lineno: 121
+                    lineno: 121
+                - _type: Decl
+                  args:
+                    list:
+                      _tuple:
+                      - _type: Output
+                        args:
+                          name: raw_out
+                          width:
+                            _type: Width
+                            args:
+                              msb:
+                                _type: Minus
+                                args:
+                                  left:
+                                    _type: Identifier
+                                    args:
+                                      name: DATA_W
+                                      scope: null
+                                      lineno: 122
+                                  right:
+                                    _type: IntConst
+                                    args:
+                                      value: '1'
+                                      lineno: 122
+                                  lineno: 122
+                              lsb:
+                                _type: IntConst
+                                args:
+                                  value: '0'
+                                  lineno: 122
+                              lineno: 122
+                          signed: true
+                          dimensions: null
+                          value: null
+                          lineno: 122
+                      - _type: Reg
+                        args:
+                          name: raw_out
+                          width:
+                            _type: Width
+                            args:
+                              msb:
+                                _type: Minus
+                                args:
+                                  left:
+                                    _type: Identifier
+                                    args:
+                                      name: DATA_W
+                                      scope: null
+                                      lineno: 122
+                                  right:
+                                    _type: IntConst
+                                    args:
+                                      value: '1'
+                                      lineno: 122
+                                  lineno: 122
+                              lsb:
+                                _type: IntConst
+                                args:
+                                  value: '0'
+                                  lineno: 122
+                              lineno: 122
+                          signed: true
+                          dimensions: null
+                          value: null
+                          lineno: 122
+                    lineno: 122
+                - _type: Decl
+                  args:
+                    list:
+                      _tuple:
+                      - _type: Output
+                        args:
+                          name: relu_out
+                          width:
+                            _type: Width
+                            args:
+                              msb:
+                                _type: Minus
+                                args:
+                                  left:
+                                    _type: Identifier
+                                    args:
+                                      name: DATA_W
+                                      scope: null
+                                      lineno: 123
+                                  right:
+                                    _type: IntConst
+                                    args:
+                                      value: '1'
+                                      lineno: 123
+                                  lineno: 123
+                              lsb:
+                                _type: IntConst
+                                args:
+                                  value: '0'
+                                  lineno: 123
+                              lineno: 123
+                          signed: true
+                          dimensions: null
+                          value: null
+                          lineno: 123
+                      - _type: Reg
+                        args:
+                          name: relu_out
+                          width:
+                            _type: Width
+                            args:
+                              msb:
+                                _type: Minus
+                                args:
+                                  left:
+                                    _type: Identifier
+                                    args:
+                                      name: DATA_W
+                                      scope: null
+                                      lineno: 123
+                                  right:
+                                    _type: IntConst
+                                    args:
+                                      value: '1'
+                                      lineno: 123
+                                  lineno: 123
+                              lsb:
+                                _type: IntConst
+                                args:
+                                  value: '0'
+                                  lineno: 123
+                              lineno: 123
+                          signed: true
+                          dimensions: null
+                          value: null
+                          lineno: 123
+                    lineno: 123
+                - _type: Decl
+                  args:
+                    list:
+                      _tuple:
+                      - _type: Output
+                        args:
+                          name: fire
+                          width: null
+                          signed: false
+                          dimensions: null
+                          value: null
+                          lineno: 124
+                      - _type: Reg
+                        args:
+                          name: fire
+                          width: null
+                          signed: false
+                          dimensions: null
+                          value: null
+                          lineno: 124
+                    lineno: 124
+                - _type: Decl
+                  args:
+                    list:
+                      _tuple:
+                      - _type: Localparam
+                        args:
+                          name: Q_MAX
+                          value:
+                            _type: Rvalue
+                            args:
+                              var:
+                                _type: Minus
+                                args:
+                                  left:
+                                    _type: Sll
+                                    args:
+                                      left:
+                                        _type: IntConst
+                                        args:
+                                          value: '1'
+                                          lineno: 126
+                                      right:
+                                        _type: Minus
+                                        args:
+                                          left:
+                                            _type: Identifier
+                                            args:
+                                              name: DATA_W
+                                              scope: null
+                                              lineno: 126
+                                          right:
+                                            _type: IntConst
+                                            args:
+                                              value: '1'
+                                              lineno: 126
+                                          lineno: 126
+                                      lineno: 126
+                                  right:
+                                    _type: IntConst
+                                    args:
+                                      value: '1'
+                                      lineno: 126
+                                  lineno: 126
+                              lineno: 126
+                          width: null
+                          signed: false
+                          lineno: 126
+                        extras:
+                          dimensions: null
+                    lineno: 126
+                - _type: Decl
+                  args:
+                    list:
+                      _tuple:
+                      - _type: Localparam
+                        args:
+                          name: Q_MIN
+                          value:
+                            _type: Rvalue
+                            args:
+                              var:
+                                _type: Uminus
+                                args:
+                                  right:
+                                    _type: Sll
+                                    args:
+                                      left:
+                                        _type: IntConst
+                                        args:
+                                          value: '1'
+                                          lineno: 127
+                                      right:
+                                        _type: Minus
+                                        args:
+                                          left:
+                                            _type: Identifier
+                                            args:
+                                              name: DATA_W
+                                              scope: null
+                                              lineno: 127
+                                          right:
+                                            _type: IntConst
+                                            args:
+                                              value: '1'
+                                              lineno: 127
+                                          lineno: 127
+                                      lineno: 127
+                                  lineno: 127
+                              lineno: 127
+                          width: null
+                          signed: false
+                          lineno: 127
+                        extras:
+                          dimensions: null
+                    lineno: 127
+                - _type: Decl
+                  args:
+                    list:
+                      _tuple:
+                      - _type: Integer
+                        args:
+                          name: edge_term
+                          width:
+                            _type: Width
+                            args:
+                              msb:
+                                _type: IntConst
+                                args:
+                                  value: '31'
+                                  lineno: 129
+                              lsb:
+                                _type: IntConst
+                                args:
+                                  value: '0'
+                                  lineno: 129
+                              lineno: 129
+                          signed: true
+                          dimensions: null
+                          value: null
+                          lineno: 129
+                    lineno: 129
+                - _type: Decl
+                  args:
+                    list:
+                      _tuple:
+                      - _type: Integer
+                        args:
+                          name: raw_term
+                          width:
+                            _type: Width
+                            args:
+                              msb:
+                                _type: IntConst
+                                args:
+                                  value: '31'
+                                  lineno: 130
+                              lsb:
+                                _type: IntConst
+                                args:
+                                  value: '0'
+                                  lineno: 130
+                              lineno: 130
+                          signed: true
+                          dimensions: null
+                          value: null
+                          lineno: 130
+                    lineno: 130
+                - _type: Decl
+                  args:
+                    list:
+                      _tuple:
+                      - _type: Integer
+                        args:
+                          name: combined
+                          width:
+                            _type: Width
+                            args:
+                              msb:
+                                _type: IntConst
+                                args:
+                                  value: '31'
+                                  lineno: 131
+                              lsb:
+                                _type: IntConst
+                                args:
+                                  value: '0'
+                                  lineno: 131
+                              lineno: 131
+                          signed: true
+                          dimensions: null
+                          value: null
+                          lineno: 131
+                    lineno: 131
+                - _type: Function
+                  args:
+                    name: clamp_signed
+                    retwidth:
+                      _type: Width
+                      args:
+                        msb:
+                          _type: IntConst
+                          args:
+                            value: '31'
+                            lineno: 133
+                        lsb:
+                          _type: IntConst
+                          args:
+                            value: '0'
+                            lineno: 133
+                        lineno: 133
+                    statement:
+                      _tuple:
+                      - _type: Decl
+                        args:
+                          list:
+                            _tuple:
+                            - _type: Input
+                              args:
+                                name: value
+                                width:
+                                  _type: Width
+                                  args:
+                                    msb:
+                                      _type: IntConst
+                                      args:
+                                        value: '31'
+                                        lineno: 134
+                                    lsb:
+                                      _type: IntConst
+                                      args:
+                                        value: '0'
+                                        lineno: 134
+                                    lineno: 134
+                                signed: false
+                                dimensions: null
+                                value: null
+                                lineno: 134
+                          lineno: 134
+                      - _type: Block
+                        args:
+                          statements:
+                            _tuple:
+                            - _type: IfStatement
+                              args:
+                                cond:
+                                  _type: GreaterThan
+                                  args:
+                                    left:
+                                      _type: Identifier
+                                      args:
+                                        name: value
+                                        scope: null
+                                        lineno: 136
+                                    right:
+                                      _type: Identifier
+                                      args:
+                                        name: Q_MAX
+                                        scope: null
+                                        lineno: 136
+                                    lineno: 136
+                                true_statement:
+                                  _type: BlockingSubstitution
+                                  args:
+                                    left:
+                                      _type: Lvalue
+                                      args:
+                                        var:
+                                          _type: Identifier
+                                          args:
+                                            name: clamp_signed
+                                            scope: null
+                                            lineno: 137
+                                        lineno: 137
+                                    right:
+                                      _type: Rvalue
+                                      args:
+                                        var:
+                                          _type: Identifier
+                                          args:
+                                            name: Q_MAX
+                                            scope: null
+                                            lineno: 137
+                                        lineno: 137
+                                    ldelay: null
+                                    rdelay: null
+                                    lineno: 137
+                                false_statement:
+                                  _type: IfStatement
+                                  args:
+                                    cond:
+                                      _type: LessThan
+                                      args:
+                                        left:
+                                          _type: Identifier
+                                          args:
+                                            name: value
+                                            scope: null
+                                            lineno: 138
+                                        right:
+                                          _type: Identifier
+                                          args:
+                                            name: Q_MIN
+                                            scope: null
+                                            lineno: 138
+                                        lineno: 138
+                                    true_statement:
+                                      _type: BlockingSubstitution
+                                      args:
+                                        left:
+                                          _type: Lvalue
+                                          args:
+                                            var:
+                                              _type: Identifier
+                                              args:
+                                                name: clamp_signed
+                                                scope: null
+                                                lineno: 139
+                                            lineno: 139
+                                        right:
+                                          _type: Rvalue
+                                          args:
+                                            var:
+                                              _type: Identifier
+                                              args:
+                                                name: Q_MIN
+                                                scope: null
+                                                lineno: 139
+                                            lineno: 139
+                                        ldelay: null
+                                        rdelay: null
+                                        lineno: 139
+                                    false_statement:
+                                      _type: BlockingSubstitution
+                                      args:
+                                        left:
+                                          _type: Lvalue
+                                          args:
+                                            var:
+                                              _type: Identifier
+                                              args:
+                                                name: clamp_signed
+                                                scope: null
+                                                lineno: 141
+                                            lineno: 141
+                                        right:
+                                          _type: Rvalue
+                                          args:
+                                            var:
+                                              _type: Identifier
+                                              args:
+                                                name: value
+                                                scope: null
+                                                lineno: 141
+                                            lineno: 141
+                                        ldelay: null
+                                        rdelay: null
+                                        lineno: 141
+                                    lineno: 138
+                                lineno: 136
+                          scope: null
+                          lineno: 135
+                    lineno: 133
+                - _type: Function
+                  args:
+                    name: clamp_positive
+                    retwidth:
+                      _type: Width
+                      args:
+                        msb:
+                          _type: IntConst
+                          args:
+                            value: '31'
+                            lineno: 145
+                        lsb:
+                          _type: IntConst
+                          args:
+                            value: '0'
+                            lineno: 145
+                        lineno: 145
+                    statement:
+                      _tuple:
+                      - _type: Decl
+                        args:
+                          list:
+                            _tuple:
+                            - _type: Input
+                              args:
+                                name: value
+                                width:
+                                  _type: Width
+                                  args:
+                                    msb:
+                                      _type: IntConst
+                                      args:
+                                        value: '31'
+                                        lineno: 146
+                                    lsb:
+                                      _type: IntConst
+                                      args:
+                                        value: '0'
+                                        lineno: 146
+                                    lineno: 146
+                                signed: false
+                                dimensions: null
+                                value: null
+                                lineno: 146
+                          lineno: 146
+                      - _type: Block
+                        args:
+                          statements:
+                            _tuple:
+                            - _type: IfStatement
+                              args:
+                                cond:
+                                  _type: LessThan
+                                  args:
+                                    left:
+                                      _type: Identifier
+                                      args:
+                                        name: value
+                                        scope: null
+                                        lineno: 148
+                                    right:
+                                      _type: IntConst
+                                      args:
+                                        value: '0'
+                                        lineno: 148
+                                    lineno: 148
+                                true_statement:
+                                  _type: BlockingSubstitution
+                                  args:
+                                    left:
+                                      _type: Lvalue
+                                      args:
+                                        var:
+                                          _type: Identifier
+                                          args:
+                                            name: clamp_positive
+                                            scope: null
+                                            lineno: 149
+                                        lineno: 149
+                                    right:
+                                      _type: Rvalue
+                                      args:
+                                        var:
+                                          _type: IntConst
+                                          args:
+                                            value: '0'
+                                            lineno: 149
+                                        lineno: 149
+                                    ldelay: null
+                                    rdelay: null
+                                    lineno: 149
+                                false_statement:
+                                  _type: IfStatement
+                                  args:
+                                    cond:
+                                      _type: GreaterThan
+                                      args:
+                                        left:
+                                          _type: Identifier
+                                          args:
+                                            name: value
+                                            scope: null
+                                            lineno: 150
+                                        right:
+                                          _type: Identifier
+                                          args:
+                                            name: Q_MAX
+                                            scope: null
+                                            lineno: 150
+                                        lineno: 150
+                                    true_statement:
+                                      _type: BlockingSubstitution
+                                      args:
+                                        left:
+                                          _type: Lvalue
+                                          args:
+                                            var:
+                                              _type: Identifier
+                                              args:
+                                                name: clamp_positive
+                                                scope: null
+                                                lineno: 151
+                                            lineno: 151
+                                        right:
+                                          _type: Rvalue
+                                          args:
+                                            var:
+                                              _type: Identifier
+                                              args:
+                                                name: Q_MAX
+                                                scope: null
+                                                lineno: 151
+                                            lineno: 151
+                                        ldelay: null
+                                        rdelay: null
+                                        lineno: 151
+                                    false_statement:
+                                      _type: BlockingSubstitution
+                                      args:
+                                        left:
+                                          _type: Lvalue
+                                          args:
+                                            var:
+                                              _type: Identifier
+                                              args:
+                                                name: clamp_positive
+                                                scope: null
+                                                lineno: 153
+                                            lineno: 153
+                                        right:
+                                          _type: Rvalue
+                                          args:
+                                            var:
+                                              _type: Identifier
+                                              args:
+                                                name: value
+                                                scope: null
+                                                lineno: 153
+                                            lineno: 153
+                                        ldelay: null
+                                        rdelay: null
+                                        lineno: 153
+                                    lineno: 150
+                                lineno: 148
+                          scope: null
+                          lineno: 147
+                    lineno: 145
+                - _type: Always
+                  args:
+                    sens_list:
+                      _type: SensList
+                      args:
+                        list:
+                          _tuple:
+                          - _type: Sens
+                            args:
+                              sig: null
+                              type: all
+                              lineno: 157
+                        lineno: 157
+                    statement:
+                      _type: Block
+                      args:
+                        statements:
+                          _tuple:
+                          - _type: BlockingSubstitution
+                            args:
+                              left:
+                                _type: Lvalue
+                                args:
+                                  var:
+                                    _type: Identifier
+                                    args:
+                                      name: edge_term
+                                      scope: null
+                                      lineno: 158
+                                  lineno: 158
+                              right:
+                                _type: Rvalue
+                                args:
+                                  var:
+                                    _type: Sra
+                                    args:
+                                      left:
+                                        _type: Times
+                                        args:
+                                          left:
+                                            _type: SystemCall
+                                            args:
+                                              syscall: signed
+                                              args:
+                                                _tuple:
+                                                - _type: Identifier
+                                                  args:
+                                                    name: edge_gain_q
+                                                    scope: null
+                                                    lineno: 158
+                                              lineno: 158
+                                          right:
+                                            _type: SystemCall
+                                            args:
+                                              syscall: signed
+                                              args:
+                                                _tuple:
+                                                - _type: Identifier
+                                                  args:
+                                                    name: edge_in
+                                                    scope: null
+                                                    lineno: 158
+                                              lineno: 158
+                                          lineno: 158
+                                      right:
+                                        _type: Identifier
+                                        args:
+                                          name: FRAC_W
+                                          scope: null
+                                          lineno: 158
+                                      lineno: 158
+                                  lineno: 158
+                              ldelay: null
+                              rdelay: null
+                              lineno: 158
+                          - _type: BlockingSubstitution
+                            args:
+                              left:
+                                _type: Lvalue
+                                args:
+                                  var:
+                                    _type: Identifier
+                                    args:
+                                      name: raw_term
+                                      scope: null
+                                      lineno: 159
+                                  lineno: 159
+                              right:
+                                _type: Rvalue
+                                args:
+                                  var:
+                                    _type: Sra
+                                    args:
+                                      left:
+                                        _type: Times
+                                        args:
+                                          left:
+                                            _type: SystemCall
+                                            args:
+                                              syscall: signed
+                                              args:
+                                                _tuple:
+                                                - _type: Identifier
+                                                  args:
+                                                    name: raw_gain_q
+                                                    scope: null
+                                                    lineno: 159
+                                              lineno: 159
+                                          right:
+                                            _type: SystemCall
+                                            args:
+                                              syscall: signed
+                                              args:
+                                                _tuple:
+                                                - _type: Identifier
+                                                  args:
+                                                    name: raw_in
+                                                    scope: null
+                                                    lineno: 159
+                                              lineno: 159
+                                          lineno: 159
+                                      right:
+                                        _type: Identifier
+                                        args:
+                                          name: FRAC_W
+                                          scope: null
+                                          lineno: 159
+                                      lineno: 159
+                                  lineno: 159
+                              ldelay: null
+                              rdelay: null
+                              lineno: 159
+                          - _type: BlockingSubstitution
+                            args:
+                              left:
+                                _type: Lvalue
+                                args:
+                                  var:
+                                    _type: Identifier
+                                    args:
+                                      name: combined
+                                      scope: null
+                                      lineno: 160
+                                  lineno: 160
+                              right:
+                                _type: Rvalue
+                                args:
+                                  var:
+                                    _type: Plus
+                                    args:
+                                      left:
+                                        _type: Plus
+                                        args:
+                                          left:
+                                            _type: Identifier
+                                            args:
+                                              name: edge_term
+                                              scope: null
+                                              lineno: 160
+                                          right:
+                                            _type: Identifier
+                                            args:
+                                              name: raw_term
+                                              scope: null
+                                              lineno: 160
+                                          lineno: 160
+                                      right:
+                                        _type: SystemCall
+                                        args:
+                                          syscall: signed
+                                          args:
+                                            _tuple:
+                                            - _type: Identifier
+                                              args:
+                                                name: bias_q
+                                                scope: null
+                                                lineno: 160
+                                          lineno: 160
+                                      lineno: 160
+                                  lineno: 160
+                              ldelay: null
+                              rdelay: null
+                              lineno: 160
+                          - _type: BlockingSubstitution
+                            args:
+                              left:
+                                _type: Lvalue
+                                args:
+                                  var:
+                                    _type: Identifier
+                                    args:
+                                      name: raw_out
+                                      scope: null
+                                      lineno: 162
+                                  lineno: 162
+                              right:
+                                _type: Rvalue
+                                args:
+                                  var:
+                                    _type: FunctionCall
+                                    args:
+                                      name:
+                                        _type: Identifier
+                                        args:
+                                          name: clamp_signed
+                                          scope: null
+                                          lineno: 162
+                                      args:
+                                        _tuple:
+                                        - _type: Identifier
+                                          args:
+                                            name: combined
+                                            scope: null
+                                            lineno: 162
+                                      lineno: 162
+                                  lineno: 162
+                              ldelay: null
+                              rdelay: null
+                              lineno: 162
+                          - _type: IfStatement
+                            args:
+                              cond:
+                                _type: GreaterThan
+                                args:
+                                  left:
+                                    _type: Identifier
+                                    args:
+                                      name: combined
+                                      scope: null
+                                      lineno: 164
+                                  right:
+                                    _type: IntConst
+                                    args:
+                                      value: '0'
+                                      lineno: 164
+                                  lineno: 164
+                              true_statement:
+                                _type: BlockingSubstitution
+                                args:
+                                  left:
+                                    _type: Lvalue
+                                    args:
+                                      var:
+                                        _type: Identifier
+                                        args:
+                                          name: relu_out
+                                          scope: null
+                                          lineno: 165
+                                      lineno: 165
+                                  right:
+                                    _type: Rvalue
+                                    args:
+                                      var:
+                                        _type: FunctionCall
+                                        args:
+                                          name:
+                                            _type: Identifier
+                                            args:
+                                              name: clamp_positive
+                                              scope: null
+                                              lineno: 165
+                                          args:
+                                            _tuple:
+                                            - _type: Identifier
+                                              args:
+                                                name: combined
+                                                scope: null
+                                                lineno: 165
+                                          lineno: 165
+                                      lineno: 165
+                                  ldelay: null
+                                  rdelay: null
+                                  lineno: 165
+                              false_statement:
+                                _type: BlockingSubstitution
+                                args:
+                                  left:
+                                    _type: Lvalue
+                                    args:
+                                      var:
+                                        _type: Identifier
+                                        args:
+                                          name: relu_out
+                                          scope: null
+                                          lineno: 167
+                                      lineno: 167
+                                  right:
+                                    _type: Rvalue
+                                    args:
+                                      var:
+                                        _type: Repeat
+                                        args:
+                                          value:
+                                            _type: Concat
+                                            args:
+                                              list:
+                                                _tuple:
+                                                - _type: IntConst
+                                                  args:
+                                                    value: 1'b0
+                                                    lineno: 167
+                                              lineno: 167
+                                          times:
+                                            _type: Identifier
+                                            args:
+                                              name: DATA_W
+                                              scope: null
+                                              lineno: 167
+                                          lineno: 167
+                                      lineno: 167
+                                  ldelay: null
+                                  rdelay: null
+                                  lineno: 167
+                              lineno: 164
+                          - _type: BlockingSubstitution
+                            args:
+                              left:
+                                _type: Lvalue
+                                args:
+                                  var:
+                                    _type: Identifier
+                                    args:
+                                      name: fire
+                                      scope: null
+                                      lineno: 169
+                                  lineno: 169
+                              right:
+                                _type: Rvalue
+                                args:
+                                  var:
+                                    _type: GreaterEq
+                                    args:
+                                      left:
+                                        _type: Identifier
+                                        args:
+                                          name: combined
+                                          scope: null
+                                          lineno: 169
+                                      right:
+                                        _type: Identifier
+                                        args:
+                                          name: threshold_q
+                                          scope: null
+                                          lineno: 169
+                                      lineno: 169
+                                  lineno: 169
+                              ldelay: null
+                              rdelay: null
+                              lineno: 169
+                        scope: null
+                        lineno: 157
+                    lineno: 157
+              default_nettype: wire
+              lineno: 102
+            extras:
+              end_lineno: 171
+        lineno: 102
+    lineno: 102
+parse_hints:
+  functions:
+    clamp_signed:
+      automatic: false
+      integer_return: true
+      signed_return: false
+    clamp_positive:
+      automatic: false
+      integer_return: true
+      signed_return: false

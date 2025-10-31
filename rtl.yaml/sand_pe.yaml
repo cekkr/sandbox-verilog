@@ -1,0 +1,441 @@
+version: 1
+kind: verilog_module_fallback
+original_path: sand_pe.v
+includes:
+- sand_defs.vh
+- sand_math.vh
+summary:
+  modules:
+  - name: sand_pe
+    parameters:
+    - name: DATA_W
+      value: '16'
+      signed: false
+    - name: FRAC_W
+      value: '8'
+      signed: false
+    ports:
+    - name: clk
+      direction: input
+      width: null
+      signed: false
+      datatype: wire
+    - name: rst
+      direction: input
+      width: null
+      signed: false
+      datatype: wire
+    - name: self_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: n_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: s_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: e_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: w_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: ne_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: nw_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: se_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: sw_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: above_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: below_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: opcode
+      direction: input
+      width: '[5-1:0]'
+      signed: false
+      datatype: wire
+    - name: use_diagonals
+      direction: input
+      width: null
+      signed: false
+      datatype: wire
+    - name: constA
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: constB
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: constC
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: constD
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_flux_enable
+      direction: input
+      width: null
+      signed: false
+      datatype: wire
+    - name: unit_overflow_reverse_top
+      direction: input
+      width: null
+      signed: false
+      datatype: wire
+    - name: unit_overflow_reverse_bottom
+      direction: input
+      width: null
+      signed: false
+      datatype: wire
+    - name: unit_pressure_diag_override
+      direction: input
+      width: null
+      signed: false
+      datatype: wire
+    - name: unit_pressure_iters
+      direction: input
+      width: '[7:0]'
+      signed: false
+      datatype: wire
+    - name: unit_weight_top
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_weight_bottom
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_weight_side
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_weight_retain
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_weight_prev
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_flux_threshold
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_flux_reverse_top
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_flux_reverse_bottom
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_pressure_gain
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_backprop_lr
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_backprop_neigh
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_backprop_decay
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: micro_lut
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: next_out
+      direction: output
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: reg
+parse_error: ' line:318: before: "["'
+body_text: "// =============================================================================\n\
+  // sand_pe.v \u2014 single \"sand\" processing element\n// - Synchronous update:\
+  \ next_state depends on PREVIOUS tick neighbors\n// - Avoids races via grid-level\
+  \ ping-pong buffers\n// - Optional diagonals\n// - Simple ALU with a microcode hook\n\
+  // =============================================================================\n\
+  `include \"sand_defs.vh\"\n`include \"sand_math.vh\" //todo?\n\nmodule sand_pe #(\n\
+  \    parameter DATA_W = `DATA_W,\n    parameter FRAC_W = `FRAC_W\n)(\n    input\
+  \  wire                   clk,\n    input  wire                   rst,\n\n    //\
+  \ Current cell & neighbors from the READ buffer (previous tick)\n    input  wire\
+  \ [DATA_W-1:0]      self_in,\n    input  wire [DATA_W-1:0]      n_in,\n    input\
+  \  wire [DATA_W-1:0]      s_in,\n    input  wire [DATA_W-1:0]      e_in,\n    input\
+  \  wire [DATA_W-1:0]      w_in,\n    input  wire [DATA_W-1:0]      ne_in,\n    input\
+  \  wire [DATA_W-1:0]      nw_in,\n    input  wire [DATA_W-1:0]      se_in,\n   \
+  \ input  wire [DATA_W-1:0]      sw_in,\n    input  wire [DATA_W-1:0]      above_in,\n\
+  \    input  wire [DATA_W-1:0]      below_in,\n\n    // Config\n    input  wire [`OPCODE_W-1:0]\
+  \   opcode,\n    input  wire                   use_diagonals, // 0 => 4-neigh, 1\
+  \ => 8-neigh\n    input  wire [DATA_W-1:0]      constA,\n    input  wire [DATA_W-1:0]\
+  \      constB,\n    input  wire [DATA_W-1:0]      constC,\n    input  wire [DATA_W-1:0]\
+  \      constD,\n\n    // Enhanced unit tuple \u2014 mirrors sand_engine_raster so\
+  \ legacy grid stays feature-parity\n    input  wire                   unit_flux_enable,\n\
+  \    input  wire                   unit_overflow_reverse_top,\n    input  wire \
+  \                  unit_overflow_reverse_bottom,\n    input  wire              \
+  \     unit_pressure_diag_override,\n    input  wire [7:0]             unit_pressure_iters,\n\
+  \    input  wire [DATA_W-1:0]      unit_weight_top,\n    input  wire [DATA_W-1:0]\
+  \      unit_weight_bottom,\n    input  wire [DATA_W-1:0]      unit_weight_side,\n\
+  \    input  wire [DATA_W-1:0]      unit_weight_retain,\n    input  wire [DATA_W-1:0]\
+  \      unit_weight_prev,\n    input  wire [DATA_W-1:0]      unit_flux_threshold,\n\
+  \    input  wire [DATA_W-1:0]      unit_flux_reverse_top,\n    input  wire [DATA_W-1:0]\
+  \      unit_flux_reverse_bottom,\n    input  wire [DATA_W-1:0]      unit_pressure_gain,\n\
+  \    input  wire [DATA_W-1:0]      unit_backprop_lr,\n    input  wire [DATA_W-1:0]\
+  \      unit_backprop_neigh,\n    input  wire [DATA_W-1:0]      unit_backprop_decay,\n\
+  \n    // Microcode table (16 entries x DATA_W), supplied by grid (shared ROM/RAM)\n\
+  \    input  wire [DATA_W-1:0]      micro_lut [0:15],\n\n    // Output next state\
+  \ (to WRITE buffer)\n    output reg  [DATA_W-1:0]      next_out\n);\n    localparam\
+  \ integer EXT_W = DATA_W + 4;\n\n    // -------- Helper functions ------------------------------------------------\n\
+  \    function [DATA_W-1:0] fp_add;\n        input [DATA_W-1:0] a,b; begin fp_add\
+  \ = a + b; end\n    endfunction\n\n    function [DATA_W-1:0] fp_sub;\n        input\
+  \ [DATA_W-1:0] a,b; begin fp_sub = a - b; end\n    endfunction\n\n    function [DATA_W-1:0]\
+  \ fp_mul_const;\n        input [DATA_W-1:0] a,c; begin\n            // Q(FRAC_W)\
+  \ * Q(FRAC_W) >> FRAC_W (if c is fixed-point)\n            fp_mul_const = (a * c)\
+  \ >>> FRAC_W;\n        end\n    endfunction\n\n    function [DATA_W-1:0] fp_div_const;\n\
+  \        input [DATA_W-1:0] a,c; begin\n            // a / c ~= (a << FRAC_W) /\
+  \ c (avoid divide-by-zero upstream)\n            fp_div_const = (c == {DATA_W{1'b0}})\
+  \ ? {DATA_W{1'b0}} : ((a <<< FRAC_W) / c);\n        end\n    endfunction\n\n   \
+  \ function signed [EXT_W-1:0] directional_flow;\n        input [DATA_W-1:0] self_val;\n\
+  \        input [DATA_W-1:0] neighbor_val;\n        input [DATA_W-1:0] channel_coeff;\n\
+  \        input [DATA_W-1:0] friction_coeff;\n        reg signed [EXT_W-1:0] self_ext;\n\
+  \        reg signed [EXT_W-1:0] neigh_ext;\n        reg signed [EXT_W-1:0] delta_ext;\n\
+  \        reg [EXT_W-1:0]       delta_abs_ext;\n        reg [DATA_W-1:0]      delta_abs;\n\
+  \        reg [DATA_W-1:0]      delta_eff;\n        reg [DATA_W-1:0]      flow_mag;\n\
+  \        reg signed [EXT_W-1:0] flow_signed;\n    begin\n        self_ext  = {{(EXT_W-DATA_W){self_val[DATA_W-1]}},\
+  \ self_val};\n        neigh_ext = {{(EXT_W-DATA_W){neighbor_val[DATA_W-1]}}, neighbor_val};\n\
+  \        delta_ext = neigh_ext - self_ext;\n        delta_abs_ext = delta_ext[EXT_W-1]\
+  \ ? -delta_ext : delta_ext;\n        delta_abs = delta_abs_ext[DATA_W-1:0];\n  \
+  \      if (|delta_abs_ext[EXT_W-1:DATA_W])\n            delta_abs = {DATA_W{1'b1}};\n\
+  \        if (delta_abs <= friction_coeff) begin\n            flow_signed = {EXT_W{1'b0}};\n\
+  \        end else begin\n            delta_eff  = fp_sub(delta_abs, friction_coeff);\n\
+  \            flow_mag   = fp_mul_const(delta_eff, channel_coeff);\n            flow_signed\
+  \ = delta_ext[EXT_W-1]\n                          ? -{{(EXT_W-DATA_W){flow_mag[DATA_W-1]}},\
+  \ flow_mag}\n                          :  {{(EXT_W-DATA_W){flow_mag[DATA_W-1]}},\
+  \ flow_mag};\n        end\n        directional_flow = flow_signed;\n    end\n  \
+  \  endfunction\n\n    // Sum / Average of neighbors (4 or 8)\n    reg [DATA_W+3:0]\
+  \ sum_nbrs;   // headroom\n    reg [DATA_W-1:0] avg_nbrs;\n    reg [DATA_W-1:0]\
+  \ min_nbr, max_nbr;\n    reg [DATA_W+2:0] sum4_only;\n\n    wire [DATA_W-1:0] nb4\
+  \ [0:3];\n    assign nb4[0]=n_in; assign nb4[1]=s_in; assign nb4[2]=e_in; assign\
+  \ nb4[3]=w_in;\n\n    wire [DATA_W-1:0] nb8 [0:7];\n    assign nb8[0]=n_in;  assign\
+  \ nb8[1]=s_in;  assign nb8[2]=e_in;  assign nb8[3]=w_in;\n    assign nb8[4]=ne_in;\
+  \ assign nb8[5]=nw_in; assign nb8[6]=se_in; assign nb8[7]=sw_in;\n\n    wire diag_active\
+  \ = use_diagonals ||\n                       (unit_pressure_diag_override && (opcode\
+  \ == `OP_PRESSURE));\n\n    integer i;\n    always @* begin\n        sum_nbrs =\
+  \ { (DATA_W+4){1'b0} };\n        sum4_only = {(DATA_W+3){1'b0}};\n        min_nbr\
+  \  = { DATA_W{1'b1} }; // max value\n        max_nbr  = { DATA_W{1'b0} };\n\n  \
+  \      for (i=0;i<4;i=i+1) begin\n            sum4_only = sum4_only + nb4[i];\n\
+  \            if (nb4[i] < min_nbr) min_nbr = nb4[i];\n            if (nb4[i] > max_nbr)\
+  \ max_nbr = nb4[i];\n        end\n\n        if (!diag_active) begin\n          \
+  \  sum_nbrs = {1'b0, sum4_only};\n            avg_nbrs = sum4_only[DATA_W-1:0] >>\
+  \ 2; // /4\n        end else begin\n            sum_nbrs = {1'b0, sum4_only};\n\
+  \            for (i=4;i<8;i=i+1) begin\n                sum_nbrs = sum_nbrs + nb8[i];\n\
+  \                if (nb8[i] < min_nbr) min_nbr = nb8[i];\n                if (nb8[i]\
+  \ > max_nbr) max_nbr = nb8[i];\n            end\n            avg_nbrs = sum_nbrs[DATA_W-1:0]\
+  \ >> 3; // /8\n        end\n\n        if (above_in < min_nbr) min_nbr = above_in;\n\
+  \        if (above_in > max_nbr) max_nbr = above_in;\n        if (below_in < min_nbr)\
+  \ min_nbr = below_in;\n        if (below_in > max_nbr) max_nbr = below_in;\n   \
+  \ end\n\n    // Microcode \u201Cindexer\u201D: small, flexible hook.\n    // You\
+  \ can redefine this to compose an index from bits of self/sum/avg/etc.\n    wire\
+  \ [3:0] micro_idx = { opcode[1:0], self_in[1:0] }; // simple example\n    wire [DATA_W-1:0]\
+  \ micro_val = micro_lut[micro_idx];\n\n    // Signed helper views\n    wire signed\
+  \ [EXT_W-1:0] self_s  = {{(EXT_W-DATA_W){self_in[DATA_W-1]}}, self_in};\n    wire\
+  \ signed [EXT_W-1:0] above_s = {{(EXT_W-DATA_W){above_in[DATA_W-1]}}, above_in};\n\
+  \    wire signed [EXT_W-1:0] below_s = {{(EXT_W-DATA_W){below_in[DATA_W-1]}}, below_in};\n\
+  \    wire signed [EXT_W-1:0] n_s     = {{(EXT_W-DATA_W){n_in[DATA_W-1]}}, n_in};\n\
+  \    wire signed [EXT_W-1:0] s_s     = {{(EXT_W-DATA_W){s_in[DATA_W-1]}}, s_in};\n\
+  \    wire signed [EXT_W-1:0] e_s     = {{(EXT_W-DATA_W){e_in[DATA_W-1]}}, e_in};\n\
+  \    wire signed [EXT_W-1:0] w_s     = {{(EXT_W-DATA_W){w_in[DATA_W-1]}}, w_in};\n\
+  \n    wire signed [EXT_W-1:0] dx_signed = e_s - w_s;\n    wire signed [EXT_W-1:0]\
+  \ dy_signed = s_s - n_s;\n    wire [DATA_W-1:0]       dx_abs = (dx_signed[EXT_W-1])\
+  \ ? (-dx_signed)[DATA_W-1:0] : dx_signed[DATA_W-1:0];\n    wire [DATA_W-1:0]   \
+  \    dy_abs = (dy_signed[EXT_W-1]) ? (-dy_signed)[DATA_W-1:0] : dy_signed[DATA_W-1:0];\n\
+  \n    wire signed [EXT_W-1:0] sum4_signed = n_s + s_s + e_s + w_s;\n    wire signed\
+  \ [EXT_W-1:0] sum3d_signed = sum4_signed + above_s + below_s;\n    wire signed [EXT_W-1:0]\
+  \ self_x4 = self_s <<< 2;\n    wire signed [EXT_W-1:0] self_x2 = self_s <<< 1;\n\
+  \    wire signed [EXT_W-1:0] self_x6 = self_x4 + self_x2;\n    wire signed [EXT_W-1:0]\
+  \ laplacian_signed = sum3d_signed - self_x6;\n    wire [DATA_W-1:0]       laplacian\
+  \ = laplacian_signed[DATA_W-1:0];\n\n    wire [DATA_W-1:0] sum_planar      = sum_nbrs[DATA_W-1:0];\n\
+  \    wire [DATA_W-1:0] sum_with_vert   = fp_add(fp_add(sum_planar, above_in), below_in);\n\
+  \n    // Main ALU\n    reg [DATA_W-1:0] alu_res;\n    always @* begin\n        case\
+  \ (opcode)\n            `OP_NOP:        alu_res = self_in;\n            `OP_SELF:\
+  \       alu_res = self_in;\n            `OP_SUM_NBRS:   alu_res = sum_nbrs[DATA_W-1:0];\n\
+  \            `OP_AVG_NBRS:   alu_res = avg_nbrs;\n            `OP_ADD_CONST:  alu_res\
+  \ = fp_add(self_in, constA);\n            `OP_SUB_CONST:  alu_res = fp_sub(self_in,\
+  \ constA);\n            `OP_MUL_CONST:  alu_res = fp_mul_const(self_in, constA);\n\
+  \            `OP_DIV_CONST:  alu_res = fp_div_const(self_in, constA);\n        \
+  \    `OP_DIFFUSION:  begin\n                // self + k*(avg - self)  where k =\
+  \ constA (0..1 in Q format)\n                // diff = (avg - self)\n          \
+  \      // k*diff = fp_mul_const(diff, constA)\n                alu_res = fp_add(self_in,\
+  \ fp_mul_const(fp_sub(avg_nbrs, self_in), constA));\n            end\n         \
+  \   `OP_MIN:        alu_res = (self_in < min_nbr) ? self_in : min_nbr;\n       \
+  \     `OP_MAX:        alu_res = (self_in > max_nbr) ? self_in : max_nbr;\n     \
+  \       `OP_CLAMP:      alu_res = (self_in < constA) ? constA :\n              \
+  \                         (self_in > constB) ? constB : self_in;\n            `OP_WATER_FLUX:\
+  \ begin\n                reg signed [EXT_W-1:0] flux_accum;\n                reg\
+  \ signed [EXT_W-1:0] flow_term;\n                reg [DATA_W-1:0]       retain_val;\n\
+  \                reg [DATA_W-1:0]       prev_val;\n                reg [EXT_W-1:0]\
+  \        cap_ext;\n                reg [DATA_W-1:0]       friction_top;\n      \
+  \          reg [DATA_W-1:0]       friction_bottom;\n                reg [DATA_W-1:0]\
+  \       friction_side;\n                if (!unit_flux_enable) begin\n         \
+  \           // Legacy behaviour: rely solely on constA..constD\n               \
+  \     retain_val = fp_mul_const(self_in, constA);\n                    flux_accum\
+  \ = {{(EXT_W-DATA_W){retain_val[DATA_W-1]}}, retain_val};\n                    flow_term\
+  \  = directional_flow(self_in, n_in, constC, constD);\n                    flux_accum\
+  \ = flux_accum + flow_term;\n                    flow_term  = directional_flow(self_in,\
+  \ s_in, constC, constD);\n                    flux_accum = flux_accum + flow_term;\n\
+  \                    flow_term  = directional_flow(self_in, e_in, constC, constD);\n\
+  \                    flux_accum = flux_accum + flow_term;\n                    flow_term\
+  \  = directional_flow(self_in, w_in, constC, constD);\n                    flux_accum\
+  \ = flux_accum + flow_term;\n                    if (diag_active) begin\n      \
+  \                  flow_term = directional_flow(self_in, ne_in, constC, constD);\n\
+  \                        flux_accum = flux_accum + flow_term;\n                \
+  \        flow_term = directional_flow(self_in, nw_in, constC, constD);\n       \
+  \                 flux_accum = flux_accum + flow_term;\n                       \
+  \ flow_term = directional_flow(self_in, se_in, constC, constD);\n              \
+  \          flux_accum = flux_accum + flow_term;\n                        flow_term\
+  \ = directional_flow(self_in, sw_in, constC, constD);\n                        flux_accum\
+  \ = flux_accum + flow_term;\n                    end\n                    if (flux_accum\
+  \ < 0) flux_accum = {EXT_W{1'b0}};\n                    cap_ext = {{(EXT_W-DATA_W){constB[DATA_W-1]}},\
+  \ constB};\n                    if (flux_accum > cap_ext) flux_accum = cap_ext;\n\
+  \                end else begin\n                    friction_top    = unit_overflow_reverse_top\n\
+  \                                      ? unit_flux_reverse_top\n               \
+  \                       : {DATA_W{1'b0}};\n                    friction_bottom =\
+  \ unit_overflow_reverse_bottom\n                                      ? unit_flux_reverse_bottom\n\
+  \                                      : {DATA_W{1'b0}};\n                    friction_side\
+  \   = unit_pressure_gain;\n\n                    retain_val = fp_mul_const(self_in,\
+  \ unit_weight_retain);\n                    flux_accum = {{(EXT_W-DATA_W){retain_val[DATA_W-1]}},\
+  \ retain_val};\n\n                    flow_term  = directional_flow(self_in,\n \
+  \                                                 n_in,\n                      \
+  \                            unit_weight_top,\n                                \
+  \                  friction_top);\n                    flux_accum = flux_accum +\
+  \ flow_term;\n                    flow_term  = directional_flow(self_in,\n     \
+  \                                             s_in,\n                          \
+  \                        unit_weight_bottom,\n                                 \
+  \                 friction_bottom);\n                    flux_accum = flux_accum\
+  \ + flow_term;\n                    flow_term  = directional_flow(self_in,\n   \
+  \                                               e_in,\n                        \
+  \                          unit_weight_side,\n                                 \
+  \                 friction_side);\n                    flux_accum = flux_accum +\
+  \ flow_term;\n                    flow_term  = directional_flow(self_in,\n     \
+  \                                             w_in,\n                          \
+  \                        unit_weight_side,\n                                   \
+  \               friction_side);\n                    flux_accum = flux_accum + flow_term;\n\
+  \                    if (diag_active) begin\n                        flow_term =\
+  \ directional_flow(self_in,\n                                                  \
+  \   ne_in,\n                                                     unit_weight_side,\n\
+  \                                                     friction_side);\n        \
+  \                flux_accum = flux_accum + flow_term;\n                        flow_term\
+  \ = directional_flow(self_in,\n                                                \
+  \     nw_in,\n                                                     unit_weight_side,\n\
+  \                                                     friction_side);\n        \
+  \                flux_accum = flux_accum + flow_term;\n                        flow_term\
+  \ = directional_flow(self_in,\n                                                \
+  \     se_in,\n                                                     unit_weight_side,\n\
+  \                                                     friction_side);\n        \
+  \                flux_accum = flux_accum + flow_term;\n                        flow_term\
+  \ = directional_flow(self_in,\n                                                \
+  \     sw_in,\n                                                     unit_weight_side,\n\
+  \                                                     friction_side);\n        \
+  \                flux_accum = flux_accum + flow_term;\n                    end\n\
+  \n                    prev_val  = fp_mul_const(constB, unit_weight_prev);\n    \
+  \                flux_accum = flux_accum + $signed({{(EXT_W-DATA_W){prev_val[DATA_W-1]}},\
+  \ prev_val});\n\n                    if (flux_accum < $signed({EXT_W{1'b0}}))\n\
+  \                        flux_accum = $signed({EXT_W{1'b0}});\n\n              \
+  \      cap_ext = {{(EXT_W-DATA_W){1'b0}}, unit_flux_threshold};\n              \
+  \      if (flux_accum > $signed(cap_ext))\n                        flux_accum =\
+  \ $signed(cap_ext);\n                end\n                alu_res = flux_accum[DATA_W-1:0];\n\
+  \            end\n            `OP_PRESSURE: begin\n                integer iter;\n\
+  \                reg [7:0]        iter_limit;\n                reg [DATA_W-1:0]\
+  \ gain_sel;\n                reg [DATA_W-1:0] delta_val;\n                reg [DATA_W-1:0]\
+  \ pressure_val;\n                gain_sel = (unit_pressure_gain != {DATA_W{1'b0}})\
+  \ ? unit_pressure_gain : constA;\n                iter_limit = (unit_pressure_iters\
+  \ < 8'd1) ? 8'd1 :\n                             (unit_pressure_iters > 8'd8) ?\
+  \ 8'd8 :\n                             unit_pressure_iters;\n                pressure_val\
+  \ = self_in;\n                for (iter = 0; iter < iter_limit; iter = iter + 1)\
+  \ begin\n                    delta_val    = fp_sub(avg_nbrs, pressure_val);\n  \
+  \                  pressure_val = fp_add(pressure_val, fp_mul_const(delta_val, gain_sel));\n\
+  \                end\n                alu_res = pressure_val;\n            end\n\
+  \            `OP_BACKPROP: begin\n                reg [DATA_W-1:0] lr_sel;\n   \
+  \             reg [DATA_W-1:0] neigh_sel;\n                reg [DATA_W-1:0] decay_sel;\n\
+  \                reg [DATA_W-1:0] err;\n                reg [DATA_W-1:0] grad_term;\n\
+  \                reg [DATA_W-1:0] neigh_term;\n                reg [DATA_W-1:0]\
+  \ decay_term;\n                reg [DATA_W-1:0] update_term;\n                lr_sel\
+  \    = (unit_backprop_lr    != {DATA_W{1'b0}}) ? unit_backprop_lr    : constA;\n\
+  \                neigh_sel = (unit_backprop_neigh != {DATA_W{1'b0}}) ? unit_backprop_neigh\
+  \ : constC;\n                decay_sel = (unit_backprop_decay != {DATA_W{1'b0}})\
+  \ ? unit_backprop_decay : constD;\n                err        = fp_sub(constB, self_in);\n\
+  \                grad_term  = fp_mul_const(err, lr_sel);\n                neigh_term\
+  \ = fp_mul_const(avg_nbrs, neigh_sel);\n                decay_term = fp_mul_const(self_in,\
+  \ decay_sel);\n                update_term = fp_sub(fp_add(grad_term, neigh_term),\
+  \ decay_term);\n                alu_res     = fp_add(self_in, update_term);\n  \
+  \          end\n            `OP_MICRO:      alu_res = micro_val;\n            `OP_LAPLACIAN:\
+  \  alu_res = laplacian;\n            `OP_SHARPEN: begin\n                reg [DATA_W-1:0]\
+  \ lap_gain;\n                reg [DATA_W-1:0] sharpen_val;\n                lap_gain\
+  \    = fp_mul_const(laplacian, constA);\n                sharpen_val = fp_sub(self_in,\
+  \ lap_gain);\n                alu_res     = sharpen_val;\n            end\n    \
+  \        `OP_EDGE: begin\n                reg [DATA_W-1:0] edge_mag;\n         \
+  \       edge_mag = fp_add(dx_abs, dy_abs);\n                alu_res  = edge_mag;\n\
+  \            end\n            `OP_MIX: begin\n                reg [DATA_W-1:0] mix_self;\n\
+  \                reg [DATA_W-1:0] mix_avg;\n                reg [DATA_W-1:0] mix_sum;\n\
+  \                reg [DATA_W-1:0] acc;\n                mix_self = fp_mul_const(self_in,\
+  \ constA);\n                mix_avg  = fp_mul_const(avg_nbrs, constB);\n       \
+  \         mix_sum  = fp_mul_const(sum_with_vert, constC);\n                acc \
+  \     = fp_add(fp_add(mix_self, mix_avg), fp_add(mix_sum, constD));\n          \
+  \      alu_res  = acc;\n            end\n            default:        alu_res = self_in;\n\
+  \        endcase\n    end\n\n    always @(posedge clk) begin\n        if (rst) next_out\
+  \ <= {DATA_W{1'b0}};\n        else     next_out <= alu_res;\n    end\n\nendmodule\n"

@@ -1,0 +1,205 @@
+version: 1
+kind: verilog_header
+original_path: sand_math.vh
+statements:
+- type: comment
+  text: // =============================================================================
+  name: null
+  value: null
+  body: null
+- type: comment
+  text: "// sand_math.vh \u2014 Saturating/Rounding fixed\u2011point helpers"
+  name: null
+  value: null
+  body: null
+- type: comment
+  text: "// Drop\u2011in include for sand_pe and other modules."
+  name: null
+  value: null
+  body: null
+- type: comment
+  text: // Macros let you switch between wrap vs saturate, round vs truncate.
+  name: null
+  value: null
+  body: null
+- type: comment
+  text: // =============================================================================
+  name: null
+  value: null
+  body: null
+- type: blank
+  text: null
+  name: null
+  value: null
+  body: null
+- type: ifndef
+  text: null
+  name: SAND_MATH_VH
+  value: null
+  body: null
+- type: define
+  text: null
+  name: SAND_MATH_VH
+  value: null
+  body:
+  - ''
+- type: blank
+  text: null
+  name: null
+  value: null
+  body: null
+- type: comment
+  text: // ---- Tunables ---------------------------------------------------------------
+  name: null
+  value: null
+  body: null
+- type: ifndef
+  text: null
+  name: SATURATE
+  value: null
+  body: null
+- type: define
+  text: null
+  name: SATURATE
+  value: null
+  body:
+  - '1       // 1: clamp on overflow, 0: wrap'
+- type: endif
+  text: null
+  name: null
+  value: null
+  body: null
+- type: ifndef
+  text: null
+  name: ROUND_MUL
+  value: null
+  body: null
+- type: define
+  text: null
+  name: ROUND_MUL
+  value: null
+  body:
+  - '1      // 1: round on >> FRAC_W, 0: truncate'
+- type: endif
+  text: null
+  name: null
+  value: null
+  body: null
+- type: blank
+  text: null
+  name: null
+  value: null
+  body: null
+- type: comment
+  text: // ---- Local helpers ----------------------------------------------------------
+  name: null
+  value: null
+  body: null
+- type: define
+  text: null
+  name: _MAXW(DATA_W)
+  value: null
+  body:
+  - '{DATA_W{1''b1}}'
+- type: define
+  text: null
+  name: _MINW(DATA_W)
+  value: null
+  body:
+  - '{DATA_W{1''b0}}'
+- type: blank
+  text: null
+  name: null
+  value: null
+  body: null
+- type: comment
+  text: // Saturating add/sub on DATA_W bits
+  name: null
+  value: null
+  body: null
+- type: define
+  text: null
+  name: SAT_ADD(a,b,DATA_W)
+  value: null
+  body:
+  - \
+  - '    ( {1''b0,(a)} + {1''b0,(b)} )[DATA_W] ? `_MAXW(DATA_W) : ( (a) + (b) )'
+- type: blank
+  text: null
+  name: null
+  value: null
+  body: null
+- type: define
+  text: null
+  name: SAT_SUB(a,b,DATA_W)
+  value: null
+  body:
+  - \
+  - '    ( {1''b0,(a)} < {1''b0,(b)} ) ? `_MINW(DATA_W) : ( (a) - (b) )'
+- type: blank
+  text: null
+  name: null
+  value: null
+  body: null
+- type: comment
+  text: "// Fixed\u2011point multiply by constant (QFRAC)"
+  name: null
+  value: null
+  body: null
+- type: define
+  text: null
+  name: FP_MUL_Q(a,c,FRAC_W)
+  value: null
+  body:
+  - \
+  - '    ( `ROUND_MUL ? ( ((a) * (c)) + (1<<(FRAC_W-1)) ) >>> (FRAC_W) : ((a) * (c))
+    >>> (FRAC_W) )'
+- type: blank
+  text: null
+  name: null
+  value: null
+  body: null
+- type: comment
+  text: "// Fixed\u2011point divide by constant (QFRAC). Caller must guard c!=0."
+  name: null
+  value: null
+  body: null
+- type: define
+  text: null
+  name: FP_DIV_Q(a,c,FRAC_W)
+  value: null
+  body:
+  - \
+  - '    ( ((a) <<< (FRAC_W)) / (c) )'
+- type: blank
+  text: null
+  name: null
+  value: null
+  body: null
+- type: comment
+  text: // Public inline functions (use inside always/assign)
+  name: null
+  value: null
+  body: null
+- type: define
+  text: null
+  name: FP_ADD(a,b,DATA_W)
+  value: null
+  body:
+  - '( `SATURATE ? `SAT_ADD((a),(b),DATA_W) : ((a)+(b)) )'
+- type: define
+  text: null
+  name: FP_SUB(a,b,DATA_W)
+  value: null
+  body:
+  - '( `SATURATE ? `SAT_SUB((a),(b),DATA_W) : ((a)-(b)) )'
+- type: blank
+  text: null
+  name: null
+  value: null
+  body: null
+- type: endif
+  text: null
+  name: null
+  value: null
+  body: null
