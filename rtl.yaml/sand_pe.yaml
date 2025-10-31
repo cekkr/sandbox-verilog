@@ -140,4 +140,4 @@ notes: |
   - For backpropagation opcodes, unit_backprop_* inputs define the learning rate,
     neighbour weight and decay applied during the update.
 implementation:
-  ast_path: machine/sand_pe.yaml
+  ast_path: machine/sand_pe.v

@@ -35,5 +35,5 @@ notes:
   - Defines saturating add/sub macros and fixed-point multiply/divide helpers.
   - Controlled by SATURATE and ROUND_MUL toggles for wrap vs clamp behaviour.
 implementation:
-  machine_path: machine/sand_math.yaml
+  machine_path: machine/sand_math.vh
   kind: verilog_header

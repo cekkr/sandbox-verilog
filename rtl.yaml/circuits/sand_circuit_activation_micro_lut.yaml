@@ -28,5 +28,5 @@ behaviour:
   notes:
   - Index typically combines opcode bits with the current cell state.
 implementation:
-  machine_path: ../machine/circuits/sand_circuit_activation_micro_lut.yaml
+  machine_path: ../machine/circuits/sand_circuit_activation_micro_lut.v
   kind: verilog_module

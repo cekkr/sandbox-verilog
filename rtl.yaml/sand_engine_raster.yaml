@@ -275,5 +275,5 @@ behaviour:
   - Consumes scheduler-provided window bounds, unit tuples, and micro-LUT writes.
   - Exposes frame activity/cycle counters for adaptive scheduling.
 implementation:
-  machine_path: machine/sand_engine_raster.yaml
+  machine_path: machine/sand_engine_raster.v
   kind: verilog_module_fallback

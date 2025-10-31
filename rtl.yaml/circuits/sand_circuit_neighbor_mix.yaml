@@ -62,5 +62,5 @@ behaviour:
   notes:
   - Supports per-direction gains for composable circuit graphs.
 implementation:
-  machine_path: ../machine/circuits/sand_circuit_neighbor_mix.yaml
+  machine_path: ../machine/circuits/sand_circuit_neighbor_mix.v
   kind: verilog_module

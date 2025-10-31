@@ -39,5 +39,5 @@ behaviour:
   notes:
   - Pairs with the activation circuits to build neural-style layers.
 implementation:
-  machine_path: ../machine/circuits/sand_circuit_neuron_relu.yaml
+  machine_path: ../machine/circuits/sand_circuit_neuron_relu.v
   kind: verilog_module

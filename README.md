@@ -35,15 +35,15 @@
 
 | Asset | Role |
 | :-- | :-- |
-| `rtl.yaml/` | Canonical module descriptors; human-facing files (e.g. `sand_pe.yaml`) link to machine snapshots for regeneration. |
+| `rtl.yaml/` | Canonical module descriptors; human-facing files (e.g. `sand_pe.yaml`) link to machine Verilog implementations for regeneration. |
 | `rtl.yaml/sand_defs.yaml` | Global parameter map for widths, grid geometry, job count, CSR layout, and default adaptive knobs. |
 | `rtl.yaml/sand_math.yaml` | Fixed-point helper corpus (saturating add/sub, mul/div, rounding) referenced by the PE and raster engine. |
-| `rtl.yaml/sand_pe.yaml` | Processing-element descriptor. Documents the interface/behaviour and references `machine/sand_pe.yaml` for AST regeneration. |
-| `rtl.yaml/sand_engine_raster.yaml` | Streaming raster engine descriptor with machine snapshot for restore. |
+| `rtl.yaml/sand_pe.yaml` | Processing-element descriptor. Documents the interface/behaviour and references `machine/sand_pe.v` for regeneration. |
+| `rtl.yaml/sand_engine_raster.yaml` | Streaming raster engine descriptor with machine implementation for restore. |
 | `rtl.yaml/sand_scheduler_dynamic.yaml` | Adaptive scheduler descriptor (round-robin budgets, telemetry, windowing). |
 | `rtl.yaml/sand_jobmem2p.yaml` + `rtl.yaml/bram_tdp_wrap.yaml` | Dual-plane memory + vendor wrapper descriptors. |
 | `rtl.yaml/circuits/` | Reusable combinational shims (edge detector, ReLU, neighbour mix, micro-LUT activation). |
-| `rtl.yaml/machine/` | Auto-generated PyVerilog AST mirrors consumed during restore; edit via companion human files. |
+| `rtl.yaml/machine/` | Canonical Verilog/VH implementations parsed by the bridge during restore; edit as regular RTL. |
 | `old/rtl/` | Archived Verilog tree kept for reference; regenerate fresh RTL via `tools/verilog_yaml_bridge.py restore`. |
 
 ---
@@ -59,7 +59,7 @@
 
 ## Configuration Surfaces
 
-- **Compile-time:** Edit `rtl.yaml/sand_defs.yaml` to pick data width (`DATA_W`/`FRAC_W`), grid geometry (`WIDTH`, `HEIGHT`, `DEPTH`), job count, and default adaptive limits. Companion machine snapshots regenerate the Verilog headers via the bridge.
+- **Compile-time:** Edit `rtl.yaml/sand_defs.yaml` to pick data width (`DATA_W`/`FRAC_W`), grid geometry (`WIDTH`, `HEIGHT`, `DEPTH`), job count, and default adaptive limits. Companion machine headers under `rtl.yaml/machine/` regenerate the Verilog include files via the bridge.
 - **CSR bus:** `sand_top` exposes a simple register file for host control. Key registers include:
 
   | CSR macro | Purpose |
@@ -86,8 +86,8 @@
 ### RTL YAML mirror
 
 - `tools/verilog_yaml_bridge.py` now treats the YAML descriptors as the source of truth. Use `python3 tools/verilog_yaml_bridge.py restore --yaml-root rtl.yaml --rtl-root build/rtl` to regenerate synthesizable Verilog (the legacy tree lives under `old/rtl/`).
-- Modules that fit within PyVerilog's syntax support are exported as full ASTs (`kind: verilog_module`) so Python tooling can round-trip edits back into Verilog.
-- For complex SystemVerilog blocks (`sand_engine_raster`, `sand_pe`, `sand_scheduler_dynamic`) the bridge currently falls back to a header summary plus the original body text (`kind: verilog_module_fallback`) because PyVerilog cannot parse their block-scoped declarations yet. The bridge still preserves their includes and interface metadata.
+- Machine implementations live as readable Verilog/VH under `rtl.yaml/machine/`; the bridge parses these files during restore to merge them with the descriptor metadata.
+- PyVerilog still cannot fully parse a few SystemVerilog-heavy blocks (`sand_engine_raster`, `sand_scheduler_dynamic`), so the bridge copies their machine sources verbatim when needed (`kind: verilog_module_fallback`).
 - Run `python3 tools/verilog_yaml_bridge.py restore` to regenerate RTL from the YAML mirror after editing.
 
 ---
@@ -177,14 +177,14 @@ The project is organized into clean, layered modules:
 | :-- | :-- |
 | **`rtl.yaml/sand_defs.yaml`** | Parameter descriptor covering grid geometry, opcodes, CSR map, and adaptive defaults. Edit this YAML, then regenerate Verilog to update `sand_defs.vh`. |
 | **`rtl.yaml/sand_math.yaml`** | Documentation for shared fixed-point helpers; governs saturation/rounding macros used across the design. |
-| **`rtl.yaml/sand_pe.yaml`** | Processing-element descriptor capturing interface and behaviour, pointing to the machine AST snapshot. |
-| **`rtl.yaml/sand_engine_raster.yaml`** | Streaming raster engine descriptor (windowing, micro-LUT writes, telemetry). Restores from a preserved Verilog body. |
+| **`rtl.yaml/sand_pe.yaml`** | Processing-element descriptor capturing interface and behaviour, pointing to the machine Verilog implementation. |
+| **`rtl.yaml/sand_engine_raster.yaml`** | Streaming raster engine descriptor (windowing, micro-LUT writes, telemetry). Restores from the companion machine Verilog. |
 | **`rtl.yaml/sand_scheduler_dynamic.yaml`** | Adaptive scheduler descriptor covering telemetry-driven budgets and window programming. |
 | **`rtl.yaml/sand_jobmem2p.yaml`** | Dual-plane job memory descriptor with pointer swap semantics. |
 | **`rtl.yaml/sand_top.yaml`** | Top-level integration descriptor for the CSR bus, seeding, and fabric orchestration. |
 | **`rtl.yaml/bram_tdp_wrap.yaml`** | Portable true dual-port RAM descriptor; swap the restored Verilog for a vendor primitive as needed. |
-| **`rtl.yaml/circuits/`** | Combinational helper descriptors (edge detector, activations, neighbour mix, neuron). Each links to its machine definition under `machine/`. |
-| **`rtl.yaml/machine/`** | Auto-generated PyVerilog snapshots (modules or fallback bodies). Do not hand-edit; regenerate with the bridge. |
+| **`rtl.yaml/circuits/`** | Combinational helper descriptors (edge detector, activations, neighbour mix, neuron). Each links to its machine Verilog implementation under `rtl.yaml/machine/`. |
+| **`rtl.yaml/machine/`** | Canonical Verilog/VH sources consumed by the bridge; edit these directly and the bridge will parse them during restore. |
 | **`old/rtl/`** | Archived Verilog tree kept for reference. Use `restore` to emit a fresh RTL workspace (legacy mesh still lives under `old/rtl/legacy/`). |
 
 ---

@@ -9,8 +9,8 @@ PROJECT_VECTOR:
 - Sim deps: iverilog, vvp, Python ≥3.8.
 
 DIRECTORY_MAP:
-- rtl.yaml/: canonical human-readable descriptors (modules, headers, circuits). Each `sand_*.yaml` links to a machine snapshot for regeneration.
-- rtl.yaml/machine/: auto-generated PyVerilog AST/fallback bodies consumed by the bridge; do not hand-edit.
+- rtl.yaml/: canonical human-readable descriptors (modules, headers, circuits). Each `sand_*.yaml` links to a machine implementation for regeneration.
+- rtl.yaml/machine/: canonical Verilog/VH implementations consumed by the bridge; edit as normal RTL and the bridge will parse them on restore.
 - old/rtl/: archived Verilog tree kept for reference (pre-descriptor migration). Run the bridge to emit a fresh RTL workspace (e.g., `build/rtl/`).
 - old/rtl/legacy/: legacy fully parallel architecture (`sand_grid.v`, `sand_scheduler.v`, `sand_jobmem.v`).
 - tools/: Python utilities (`sand_runner.py`, `sand_configurator.py`, `sand_dynamic_configurator.py`, `sample_dynamic_config.yaml`, `__init__.py`).

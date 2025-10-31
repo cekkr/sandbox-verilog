@@ -29,5 +29,5 @@ behaviour:
   notes:
   - Useful for feature extraction inside the activation field demos.
 implementation:
-  machine_path: ../machine/circuits/sand_circuit_edge_l1.yaml
+  machine_path: ../machine/circuits/sand_circuit_edge_l1.v
   kind: verilog_module

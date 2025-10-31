@@ -76,5 +76,5 @@ behaviour:
   - Hosts seeding and CSR access, exporting job_done/status telemetry for firmware.
   - Clock/reset domain wrapper for the sand processing fabric.
 implementation:
-  machine_path: machine/sand_top.yaml
+  machine_path: machine/sand_top.v
   kind: verilog_module

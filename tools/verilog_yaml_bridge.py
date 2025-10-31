@@ -673,7 +673,11 @@ def restore_module_fallback(record: Dict[str, Any], rtl_root: Path) -> None:
 
 
 def _resolve_machine_path(yaml_path: Path, implementation: Dict[str, Any]) -> Path:
-    machine_rel = implementation.get("ast_path") or implementation.get("machine_path")
+    machine_rel = (
+        implementation.get("ast_path")
+        or implementation.get("machine_path")
+        or implementation.get("verilog_path")
+    )
     if not machine_rel:
         raise ValueError(f"{yaml_path} missing implementation.ast_path or implementation.machine_path")
     machine_path = (yaml_path.parent / machine_rel).resolve()
@@ -682,10 +686,82 @@ def _resolve_machine_path(yaml_path: Path, implementation: Dict[str, Any]) -> Pa
     return machine_path
 
 
+def _module_record_from_source(source: Path) -> Dict[str, Any]:
+    text = load_text(source)
+    includes = extract_includes(text)
+    sanitized_text, hints = sanitize_for_parse(text)
+    with tempfile.NamedTemporaryFile("w", suffix=source.suffix, delete=False) as tmp:
+        tmp.write(sanitized_text)
+        tmp_path = Path(tmp.name)
+    include_dirs: List[str] = []
+    parent = source.parent
+    include_dirs.append(str(parent))
+    ancestor = parent.parent
+    if ancestor != parent:
+        include_dirs.append(str(ancestor))
+    try:
+        ast_root, _ = parse_verilog([str(tmp_path)], preprocess_include=include_dirs)
+    except ParseError as error:
+        tmp_path.unlink(missing_ok=True)
+        return {
+            "version": YAML_VERSION,
+            "kind": "verilog_module_fallback",
+            "original_path": source.name,
+            "includes": includes,
+            "summary": header_summary(text, source.parent, source),
+            "parse_error": str(error),
+            "body_text": text,
+        }
+    else:
+        tmp_path.unlink(missing_ok=True)
+        return {
+            "version": YAML_VERSION,
+            "kind": "verilog_module",
+            "original_path": source.name,
+            "includes": includes,
+            "summary": summarise_ast(ast_root),
+            "ast": ast_to_dict(ast_root),
+            "parse_hints": hints,
+        }
+
+
+def _header_record_from_source(source: Path) -> Dict[str, Any]:
+    text = load_text(source)
+    statements = parse_header(text)
+    return {
+        "version": YAML_VERSION,
+        "kind": "verilog_header",
+        "original_path": source.name,
+        "statements": [
+            _compact_dict(
+                {
+                    "type": stmt.type,
+                    "text": stmt.text,
+                    "name": stmt.name,
+                    "value": stmt.value,
+                    "body": stmt.body,
+                }
+            )
+            for stmt in statements
+        ],
+    }
+
+
+def _load_machine_record(machine_path: Path) -> Dict[str, Any]:
+    suffix = machine_path.suffix.lower()
+    if suffix in {".yaml", ".yml"}:
+        return yaml.safe_load(machine_path.read_text(encoding="utf-8"))
+    if suffix in RTL_SUFFIXES:
+        return _module_record_from_source(machine_path)
+    if suffix in HEADER_SUFFIXES:
+        return _header_record_from_source(machine_path)
+    raise ValueError(f"Unsupported machine artefact type for {machine_path}")
+
+
 def restore_sand_module(record: Dict[str, Any], yaml_path: Path, rtl_root: Path) -> None:
     implementation = record.get("implementation", {})
     machine_path = _resolve_machine_path(yaml_path, implementation)
-    machine_record = yaml.safe_load(machine_path.read_text(encoding="utf-8"))
+    machine_record = _load_machine_record(machine_path)
     kind = machine_record.get("kind")
     if kind not in {"verilog_module", "verilog_module_machine", "verilog_module_fallback"}:
         raise ValueError(f"{machine_path} has unsupported module kind: {kind}")
@@ -717,7 +793,7 @@ def restore_sand_module(record: Dict[str, Any], yaml_path: Path, rtl_root: Path)
 def restore_sand_header(record: Dict[str, Any], yaml_path: Path, rtl_root: Path) -> None:
     implementation = record.get("implementation", {})
     machine_path = _resolve_machine_path(yaml_path, implementation)
-    machine_record = yaml.safe_load(machine_path.read_text(encoding="utf-8"))
+    machine_record = _load_machine_record(machine_path)
     if machine_record.get("kind") != "verilog_header":
         raise ValueError(f"{machine_path} expected verilog_header, found {machine_record.get('kind')}")
     restore_header(machine_record, rtl_root)
