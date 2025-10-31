@@ -1,6 +1,6 @@
 !!! CRITICAL PROTOCOL !!!
 - AI agent MUST refresh AI_REFERENCE.md after every code mutation before yielding control.
-- AI agent MUST referesh README.md and in depth README_BUT_LONGER.md after a new implementation.
+- AI agent MUST referesh README.md after a new implementation.
 
 PROJECT_VECTOR:
 - Repo: sandbox-verilog — parametric Verilog sandbox engine (cellular automaton / streaming PE fabric).
