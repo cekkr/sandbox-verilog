@@ -91,6 +91,7 @@ def is_header_file(path: Path) -> bool:
 # ------------------------------------------------------------------------------
 
 _CODEGEN = ASTCodeGenerator()
+_SERIALIZE_SKIP_ATTRS = {"coord", "lineno"}
 
 
 def _expr_to_str(node: Any) -> Optional[str]:
@@ -113,6 +114,25 @@ def _get_init_params(cls: type[vast.Node]) -> List[str]:
     return params
 
 
+def _compact_dict(mapping: Dict[str, Any]) -> Dict[str, Any]:
+    """Drop entries whose value is None."""
+    return {key: value for key, value in mapping.items() if value is not None}
+
+
+def _fill_required_kwargs(cls: type[vast.Node], kwargs: Dict[str, Any]) -> None:
+    """Ensure kwargs cover required constructor parameters, defaulting to None when omitted."""
+    signature = inspect.signature(cls.__init__)  # type: ignore[attr-defined]
+    for idx, (name, param) in enumerate(signature.parameters.items()):
+        if idx == 0:
+            continue  # skip self
+        if param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+            continue
+        if name in kwargs:
+            continue
+        if param.default is inspect._empty:
+            kwargs[name] = None
+
+
 def ast_to_dict(node: Any) -> Any:
     """Serialise a PyVerilog AST node (or nested structure) into pure Python types."""
     if node is None:
@@ -125,21 +145,25 @@ def ast_to_dict(node: Any) -> Any:
         return {"_tuple": [ast_to_dict(item) for item in node]}
     if isinstance(node, vast.Node):
         cls = node.__class__
-        args: Dict[str, Any] = {}
-        extras: Dict[str, Any] = {}
-        attrs = dict(vars(node))
-        attrs.pop("coord", None)  # coord is debugging info; ignore
+        attrs = {
+            name: value
+            for name, value in vars(node).items()
+            if name not in _SERIALIZE_SKIP_ATTRS
+        }
+        record: Dict[str, Any] = {"_type": cls.__name__}
         init_params = _get_init_params(cls)
         for name in init_params:
-            if name in attrs:
-                args[name] = ast_to_dict(attrs.pop(name))
-        for name, value in attrs.items():
-            extras[name] = ast_to_dict(value)
-        record: Dict[str, Any] = {"_type": cls.__name__}
-        if args:
-            record["args"] = args
-        if extras:
-            record["extras"] = extras
+            if name not in attrs:
+                continue
+            serialised = ast_to_dict(attrs.pop(name))
+            if serialised is None:
+                continue
+            record[name] = serialised
+        for name in list(attrs.keys()):
+            serialised = ast_to_dict(attrs[name])
+            if serialised is None:
+                continue
+            record[name] = serialised
         return record
     # Fallback: convert to string
     return str(node)
@@ -159,14 +183,46 @@ def dict_to_ast(data: Any) -> Any:
             if not hasattr(vast, type_name):
                 raise ValueError(f"Unknown AST node type: {type_name}")
             cls = getattr(vast, type_name)
-            args_data = data.get("args", {})
+            # Backwards compatibility: legacy format with args/extras buckets.
+            args_bucket = data.get("args")
+            extras_bucket = data.get("extras")
+            legacy_like = False
+            if isinstance(args_bucket, dict):
+                legacy_like = any(not key.startswith("_") for key in args_bucket.keys())
+            if not legacy_like and isinstance(extras_bucket, dict):
+                legacy_like = any(not key.startswith("_") for key in extras_bucket.keys())
+            if legacy_like:
+                args_data = args_bucket or {}
+                init_kwargs = {
+                    name: dict_to_ast(value)
+                    for name, value in args_data.items()
+                    if name not in _SERIALIZE_SKIP_ATTRS
+                }
+                _fill_required_kwargs(cls, init_kwargs)
+                node = cls(**init_kwargs)
+                extras = extras_bucket or {}
+                for name, value in extras.items():
+                    if name in _SERIALIZE_SKIP_ATTRS:
+                        continue
+                    setattr(node, name, dict_to_ast(value))
+                return node
+            init_params = set(_get_init_params(cls))
             init_kwargs: Dict[str, Any] = {}
-            for name, value in args_data.items():
-                init_kwargs[name] = dict_to_ast(value)
+            extras: Dict[str, Any] = {}
+            for name, value in data.items():
+                if name in ("_type",):
+                    continue
+                if name in _SERIALIZE_SKIP_ATTRS:
+                    continue
+                resolved = dict_to_ast(value)
+                if name in init_params:
+                    init_kwargs[name] = resolved
+                else:
+                    extras[name] = resolved
+            _fill_required_kwargs(cls, init_kwargs)
             node = cls(**init_kwargs)
-            extras = data.get("extras", {})
             for name, value in extras.items():
-                setattr(node, name, dict_to_ast(value))
+                setattr(node, name, value)
             return node
         return {key: dict_to_ast(value) for key, value in data.items()}
     raise TypeError(f"Unsupported data type in AST reconstruction: {type(data)}")
@@ -444,13 +500,14 @@ def summarise_module(module: vast.ModuleDef) -> Dict[str, Any]:
     if module.paramlist is not None:
         for decl in module.paramlist.params:
             for param in decl.list:
-                params.append(
+                entry = _compact_dict(
                     {
                         "name": param.name,
                         "value": _expr_to_str(param.value),
                         "signed": bool(param.signed),
                     }
                 )
+                params.append(entry)
     ports: List[Dict[str, Any]] = []
     if module.portlist is not None:
         for entry in module.portlist.ports:
@@ -472,7 +529,7 @@ def summarise_module(module: vast.ModuleDef) -> Dict[str, Any]:
                 width = None
                 signed = False
                 kind = None
-            ports.append(
+            port = _compact_dict(
                 {
                     "name": name,
                     "direction": direction,
@@ -481,6 +538,7 @@ def summarise_module(module: vast.ModuleDef) -> Dict[str, Any]:
                     "datatype": kind,
                 }
             )
+            ports.append(port)
     return {
         "name": module.name,
         "parameters": params,
@@ -554,13 +612,15 @@ def export_header(source: Path, rtl_root: Path, yaml_root: Path) -> None:
         "kind": "verilog_header",
         "original_path": str(source.relative_to(rtl_root)).replace("\\", "/"),
         "statements": [
-            {
-                "type": stmt.type,
-                "text": stmt.text,
-                "name": stmt.name,
-                "value": stmt.value,
-                "body": stmt.body,
-            }
+            _compact_dict(
+                {
+                    "type": stmt.type,
+                    "text": stmt.text,
+                    "name": stmt.name,
+                    "value": stmt.value,
+                    "body": stmt.body,
+                }
+            )
             for stmt in statements
         ],
     }

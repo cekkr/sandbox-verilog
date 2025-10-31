@@ -38,27 +38,22 @@ summary:
     ports:
     - name: clk
       direction: input
-      width: null
       signed: false
       datatype: wire
     - name: rst
       direction: input
-      width: null
       signed: false
       datatype: wire
     - name: start_frame
       direction: input
-      width: null
       signed: false
       datatype: wire
     - name: busy
       direction: output
-      width: null
       signed: false
       datatype: reg
     - name: frame_done
       direction: output
-      width: null
       signed: false
       datatype: reg
     - name: opcode
@@ -68,7 +63,6 @@ summary:
       datatype: wire
     - name: use_diagonals
       direction: input
-      width: null
       signed: false
       datatype: wire
     - name: constA
@@ -98,7 +92,6 @@ summary:
       datatype: wire
     - name: micro_lut_we
       direction: input
-      width: null
       signed: false
       datatype: wire
     - name: micro_lut_waddr
@@ -123,27 +116,22 @@ summary:
       datatype: wire
     - name: plane_read_sel
       direction: input
-      width: null
       signed: false
       datatype: wire
     - name: unit_flux_enable
       direction: input
-      width: null
       signed: false
       datatype: wire
     - name: unit_overflow_reverse_top
       direction: input
-      width: null
       signed: false
       datatype: wire
     - name: unit_overflow_reverse_bottom
       direction: input
-      width: null
       signed: false
       datatype: wire
     - name: unit_pressure_diag_override
       direction: input
-      width: null
       signed: false
       datatype: wire
     - name: unit_pressure_iters
@@ -233,7 +221,6 @@ summary:
       datatype: wire
     - name: jm_we
       direction: output
-      width: null
       signed: false
       datatype: reg
     - name: jm_job
@@ -248,12 +235,10 @@ summary:
       datatype: reg
     - name: jm_plane_sel
       direction: output
-      width: null
       signed: false
       datatype: reg
     - name: jm_write_other_plane
       direction: output
-      width: null
       signed: false
       datatype: reg
     - name: jm_idx

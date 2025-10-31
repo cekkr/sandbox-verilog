@@ -12,926 +12,477 @@ summary:
       direction: input
       width: '[16-1:0]'
       signed: true
-      datatype: null
     - name: value_out
       direction: output
       width: '[16-1:0]'
       signed: true
-      datatype: null
 ast:
   _type: Source
-  args:
-    name: ''
-    description:
-      _type: Description
-      args:
-        definitions:
+  name: ''
+  description:
+    _type: Description
+    definitions:
+      _tuple:
+      - _type: ModuleDef
+        name: sand_circuit_activation_softsign
+        paramlist:
+          _type: Paramlist
+          params:
+            _tuple: []
+        portlist:
+          _type: Portlist
+          ports:
+            _tuple:
+            - _type: Ioport
+              first:
+                _type: Input
+                name: value_in
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+            - _type: Ioport
+              first:
+                _type: Output
+                name: value_out
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+        items:
           _tuple:
-          - _type: ModuleDef
-            args:
-              name: sand_circuit_activation_softsign
-              paramlist:
-                _type: Paramlist
-                args:
-                  params:
-                    _tuple: []
-                  lineno: 0
-              portlist:
-                _type: Portlist
-                args:
-                  ports:
-                    _tuple:
-                    - _type: Ioport
-                      args:
-                        first:
-                          _type: Input
-                          args:
-                            name: value_in
-                            width:
-                              _type: Width
-                              args:
-                                msb:
-                                  _type: Minus
-                                  args:
-                                    left:
-                                      _type: IntConst
-                                      args:
-                                        value: '16'
-                                        lineno: 98
-                                    right:
-                                      _type: IntConst
-                                      args:
-                                        value: '1'
-                                        lineno: 98
-                                    lineno: 98
-                                lsb:
-                                  _type: IntConst
-                                  args:
-                                    value: '0'
-                                    lineno: 98
-                                lineno: 98
-                            signed: true
-                            dimensions: null
-                            value: null
-                            lineno: 98
-                        second: null
-                        lineno: 98
-                    - _type: Ioport
-                      args:
-                        first:
-                          _type: Output
-                          args:
-                            name: value_out
-                            width:
-                              _type: Width
-                              args:
-                                msb:
-                                  _type: Minus
-                                  args:
-                                    left:
-                                      _type: IntConst
-                                      args:
-                                        value: '16'
-                                        lineno: 99
-                                    right:
-                                      _type: IntConst
-                                      args:
-                                        value: '1'
-                                        lineno: 99
-                                    lineno: 99
-                                lsb:
-                                  _type: IntConst
-                                  args:
-                                    value: '0'
-                                    lineno: 99
-                                lineno: 99
-                            signed: true
-                            dimensions: null
-                            value: null
-                            lineno: 99
-                        second: null
-                        lineno: 99
-                  lineno: 97
-              items:
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Localparam
+                name: Q_ONE_INT
+                value:
+                  _type: Rvalue
+                  var:
+                    _type: Sll
+                    left:
+                      _type: IntConst
+                      value: '1'
+                    right:
+                      _type: IntConst
+                      value: '8'
+                signed: false
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Localparam
+                name: Q_MAX
+                value:
+                  _type: Rvalue
+                  var:
+                    _type: Minus
+                    left:
+                      _type: Sll
+                      left:
+                        _type: IntConst
+                        value: '1'
+                      right:
+                        _type: Minus
+                        left:
+                          _type: IntConst
+                          value: '16'
+                        right:
+                          _type: IntConst
+                          value: '1'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Localparam
+                name: Q_MIN
+                value:
+                  _type: Rvalue
+                  var:
+                    _type: Uminus
+                    right:
+                      _type: Sll
+                      left:
+                        _type: IntConst
+                        value: '1'
+                      right:
+                        _type: Minus
+                        left:
+                          _type: IntConst
+                          value: '16'
+                        right:
+                          _type: IntConst
+                          value: '1'
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Integer
+                name: numerator
+                width:
+                  _type: Width
+                  msb:
+                    _type: IntConst
+                    value: '31'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Integer
+                name: denominator
+                width:
+                  _type: Width
+                  msb:
+                    _type: IntConst
+                    value: '31'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Integer
+                name: abs_val
+                width:
+                  _type: Width
+                  msb:
+                    _type: IntConst
+                    value: '31'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Integer
+                name: scaled
+                width:
+                  _type: Width
+                  msb:
+                    _type: IntConst
+                    value: '31'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Reg
+                name: result
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Always
+            sens_list:
+              _type: SensList
+              list:
                 _tuple:
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Localparam
-                        args:
-                          name: Q_ONE_INT
-                          value:
-                            _type: Rvalue
-                            args:
-                              var:
-                                _type: Sll
-                                args:
-                                  left:
-                                    _type: IntConst
-                                    args:
-                                      value: '1'
-                                      lineno: 101
-                                  right:
-                                    _type: IntConst
-                                    args:
-                                      value: '8'
-                                      lineno: 101
-                                  lineno: 101
-                              lineno: 101
-                          width: null
-                          signed: false
-                          lineno: 101
-                        extras:
-                          dimensions: null
-                    lineno: 101
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Localparam
-                        args:
-                          name: Q_MAX
-                          value:
-                            _type: Rvalue
-                            args:
-                              var:
-                                _type: Minus
-                                args:
-                                  left:
-                                    _type: Sll
-                                    args:
-                                      left:
-                                        _type: IntConst
-                                        args:
-                                          value: '1'
-                                          lineno: 102
-                                      right:
-                                        _type: Minus
-                                        args:
-                                          left:
-                                            _type: IntConst
-                                            args:
-                                              value: '16'
-                                              lineno: 102
-                                          right:
-                                            _type: IntConst
-                                            args:
-                                              value: '1'
-                                              lineno: 102
-                                          lineno: 102
-                                      lineno: 102
-                                  right:
-                                    _type: IntConst
-                                    args:
-                                      value: '1'
-                                      lineno: 102
-                                  lineno: 102
-                              lineno: 102
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: Minus
-                                args:
-                                  left:
-                                    _type: IntConst
-                                    args:
-                                      value: '16'
-                                      lineno: 102
-                                  right:
-                                    _type: IntConst
-                                    args:
-                                      value: '1'
-                                      lineno: 102
-                                  lineno: 102
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 102
-                              lineno: 102
-                          signed: true
-                          lineno: 102
-                        extras:
-                          dimensions: null
-                    lineno: 102
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Localparam
-                        args:
-                          name: Q_MIN
-                          value:
-                            _type: Rvalue
-                            args:
-                              var:
-                                _type: Uminus
-                                args:
-                                  right:
-                                    _type: Sll
-                                    args:
-                                      left:
-                                        _type: IntConst
-                                        args:
-                                          value: '1'
-                                          lineno: 103
-                                      right:
-                                        _type: Minus
-                                        args:
-                                          left:
-                                            _type: IntConst
-                                            args:
-                                              value: '16'
-                                              lineno: 103
-                                          right:
-                                            _type: IntConst
-                                            args:
-                                              value: '1'
-                                              lineno: 103
-                                          lineno: 103
-                                      lineno: 103
-                                  lineno: 103
-                              lineno: 103
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: Minus
-                                args:
-                                  left:
-                                    _type: IntConst
-                                    args:
-                                      value: '16'
-                                      lineno: 103
-                                  right:
-                                    _type: IntConst
-                                    args:
-                                      value: '1'
-                                      lineno: 103
-                                  lineno: 103
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 103
-                              lineno: 103
-                          signed: true
-                          lineno: 103
-                        extras:
-                          dimensions: null
-                    lineno: 103
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Integer
-                        args:
-                          name: numerator
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: IntConst
-                                args:
-                                  value: '31'
-                                  lineno: 105
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 105
-                              lineno: 105
-                          signed: true
-                          dimensions: null
-                          value: null
-                          lineno: 105
-                    lineno: 105
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Integer
-                        args:
-                          name: denominator
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: IntConst
-                                args:
-                                  value: '31'
-                                  lineno: 106
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 106
-                              lineno: 106
-                          signed: true
-                          dimensions: null
-                          value: null
-                          lineno: 106
-                    lineno: 106
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Integer
-                        args:
-                          name: abs_val
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: IntConst
-                                args:
-                                  value: '31'
-                                  lineno: 107
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 107
-                              lineno: 107
-                          signed: true
-                          dimensions: null
-                          value: null
-                          lineno: 107
-                    lineno: 107
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Integer
-                        args:
-                          name: scaled
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: IntConst
-                                args:
-                                  value: '31'
-                                  lineno: 108
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 108
-                              lineno: 108
-                          signed: true
-                          dimensions: null
-                          value: null
-                          lineno: 108
-                    lineno: 108
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Reg
-                        args:
-                          name: result
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: Minus
-                                args:
-                                  left:
-                                    _type: IntConst
-                                    args:
-                                      value: '16'
-                                      lineno: 109
-                                  right:
-                                    _type: IntConst
-                                    args:
-                                      value: '1'
-                                      lineno: 109
-                                  lineno: 109
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 109
-                              lineno: 109
-                          signed: true
-                          dimensions: null
-                          value: null
-                          lineno: 109
-                    lineno: 109
-                - _type: Always
-                  args:
-                    sens_list:
-                      _type: SensList
+                - _type: Sens
+                  type: all
+            statement:
+              _type: Block
+              statements:
+                _tuple:
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: numerator
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: SystemCall
+                      syscall: signed
                       args:
-                        list:
+                        _tuple:
+                        - _type: Identifier
+                          name: value_in
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: abs_val
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: Cond
+                      cond:
+                        _type: Pointer
+                        var:
+                          _type: Identifier
+                          name: value_in
+                        ptr:
+                          _type: Minus
+                          left:
+                            _type: IntConst
+                            value: '16'
+                          right:
+                            _type: IntConst
+                            value: '1'
+                      true_value:
+                        _type: Uminus
+                        right:
+                          _type: SystemCall
+                          syscall: signed
+                          args:
+                            _tuple:
+                            - _type: Identifier
+                              name: value_in
+                      false_value:
+                        _type: SystemCall
+                        syscall: signed
+                        args:
                           _tuple:
-                          - _type: Sens
-                            args:
-                              sig: null
-                              type: all
-                              lineno: 111
-                        lineno: 111
-                    statement:
-                      _type: Block
-                      args:
-                        statements:
-                          _tuple:
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: numerator
-                                      scope: null
-                                      lineno: 112
-                                  lineno: 112
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: SystemCall
-                                    args:
-                                      syscall: signed
-                                      args:
-                                        _tuple:
-                                        - _type: Identifier
-                                          args:
-                                            name: value_in
-                                            scope: null
-                                            lineno: 112
-                                      lineno: 112
-                                  lineno: 112
-                              ldelay: null
-                              rdelay: null
-                              lineno: 112
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: abs_val
-                                      scope: null
-                                      lineno: 113
-                                  lineno: 113
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: Cond
-                                    args:
-                                      cond:
-                                        _type: Pointer
-                                        args:
-                                          var:
-                                            _type: Identifier
-                                            args:
-                                              name: value_in
-                                              scope: null
-                                              lineno: 113
-                                          ptr:
-                                            _type: Minus
-                                            args:
-                                              left:
-                                                _type: IntConst
-                                                args:
-                                                  value: '16'
-                                                  lineno: 113
-                                              right:
-                                                _type: IntConst
-                                                args:
-                                                  value: '1'
-                                                  lineno: 113
-                                              lineno: 113
-                                          lineno: 113
-                                      true_value:
-                                        _type: Uminus
-                                        args:
-                                          right:
-                                            _type: SystemCall
-                                            args:
-                                              syscall: signed
-                                              args:
-                                                _tuple:
-                                                - _type: Identifier
-                                                  args:
-                                                    name: value_in
-                                                    scope: null
-                                                    lineno: 113
-                                              lineno: 113
-                                          lineno: 113
-                                      false_value:
-                                        _type: SystemCall
-                                        args:
-                                          syscall: signed
-                                          args:
-                                            _tuple:
-                                            - _type: Identifier
-                                              args:
-                                                name: value_in
-                                                scope: null
-                                                lineno: 113
-                                          lineno: 113
-                                      lineno: 113
-                                  lineno: 113
-                              ldelay: null
-                              rdelay: null
-                              lineno: 113
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: denominator
-                                      scope: null
-                                      lineno: 114
-                                  lineno: 114
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: Plus
-                                    args:
-                                      left:
-                                        _type: Identifier
-                                        args:
-                                          name: abs_val
-                                          scope: null
-                                          lineno: 114
-                                      right:
-                                        _type: Identifier
-                                        args:
-                                          name: Q_ONE_INT
-                                          scope: null
-                                          lineno: 114
-                                      lineno: 114
-                                  lineno: 114
-                              ldelay: null
-                              rdelay: null
-                              lineno: 114
-                          - _type: IfStatement
-                            args:
-                              cond:
-                                _type: LessEq
-                                args:
-                                  left:
-                                    _type: Identifier
-                                    args:
-                                      name: denominator
-                                      scope: null
-                                      lineno: 115
-                                  right:
-                                    _type: IntConst
-                                    args:
-                                      value: '0'
-                                      lineno: 115
-                                  lineno: 115
-                              true_statement:
-                                _type: BlockingSubstitution
-                                args:
-                                  left:
-                                    _type: Lvalue
-                                    args:
-                                      var:
-                                        _type: Identifier
-                                        args:
-                                          name: denominator
-                                          scope: null
-                                          lineno: 116
-                                      lineno: 116
-                                  right:
-                                    _type: Rvalue
-                                    args:
-                                      var:
-                                        _type: IntConst
-                                        args:
-                                          value: '1'
-                                          lineno: 116
-                                      lineno: 116
-                                  ldelay: null
-                                  rdelay: null
-                                  lineno: 116
-                              false_statement: null
-                              lineno: 115
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: scaled
-                                      scope: null
-                                      lineno: 118
-                                  lineno: 118
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: Sla
-                                    args:
-                                      left:
-                                        _type: Identifier
-                                        args:
-                                          name: numerator
-                                          scope: null
-                                          lineno: 118
-                                      right:
-                                        _type: IntConst
-                                        args:
-                                          value: '8'
-                                          lineno: 118
-                                      lineno: 118
-                                  lineno: 118
-                              ldelay: null
-                              rdelay: null
-                              lineno: 118
-                          - _type: IfStatement
-                            args:
-                              cond:
-                                _type: GreaterEq
-                                args:
-                                  left:
-                                    _type: Identifier
-                                    args:
-                                      name: scaled
-                                      scope: null
-                                      lineno: 119
-                                  right:
-                                    _type: IntConst
-                                    args:
-                                      value: '0'
-                                      lineno: 119
-                                  lineno: 119
-                              true_statement:
-                                _type: BlockingSubstitution
-                                args:
-                                  left:
-                                    _type: Lvalue
-                                    args:
-                                      var:
-                                        _type: Identifier
-                                        args:
-                                          name: scaled
-                                          scope: null
-                                          lineno: 120
-                                      lineno: 120
-                                  right:
-                                    _type: Rvalue
-                                    args:
-                                      var:
-                                        _type: Plus
-                                        args:
-                                          left:
-                                            _type: Identifier
-                                            args:
-                                              name: scaled
-                                              scope: null
-                                              lineno: 120
-                                          right:
-                                            _type: Srl
-                                            args:
-                                              left:
-                                                _type: Identifier
-                                                args:
-                                                  name: denominator
-                                                  scope: null
-                                                  lineno: 120
-                                              right:
-                                                _type: IntConst
-                                                args:
-                                                  value: '1'
-                                                  lineno: 120
-                                              lineno: 120
-                                          lineno: 120
-                                      lineno: 120
-                                  ldelay: null
-                                  rdelay: null
-                                  lineno: 120
-                              false_statement:
-                                _type: BlockingSubstitution
-                                args:
-                                  left:
-                                    _type: Lvalue
-                                    args:
-                                      var:
-                                        _type: Identifier
-                                        args:
-                                          name: scaled
-                                          scope: null
-                                          lineno: 122
-                                      lineno: 122
-                                  right:
-                                    _type: Rvalue
-                                    args:
-                                      var:
-                                        _type: Minus
-                                        args:
-                                          left:
-                                            _type: Identifier
-                                            args:
-                                              name: scaled
-                                              scope: null
-                                              lineno: 122
-                                          right:
-                                            _type: Srl
-                                            args:
-                                              left:
-                                                _type: Identifier
-                                                args:
-                                                  name: denominator
-                                                  scope: null
-                                                  lineno: 122
-                                              right:
-                                                _type: IntConst
-                                                args:
-                                                  value: '1'
-                                                  lineno: 122
-                                              lineno: 122
-                                          lineno: 122
-                                      lineno: 122
-                                  ldelay: null
-                                  rdelay: null
-                                  lineno: 122
-                              lineno: 119
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: result
-                                      scope: null
-                                      lineno: 124
-                                  lineno: 124
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: SystemCall
-                                    args:
-                                      syscall: signed
-                                      args:
-                                        _tuple:
-                                        - _type: Divide
-                                          args:
-                                            left:
-                                              _type: Identifier
-                                              args:
-                                                name: scaled
-                                                scope: null
-                                                lineno: 124
-                                            right:
-                                              _type: Identifier
-                                              args:
-                                                name: denominator
-                                                scope: null
-                                                lineno: 124
-                                            lineno: 124
-                                      lineno: 124
-                                  lineno: 124
-                              ldelay: null
-                              rdelay: null
-                              lineno: 124
-                          - _type: IfStatement
-                            args:
-                              cond:
-                                _type: GreaterThan
-                                args:
-                                  left:
-                                    _type: Identifier
-                                    args:
-                                      name: result
-                                      scope: null
-                                      lineno: 126
-                                  right:
-                                    _type: Identifier
-                                    args:
-                                      name: Q_MAX
-                                      scope: null
-                                      lineno: 126
-                                  lineno: 126
-                              true_statement:
-                                _type: BlockingSubstitution
-                                args:
-                                  left:
-                                    _type: Lvalue
-                                    args:
-                                      var:
-                                        _type: Identifier
-                                        args:
-                                          name: result
-                                          scope: null
-                                          lineno: 127
-                                      lineno: 127
-                                  right:
-                                    _type: Rvalue
-                                    args:
-                                      var:
-                                        _type: Identifier
-                                        args:
-                                          name: Q_MAX
-                                          scope: null
-                                          lineno: 127
-                                      lineno: 127
-                                  ldelay: null
-                                  rdelay: null
-                                  lineno: 127
-                              false_statement:
-                                _type: IfStatement
-                                args:
-                                  cond:
-                                    _type: LessThan
-                                    args:
-                                      left:
-                                        _type: Identifier
-                                        args:
-                                          name: result
-                                          scope: null
-                                          lineno: 128
-                                      right:
-                                        _type: Identifier
-                                        args:
-                                          name: Q_MIN
-                                          scope: null
-                                          lineno: 128
-                                      lineno: 128
-                                  true_statement:
-                                    _type: BlockingSubstitution
-                                    args:
-                                      left:
-                                        _type: Lvalue
-                                        args:
-                                          var:
-                                            _type: Identifier
-                                            args:
-                                              name: result
-                                              scope: null
-                                              lineno: 129
-                                          lineno: 129
-                                      right:
-                                        _type: Rvalue
-                                        args:
-                                          var:
-                                            _type: Identifier
-                                            args:
-                                              name: Q_MIN
-                                              scope: null
-                                              lineno: 129
-                                          lineno: 129
-                                      ldelay: null
-                                      rdelay: null
-                                      lineno: 129
-                                  false_statement: null
-                                  lineno: 128
-                              lineno: 126
-                        scope: null
-                        lineno: 111
-                    lineno: 111
-                - _type: Assign
-                  args:
+                          - _type: Identifier
+                            name: value_in
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: denominator
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: Plus
+                      left:
+                        _type: Identifier
+                        name: abs_val
+                      right:
+                        _type: Identifier
+                        name: Q_ONE_INT
+                - _type: IfStatement
+                  cond:
+                    _type: LessEq
+                    left:
+                      _type: Identifier
+                      name: denominator
+                    right:
+                      _type: IntConst
+                      value: '0'
+                  true_statement:
+                    _type: BlockingSubstitution
                     left:
                       _type: Lvalue
-                      args:
-                        var:
-                          _type: Identifier
-                          args:
-                            name: value_out
-                            scope: null
-                            lineno: 132
-                        lineno: 132
+                      var:
+                        _type: Identifier
+                        name: denominator
                     right:
                       _type: Rvalue
+                      var:
+                        _type: IntConst
+                        value: '1'
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: scaled
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: Sla
+                      left:
+                        _type: Identifier
+                        name: numerator
+                      right:
+                        _type: IntConst
+                        value: '8'
+                - _type: IfStatement
+                  cond:
+                    _type: GreaterEq
+                    left:
+                      _type: Identifier
+                      name: scaled
+                    right:
+                      _type: IntConst
+                      value: '0'
+                  true_statement:
+                    _type: BlockingSubstitution
+                    left:
+                      _type: Lvalue
+                      var:
+                        _type: Identifier
+                        name: scaled
+                    right:
+                      _type: Rvalue
+                      var:
+                        _type: Plus
+                        left:
+                          _type: Identifier
+                          name: scaled
+                        right:
+                          _type: Srl
+                          left:
+                            _type: Identifier
+                            name: denominator
+                          right:
+                            _type: IntConst
+                            value: '1'
+                  false_statement:
+                    _type: BlockingSubstitution
+                    left:
+                      _type: Lvalue
+                      var:
+                        _type: Identifier
+                        name: scaled
+                    right:
+                      _type: Rvalue
+                      var:
+                        _type: Minus
+                        left:
+                          _type: Identifier
+                          name: scaled
+                        right:
+                          _type: Srl
+                          left:
+                            _type: Identifier
+                            name: denominator
+                          right:
+                            _type: IntConst
+                            value: '1'
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: result
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: SystemCall
+                      syscall: signed
                       args:
+                        _tuple:
+                        - _type: Divide
+                          left:
+                            _type: Identifier
+                            name: scaled
+                          right:
+                            _type: Identifier
+                            name: denominator
+                - _type: IfStatement
+                  cond:
+                    _type: GreaterThan
+                    left:
+                      _type: Identifier
+                      name: result
+                    right:
+                      _type: Identifier
+                      name: Q_MAX
+                  true_statement:
+                    _type: BlockingSubstitution
+                    left:
+                      _type: Lvalue
+                      var:
+                        _type: Identifier
+                        name: result
+                    right:
+                      _type: Rvalue
+                      var:
+                        _type: Identifier
+                        name: Q_MAX
+                  false_statement:
+                    _type: IfStatement
+                    cond:
+                      _type: LessThan
+                      left:
+                        _type: Identifier
+                        name: result
+                      right:
+                        _type: Identifier
+                        name: Q_MIN
+                    true_statement:
+                      _type: BlockingSubstitution
+                      left:
+                        _type: Lvalue
                         var:
                           _type: Identifier
-                          args:
-                            name: result
-                            scope: null
-                            lineno: 132
-                        lineno: 132
-                    ldelay: null
-                    rdelay: null
-                    lineno: 132
-              default_nettype: wire
-              lineno: 97
-            extras:
-              end_lineno: 133
-        lineno: 97
-    lineno: 97
+                          name: result
+                      right:
+                        _type: Rvalue
+                        var:
+                          _type: Identifier
+                          name: Q_MIN
+          - _type: Assign
+            left:
+              _type: Lvalue
+              var:
+                _type: Identifier
+                name: value_out
+            right:
+              _type: Rvalue
+              var:
+                _type: Identifier
+                name: result
+        default_nettype: wire
+        end_lineno: 133
 parse_hints:
   functions: {}

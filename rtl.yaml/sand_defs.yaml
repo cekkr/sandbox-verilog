@@ -4,511 +4,309 @@ original_path: sand_defs.vh
 statements:
 - type: comment
   text: // =============================================================================
-  name: null
-  value: null
-  body: null
 - type: comment
   text: "// sand_defs.vh  \u2014 shared parameters/opcodes"
-  name: null
-  value: null
-  body: null
 - type: comment
   text: // =============================================================================
-  name: null
-  value: null
-  body: null
 - type: blank
-  text: null
-  name: null
-  value: null
-  body: null
 - type: ifndef
-  text: null
   name: SAND_DEFS_VH
-  value: null
-  body: null
 - type: define
-  text: null
   name: SAND_DEFS_VH
-  value: null
   body:
   - ''
 - type: blank
-  text: null
-  name: null
-  value: null
-  body: null
 - type: comment
   text: // -------- Core tunables (edit freely) ----------------------------------------
-  name: null
-  value: null
-  body: null
 - type: define
-  text: null
   name: DATA_W
-  value: null
   body:
   - 16      // cell data width (fixed-point ok)
 - type: define
-  text: null
   name: FRAC_W
-  value: null
   body:
   - 8       // if using fixed-point (Q8.8 by default)
 - type: define
-  text: null
   name: WIDTH
-  value: null
   body:
   - 32      // grid X (edit as resources allow)
 - type: define
-  text: null
   name: HEIGHT
-  value: null
   body:
   - 32      // grid Y
 - type: define
-  text: null
   name: DEPTH
-  value: null
   body:
   - 4       // grid Z (layers); set 1 for pure 2D
 - type: define
-  text: null
   name: N_JOBS
-  value: null
   body:
   - 4       // number of sandboxes time-sliced
 - type: define
-  text: null
   name: STEPS_PER_SLICE
-  value: null
   body:
   - 8       // steps per job before rotating
 - type: define
-  text: null
   name: USE_DIAGONALS
-  value: null
   body:
   - '1       // 1: 8-neighborhood, 0: 4-neighborhood'
 - type: blank
-  text: null
-  name: null
-  value: null
-  body: null
 - type: comment
   text: "// Host-visible config space (simple memory-mapped \u201CCSR\u201D window)"
-  name: null
-  value: null
-  body: null
 - type: define
-  text: null
   name: CSR_ADDR_W
-  value: null
   body:
   - '8'
 - type: comment
   text: '// CSR map (byte/word addressing up to you). Minimal set:'
-  name: null
-  value: null
-  body: null
 - type: define
-  text: null
   name: CSR_JOB_SELECT
-  value: null
   body:
   - '8''h00   // W: selects active job when manually poked'
 - type: define
-  text: null
   name: CSR_RULE_OP
-  value: null
   body:
   - '8''h04   // W: opcode selector (see opcodes below)'
 - type: define
-  text: null
   name: CSR_RULE_CONSTA
-  value: null
   body:
   - '8''h08   // W: constA (DATA_W)'
 - type: define
-  text: null
   name: CSR_RULE_CONSTB
-  value: null
   body:
   - '8''h0C   // W: constB (DATA_W)'
 - type: define
-  text: null
   name: CSR_FLAGS
-  value: null
   body:
   - '8''h10   // W: [0]=enable_diagonals override, [1]=use_microcode'
 - type: define
-  text: null
   name: CSR_STATUS
-  value: null
   body:
   - '8''h14   // R: [0]=engine_busy, [N_JOBS:1]=job_done bits'
 - type: define
-  text: null
   name: CSR_ADAPT_CTRL
-  value: null
   body:
   - '8''h18   // W: [0]=enable, [1]=auto, step budgets packed'
 - type: define
-  text: null
   name: CSR_ADAPT_THRESH_LO
-  value: null
   body:
   - '8''h1C   // W: activity threshold low'
 - type: define
-  text: null
   name: CSR_ADAPT_THRESH_HI
-  value: null
   body:
   - '8''h20   // W: activity threshold high'
 - type: define
-  text: null
   name: CSR_ADAPT_CAPACITY
-  value: null
   body:
   - '8''h24   // W: cycle budget hint for frame runtime (0=ignore)'
 - type: define
-  text: null
   name: CSR_ADAPT_STATUS
-  value: null
   body:
   - '8''h28   // R: packed status for selected job'
 - type: define
-  text: null
   name: CSR_ADAPT_STATUS_SEL
-  value: null
   body:
   - '8''h2C   // W: selects which job to expose via STATUS register'
 - type: define
-  text: null
   name: CSR_ADAPT_BUDGET
-  value: null
   body:
   - '8''h30   // R: step budget + misc info for selected job'
 - type: define
-  text: null
   name: CSR_RULE_CONSTC
-  value: null
   body:
   - '8''h34   // W: constC / mix coefficient C'
 - type: define
-  text: null
   name: CSR_RULE_CONSTD
-  value: null
   body:
   - '8''h38   // W: constD / mix bias term'
 - type: define
-  text: null
   name: CSR_MICRO_BASE
-  value: null
   body:
   - '8''h40   // W: microcode table (16 entries)'
 - type: blank
-  text: null
-  name: null
-  value: null
-  body: null
 - type: comment
   text: // Enhanced unit controls
-  name: null
-  value: null
-  body: null
 - type: define
-  text: null
   name: CSR_UNIT_CTRL
-  value: null
   body:
   - '8''h50   // W: unit behavior enable bits + iteration counts'
 - type: define
-  text: null
   name: CSR_UNIT_WINDOW_WH
-  value: null
   body:
   - '8''h54   // W: {height[31:16], width[15:0]} for selected job'
 - type: define
-  text: null
   name: CSR_UNIT_WINDOW_OFFSET
-  value: null
   body:
   - '8''h58   // W: {y_off[31:16], x_off[15:0]} for selected job'
 - type: define
-  text: null
   name: CSR_UNIT_FLUX_WEIGHT_TOP
-  value: null
   body:
   - '8''h5C   // W: weight for north/top flux'
 - type: define
-  text: null
   name: CSR_UNIT_FLUX_WEIGHT_BOTTOM
-  value: null
   body:
   - '8''h60  // W: weight for south/bottom flux'
 - type: define
-  text: null
   name: CSR_UNIT_FLUX_WEIGHT_SIDE
-  value: null
   body:
   - '8''h64   // W: weight for lateral/diagonal flux'
 - type: define
-  text: null
   name: CSR_UNIT_FLUX_WEIGHT_RETAIN
-  value: null
   body:
   - '8''h68  // W: retention/self weight'
 - type: define
-  text: null
   name: CSR_UNIT_FLUX_WEIGHT_PREV
-  value: null
   body:
   - '8''h6C   // W: previous-layer feedback weight'
 - type: define
-  text: null
   name: CSR_UNIT_FLUX_THRESHOLD
-  value: null
   body:
   - '8''h70   // W: saturation threshold for flux accumulator'
 - type: define
-  text: null
   name: CSR_UNIT_FLUX_REVERSE_TOP
-  value: null
   body:
   - '8''h74   // W: fraction of overflow sent back upward'
 - type: define
-  text: null
   name: CSR_UNIT_FLUX_REVERSE_BOTTOM
-  value: null
   body:
   - '8''h78 // W: fraction of overflow drained downward'
 - type: define
-  text: null
   name: CSR_UNIT_PRESSURE_GAIN
-  value: null
   body:
   - '8''h7C   // W: exchange rate gain'
 - type: define
-  text: null
   name: CSR_UNIT_BACKPROP_LR
-  value: null
   body:
   - '8''h80   // W: learning rate for backprop mode'
 - type: define
-  text: null
   name: CSR_UNIT_BACKPROP_NEIGH
-  value: null
   body:
   - '8''h84   // W: neighbor-coupled gradient gain'
 - type: define
-  text: null
   name: CSR_UNIT_BACKPROP_DECAY
-  value: null
   body:
   - '8''h88   // W: decay/regularization factor'
 - type: define
-  text: null
   name: CSR_UNIT_STATUS_WINDOW
-  value: null
   body:
   - '8''h8C   // R: {height[31:16], width[15:0]} for selected job'
 - type: define
-  text: null
   name: CSR_UNIT_STATUS_OFFSET
-  value: null
   body:
   - '8''h90   // R: {y_off[31:16], x_off[15:0]} for selected job'
 - type: blank
-  text: null
-  name: null
-  value: null
-  body: null
 - type: comment
   text: // Adaptive scheduler defaults
-  name: null
-  value: null
-  body: null
 - type: define
-  text: null
   name: ADAPT_DEFAULT_MANUAL_STEPS
-  value: null
   body:
   - '`STEPS_PER_SLICE'
 - type: define
-  text: null
   name: ADAPT_DEFAULT_MIN_STEPS
-  value: null
   body:
   - '1'
 - type: define
-  text: null
   name: ADAPT_DEFAULT_MAX_STEPS
-  value: null
   body:
   - '`STEPS_PER_SLICE'
 - type: define
-  text: null
   name: ADAPT_DEFAULT_LOW_THRESH
-  value: null
   body:
   - '16'
 - type: define
-  text: null
   name: ADAPT_DEFAULT_HIGH_THRESH
-  value: null
   body:
   - '(((`WIDTH*`HEIGHT) > 0) ? ((`WIDTH*`HEIGHT) >> 1) : 1)'
 - type: define
-  text: null
   name: ADAPT_DEFAULT_CAP_CYCLES
-  value: null
   body:
   - '0'
 - type: blank
-  text: null
-  name: null
-  value: null
-  body: null
 - type: comment
   text: "// Opcodes for the PE ALU (baseline \u201Cmath\u201D)"
-  name: null
-  value: null
-  body: null
 - type: define
-  text: null
   name: OPCODE_W
-  value: null
   body:
   - '5'
 - type: define
-  text: null
   name: OP_NOP
-  value: null
   body:
   - 5'd0
 - type: define
-  text: null
   name: OP_SELF
-  value: null
   body:
   - 5'd1
 - type: define
-  text: null
   name: OP_SUM_NBRS
-  value: null
   body:
   - 5'd2
 - type: define
-  text: null
   name: OP_AVG_NBRS
-  value: null
   body:
   - 5'd3
 - type: define
-  text: null
   name: OP_ADD_CONST
-  value: null
   body:
   - 5'd4
 - type: define
-  text: null
   name: OP_SUB_CONST
-  value: null
   body:
   - 5'd5
 - type: define
-  text: null
   name: OP_MUL_CONST
-  value: null
   body:
   - 5'd6
 - type: define
-  text: null
   name: OP_DIV_CONST
-  value: null
   body:
   - 5'd7
 - type: define
-  text: null
   name: OP_DIFFUSION
-  value: null
   body:
   - 5'd8  // self + k*(avg_nbrs - self)
 - type: define
-  text: null
   name: OP_MIN
-  value: null
   body:
   - 5'd9  // min(self, any neighbor)
 - type: define
-  text: null
   name: OP_MAX
-  value: null
   body:
   - 5'd10 // max(self, any neighbor)
 - type: define
-  text: null
   name: OP_CLAMP
-  value: null
   body:
   - 5'd11 // clamp(self, constA..constB)
 - type: define
-  text: null
   name: OP_WATER_FLUX
-  value: null
   body:
   - 5'd12 // weighted flux accumulation with overflow routing
 - type: define
-  text: null
   name: OP_PRESSURE
-  value: null
   body:
   - 5'd13 // iterative pressure/exchange solver
 - type: define
-  text: null
   name: OP_BACKPROP
-  value: null
   body:
   - 5'd14 // simple backprop-style gradient update
 - type: define
-  text: null
   name: OP_MICRO
-  value: null
   body:
   - 5'd15 // microcode lookup (default)
 - type: define
-  text: null
   name: OP_LAPLACIAN
-  value: null
   body:
   - 5'd16 // 6-neighbor laplacian (planar + vertical)
 - type: define
-  text: null
   name: OP_SHARPEN
-  value: null
   body:
   - 5'd17 // self + alpha*(laplacian) with alpha=constA
 - type: define
-  text: null
   name: OP_EDGE
-  value: null
   body:
   - 5'd18 // |dx|+|dy| using 4-neighbor gradients
 - type: define
-  text: null
   name: OP_MIX
-  value: null
   body:
   - 5'd19 // a*self + b*avg + c*sum + d (fixed-point mix)
 - type: blank
-  text: null
-  name: null
-  value: null
-  body: null
 - type: endif
-  text: null
-  name: null
-  value: null
-  body: null

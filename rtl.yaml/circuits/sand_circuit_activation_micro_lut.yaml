@@ -12,7 +12,6 @@ summary:
       direction: input
       width: '[16-1:0]'
       signed: true
-      datatype: null
     - name: micro_lut
       direction: input
       width: '[16-1:0]'
@@ -22,868 +21,450 @@ summary:
       direction: output
       width: '[16-1:0]'
       signed: true
-      datatype: null
 ast:
   _type: Source
-  args:
-    name: ''
-    description:
-      _type: Description
-      args:
-        definitions:
+  name: ''
+  description:
+    _type: Description
+    definitions:
+      _tuple:
+      - _type: ModuleDef
+        name: sand_circuit_activation_micro_lut
+        paramlist:
+          _type: Paramlist
+          params:
+            _tuple: []
+        portlist:
+          _type: Portlist
+          ports:
+            _tuple:
+            - _type: Ioport
+              first:
+                _type: Input
+                name: value_in
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+            - _type: Ioport
+              first:
+                _type: Input
+                name: micro_lut
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+                dimensions:
+                  _type: Dimensions
+                  lengths:
+                  - _type: Length
+                    msb:
+                      _type: IntConst
+                      value: '0'
+                    lsb:
+                      _type: IntConst
+                      value: '15'
+              second:
+                _type: Wire
+                name: micro_lut
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+                dimensions:
+                  _type: Dimensions
+                  lengths:
+                  - _type: Length
+                    msb:
+                      _type: IntConst
+                      value: '0'
+                    lsb:
+                      _type: IntConst
+                      value: '15'
+            - _type: Ioport
+              first:
+                _type: Output
+                name: value_out
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+        items:
           _tuple:
-          - _type: ModuleDef
-            args:
-              name: sand_circuit_activation_micro_lut
-              paramlist:
-                _type: Paramlist
-                args:
-                  params:
-                    _tuple: []
-                  lineno: 0
-              portlist:
-                _type: Portlist
-                args:
-                  ports:
-                    _tuple:
-                    - _type: Ioport
-                      args:
-                        first:
-                          _type: Input
-                          args:
-                            name: value_in
-                            width:
-                              _type: Width
-                              args:
-                                msb:
-                                  _type: Minus
-                                  args:
-                                    left:
-                                      _type: IntConst
-                                      args:
-                                        value: '16'
-                                        lineno: 96
-                                    right:
-                                      _type: IntConst
-                                      args:
-                                        value: '1'
-                                        lineno: 96
-                                    lineno: 96
-                                lsb:
-                                  _type: IntConst
-                                  args:
-                                    value: '0'
-                                    lineno: 96
-                                lineno: 96
-                            signed: true
-                            dimensions: null
-                            value: null
-                            lineno: 96
-                        second: null
-                        lineno: 96
-                    - _type: Ioport
-                      args:
-                        first:
-                          _type: Input
-                          args:
-                            name: micro_lut
-                            width:
-                              _type: Width
-                              args:
-                                msb:
-                                  _type: Minus
-                                  args:
-                                    left:
-                                      _type: IntConst
-                                      args:
-                                        value: '16'
-                                        lineno: 97
-                                    right:
-                                      _type: IntConst
-                                      args:
-                                        value: '1'
-                                        lineno: 97
-                                    lineno: 97
-                                lsb:
-                                  _type: IntConst
-                                  args:
-                                    value: '0'
-                                    lineno: 97
-                                lineno: 97
-                            signed: true
-                            dimensions:
-                              _type: Dimensions
-                              args:
-                                lengths:
-                                - _type: Length
-                                  args:
-                                    msb:
-                                      _type: IntConst
-                                      args:
-                                        value: '0'
-                                        lineno: 97
-                                    lsb:
-                                      _type: IntConst
-                                      args:
-                                        value: '15'
-                                        lineno: 97
-                                    lineno: 97
-                                lineno: 97
-                            value: null
-                            lineno: 97
-                        second:
-                          _type: Wire
-                          args:
-                            name: micro_lut
-                            width:
-                              _type: Width
-                              args:
-                                msb:
-                                  _type: Minus
-                                  args:
-                                    left:
-                                      _type: IntConst
-                                      args:
-                                        value: '16'
-                                        lineno: 97
-                                    right:
-                                      _type: IntConst
-                                      args:
-                                        value: '1'
-                                        lineno: 97
-                                    lineno: 97
-                                lsb:
-                                  _type: IntConst
-                                  args:
-                                    value: '0'
-                                    lineno: 97
-                                lineno: 97
-                            signed: true
-                            dimensions:
-                              _type: Dimensions
-                              args:
-                                lengths:
-                                - _type: Length
-                                  args:
-                                    msb:
-                                      _type: IntConst
-                                      args:
-                                        value: '0'
-                                        lineno: 97
-                                    lsb:
-                                      _type: IntConst
-                                      args:
-                                        value: '15'
-                                        lineno: 97
-                                    lineno: 97
-                                lineno: 97
-                            value: null
-                            lineno: 97
-                        lineno: 97
-                    - _type: Ioport
-                      args:
-                        first:
-                          _type: Output
-                          args:
-                            name: value_out
-                            width:
-                              _type: Width
-                              args:
-                                msb:
-                                  _type: Minus
-                                  args:
-                                    left:
-                                      _type: IntConst
-                                      args:
-                                        value: '16'
-                                        lineno: 98
-                                    right:
-                                      _type: IntConst
-                                      args:
-                                        value: '1'
-                                        lineno: 98
-                                    lineno: 98
-                                lsb:
-                                  _type: IntConst
-                                  args:
-                                    value: '0'
-                                    lineno: 98
-                                lineno: 98
-                            signed: true
-                            dimensions: null
-                            value: null
-                            lineno: 98
-                        second: null
-                        lineno: 98
-                  lineno: 95
-              items:
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Localparam
+                name: Q_ONE
+                value:
+                  _type: Rvalue
+                  var:
+                    _type: Sll
+                    left:
+                      _type: IntConst
+                      value: '1'
+                    right:
+                      _type: IntConst
+                      value: '8'
+                signed: false
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Integer
+                name: abs_val
+                width:
+                  _type: Width
+                  msb:
+                    _type: IntConst
+                    value: '31'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Reg
+                name: bucket
+                width:
+                  _type: Width
+                  msb:
+                    _type: IntConst
+                    value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: false
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Reg
+                name: frac_flag
+                signed: false
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Reg
+                name: lut_idx
+                width:
+                  _type: Width
+                  msb:
+                    _type: IntConst
+                    value: '3'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: false
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Reg
+                name: lut_val
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Always
+            sens_list:
+              _type: SensList
+              list:
                 _tuple:
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Localparam
+                - _type: Sens
+                  type: all
+            statement:
+              _type: Block
+              statements:
+                _tuple:
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: abs_val
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: Cond
+                      cond:
+                        _type: Pointer
+                        var:
+                          _type: Identifier
+                          name: value_in
+                        ptr:
+                          _type: Minus
+                          left:
+                            _type: IntConst
+                            value: '16'
+                          right:
+                            _type: IntConst
+                            value: '1'
+                      true_value:
+                        _type: Uminus
+                        right:
+                          _type: SystemCall
+                          syscall: signed
+                          args:
+                            _tuple:
+                            - _type: Identifier
+                              name: value_in
+                      false_value:
+                        _type: SystemCall
+                        syscall: signed
                         args:
-                          name: Q_ONE
-                          value:
-                            _type: Rvalue
-                            args:
-                              var:
-                                _type: Sll
-                                args:
-                                  left:
-                                    _type: IntConst
-                                    args:
-                                      value: '1'
-                                      lineno: 100
-                                  right:
-                                    _type: IntConst
-                                    args:
-                                      value: '8'
-                                      lineno: 100
-                                  lineno: 100
-                              lineno: 100
-                          width: null
-                          signed: false
-                          lineno: 100
-                        extras:
-                          dimensions: null
-                    lineno: 100
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Integer
-                        args:
-                          name: abs_val
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: IntConst
-                                args:
-                                  value: '31'
-                                  lineno: 102
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 102
-                              lineno: 102
-                          signed: true
-                          dimensions: null
-                          value: null
-                          lineno: 102
-                    lineno: 102
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Reg
-                        args:
-                          name: bucket
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: IntConst
-                                args:
-                                  value: '1'
-                                  lineno: 103
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 103
-                              lineno: 103
-                          signed: false
-                          dimensions: null
-                          value: null
-                          lineno: 103
-                    lineno: 103
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Reg
-                        args:
-                          name: frac_flag
-                          width: null
-                          signed: false
-                          dimensions: null
-                          value: null
-                          lineno: 104
-                    lineno: 104
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Reg
-                        args:
-                          name: lut_idx
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: IntConst
-                                args:
-                                  value: '3'
-                                  lineno: 105
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 105
-                              lineno: 105
-                          signed: false
-                          dimensions: null
-                          value: null
-                          lineno: 105
-                    lineno: 105
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Reg
-                        args:
-                          name: lut_val
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: Minus
-                                args:
-                                  left:
-                                    _type: IntConst
-                                    args:
-                                      value: '16'
-                                      lineno: 106
-                                  right:
-                                    _type: IntConst
-                                    args:
-                                      value: '1'
-                                      lineno: 106
-                                  lineno: 106
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 106
-                              lineno: 106
-                          signed: true
-                          dimensions: null
-                          value: null
-                          lineno: 106
-                    lineno: 106
-                - _type: Always
-                  args:
-                    sens_list:
-                      _type: SensList
-                      args:
-                        list:
                           _tuple:
-                          - _type: Sens
-                            args:
-                              sig: null
-                              type: all
-                              lineno: 108
-                        lineno: 108
-                    statement:
-                      _type: Block
-                      args:
-                        statements:
-                          _tuple:
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: abs_val
-                                      scope: null
-                                      lineno: 109
-                                  lineno: 109
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: Cond
-                                    args:
-                                      cond:
-                                        _type: Pointer
-                                        args:
-                                          var:
-                                            _type: Identifier
-                                            args:
-                                              name: value_in
-                                              scope: null
-                                              lineno: 109
-                                          ptr:
-                                            _type: Minus
-                                            args:
-                                              left:
-                                                _type: IntConst
-                                                args:
-                                                  value: '16'
-                                                  lineno: 109
-                                              right:
-                                                _type: IntConst
-                                                args:
-                                                  value: '1'
-                                                  lineno: 109
-                                              lineno: 109
-                                          lineno: 109
-                                      true_value:
-                                        _type: Uminus
-                                        args:
-                                          right:
-                                            _type: SystemCall
-                                            args:
-                                              syscall: signed
-                                              args:
-                                                _tuple:
-                                                - _type: Identifier
-                                                  args:
-                                                    name: value_in
-                                                    scope: null
-                                                    lineno: 109
-                                              lineno: 109
-                                          lineno: 109
-                                      false_value:
-                                        _type: SystemCall
-                                        args:
-                                          syscall: signed
-                                          args:
-                                            _tuple:
-                                            - _type: Identifier
-                                              args:
-                                                name: value_in
-                                                scope: null
-                                                lineno: 109
-                                          lineno: 109
-                                      lineno: 109
-                                  lineno: 109
-                              ldelay: null
-                              rdelay: null
-                              lineno: 109
-                          - _type: IfStatement
-                            args:
-                              cond:
-                                _type: GreaterEq
-                                args:
-                                  left:
-                                    _type: Identifier
-                                    args:
-                                      name: abs_val
-                                      scope: null
-                                      lineno: 111
-                                  right:
-                                    _type: Sll
-                                    args:
-                                      left:
-                                        _type: Identifier
-                                        args:
-                                          name: Q_ONE
-                                          scope: null
-                                          lineno: 111
-                                      right:
-                                        _type: IntConst
-                                        args:
-                                          value: '1'
-                                          lineno: 111
-                                      lineno: 111
-                                  lineno: 111
-                              true_statement:
-                                _type: BlockingSubstitution
-                                args:
-                                  left:
-                                    _type: Lvalue
-                                    args:
-                                      var:
-                                        _type: Identifier
-                                        args:
-                                          name: bucket
-                                          scope: null
-                                          lineno: 112
-                                      lineno: 112
-                                  right:
-                                    _type: Rvalue
-                                    args:
-                                      var:
-                                        _type: IntConst
-                                        args:
-                                          value: 2'd3
-                                          lineno: 112
-                                      lineno: 112
-                                  ldelay: null
-                                  rdelay: null
-                                  lineno: 112
-                              false_statement:
-                                _type: IfStatement
-                                args:
-                                  cond:
-                                    _type: GreaterEq
-                                    args:
-                                      left:
-                                        _type: Identifier
-                                        args:
-                                          name: abs_val
-                                          scope: null
-                                          lineno: 113
-                                      right:
-                                        _type: Srl
-                                        args:
-                                          left:
-                                            _type: Times
-                                            args:
-                                              left:
-                                                _type: Identifier
-                                                args:
-                                                  name: Q_ONE
-                                                  scope: null
-                                                  lineno: 113
-                                              right:
-                                                _type: IntConst
-                                                args:
-                                                  value: '3'
-                                                  lineno: 113
-                                              lineno: 113
-                                          right:
-                                            _type: IntConst
-                                            args:
-                                              value: '1'
-                                              lineno: 113
-                                          lineno: 113
-                                      lineno: 113
-                                  true_statement:
-                                    _type: BlockingSubstitution
-                                    args:
-                                      left:
-                                        _type: Lvalue
-                                        args:
-                                          var:
-                                            _type: Identifier
-                                            args:
-                                              name: bucket
-                                              scope: null
-                                              lineno: 114
-                                          lineno: 114
-                                      right:
-                                        _type: Rvalue
-                                        args:
-                                          var:
-                                            _type: IntConst
-                                            args:
-                                              value: 2'd2
-                                              lineno: 114
-                                          lineno: 114
-                                      ldelay: null
-                                      rdelay: null
-                                      lineno: 114
-                                  false_statement:
-                                    _type: IfStatement
-                                    args:
-                                      cond:
-                                        _type: GreaterEq
-                                        args:
-                                          left:
-                                            _type: Identifier
-                                            args:
-                                              name: abs_val
-                                              scope: null
-                                              lineno: 115
-                                          right:
-                                            _type: Srl
-                                            args:
-                                              left:
-                                                _type: Identifier
-                                                args:
-                                                  name: Q_ONE
-                                                  scope: null
-                                                  lineno: 115
-                                              right:
-                                                _type: IntConst
-                                                args:
-                                                  value: '1'
-                                                  lineno: 115
-                                              lineno: 115
-                                          lineno: 115
-                                      true_statement:
-                                        _type: BlockingSubstitution
-                                        args:
-                                          left:
-                                            _type: Lvalue
-                                            args:
-                                              var:
-                                                _type: Identifier
-                                                args:
-                                                  name: bucket
-                                                  scope: null
-                                                  lineno: 116
-                                              lineno: 116
-                                          right:
-                                            _type: Rvalue
-                                            args:
-                                              var:
-                                                _type: IntConst
-                                                args:
-                                                  value: 2'd1
-                                                  lineno: 116
-                                              lineno: 116
-                                          ldelay: null
-                                          rdelay: null
-                                          lineno: 116
-                                      false_statement:
-                                        _type: BlockingSubstitution
-                                        args:
-                                          left:
-                                            _type: Lvalue
-                                            args:
-                                              var:
-                                                _type: Identifier
-                                                args:
-                                                  name: bucket
-                                                  scope: null
-                                                  lineno: 118
-                                              lineno: 118
-                                          right:
-                                            _type: Rvalue
-                                            args:
-                                              var:
-                                                _type: IntConst
-                                                args:
-                                                  value: 2'd0
-                                                  lineno: 118
-                                              lineno: 118
-                                          ldelay: null
-                                          rdelay: null
-                                          lineno: 118
-                                      lineno: 115
-                                  lineno: 113
-                              lineno: 111
-                          - _type: IfStatement
-                            args:
-                              cond:
-                                _type: GreaterThan
-                                args:
-                                  left:
-                                    _type: IntConst
-                                    args:
-                                      value: '8'
-                                      lineno: 120
-                                  right:
-                                    _type: IntConst
-                                    args:
-                                      value: '0'
-                                      lineno: 120
-                                  lineno: 120
-                              true_statement:
-                                _type: BlockingSubstitution
-                                args:
-                                  left:
-                                    _type: Lvalue
-                                    args:
-                                      var:
-                                        _type: Identifier
-                                        args:
-                                          name: frac_flag
-                                          scope: null
-                                          lineno: 121
-                                      lineno: 121
-                                  right:
-                                    _type: Rvalue
-                                    args:
-                                      var:
-                                        _type: And
-                                        args:
-                                          left:
-                                            _type: Srl
-                                            args:
-                                              left:
-                                                _type: Identifier
-                                                args:
-                                                  name: abs_val
-                                                  scope: null
-                                                  lineno: 121
-                                              right:
-                                                _type: Minus
-                                                args:
-                                                  left:
-                                                    _type: IntConst
-                                                    args:
-                                                      value: '8'
-                                                      lineno: 121
-                                                  right:
-                                                    _type: IntConst
-                                                    args:
-                                                      value: '1'
-                                                      lineno: 121
-                                                  lineno: 121
-                                              lineno: 121
-                                          right:
-                                            _type: IntConst
-                                            args:
-                                              value: 1'b1
-                                              lineno: 121
-                                          lineno: 121
-                                      lineno: 121
-                                  ldelay: null
-                                  rdelay: null
-                                  lineno: 121
-                              false_statement:
-                                _type: BlockingSubstitution
-                                args:
-                                  left:
-                                    _type: Lvalue
-                                    args:
-                                      var:
-                                        _type: Identifier
-                                        args:
-                                          name: frac_flag
-                                          scope: null
-                                          lineno: 123
-                                      lineno: 123
-                                  right:
-                                    _type: Rvalue
-                                    args:
-                                      var:
-                                        _type: IntConst
-                                        args:
-                                          value: 1'b0
-                                          lineno: 123
-                                      lineno: 123
-                                  ldelay: null
-                                  rdelay: null
-                                  lineno: 123
-                              lineno: 120
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: lut_idx
-                                      scope: null
-                                      lineno: 125
-                                  lineno: 125
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: Concat
-                                    args:
-                                      list:
-                                        _tuple:
-                                        - _type: Pointer
-                                          args:
-                                            var:
-                                              _type: Identifier
-                                              args:
-                                                name: value_in
-                                                scope: null
-                                                lineno: 125
-                                            ptr:
-                                              _type: Minus
-                                              args:
-                                                left:
-                                                  _type: IntConst
-                                                  args:
-                                                    value: '16'
-                                                    lineno: 125
-                                                right:
-                                                  _type: IntConst
-                                                  args:
-                                                    value: '1'
-                                                    lineno: 125
-                                                lineno: 125
-                                            lineno: 125
-                                        - _type: Identifier
-                                          args:
-                                            name: bucket
-                                            scope: null
-                                            lineno: 125
-                                        - _type: Identifier
-                                          args:
-                                            name: frac_flag
-                                            scope: null
-                                            lineno: 125
-                                      lineno: 125
-                                  lineno: 125
-                              ldelay: null
-                              rdelay: null
-                              lineno: 125
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: lut_val
-                                      scope: null
-                                      lineno: 126
-                                  lineno: 126
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: Pointer
-                                    args:
-                                      var:
-                                        _type: Identifier
-                                        args:
-                                          name: micro_lut
-                                          scope: null
-                                          lineno: 126
-                                      ptr:
-                                        _type: Identifier
-                                        args:
-                                          name: lut_idx
-                                          scope: null
-                                          lineno: 126
-                                      lineno: 126
-                                  lineno: 126
-                              ldelay: null
-                              rdelay: null
-                              lineno: 126
-                        scope: null
-                        lineno: 108
-                    lineno: 108
-                - _type: Assign
-                  args:
+                          - _type: Identifier
+                            name: value_in
+                - _type: IfStatement
+                  cond:
+                    _type: GreaterEq
+                    left:
+                      _type: Identifier
+                      name: abs_val
+                    right:
+                      _type: Sll
+                      left:
+                        _type: Identifier
+                        name: Q_ONE
+                      right:
+                        _type: IntConst
+                        value: '1'
+                  true_statement:
+                    _type: BlockingSubstitution
                     left:
                       _type: Lvalue
-                      args:
-                        var:
-                          _type: Identifier
-                          args:
-                            name: value_out
-                            scope: null
-                            lineno: 129
-                        lineno: 129
+                      var:
+                        _type: Identifier
+                        name: bucket
                     right:
                       _type: Rvalue
-                      args:
+                      var:
+                        _type: IntConst
+                        value: 2'd3
+                  false_statement:
+                    _type: IfStatement
+                    cond:
+                      _type: GreaterEq
+                      left:
+                        _type: Identifier
+                        name: abs_val
+                      right:
+                        _type: Srl
+                        left:
+                          _type: Times
+                          left:
+                            _type: Identifier
+                            name: Q_ONE
+                          right:
+                            _type: IntConst
+                            value: '3'
+                        right:
+                          _type: IntConst
+                          value: '1'
+                    true_statement:
+                      _type: BlockingSubstitution
+                      left:
+                        _type: Lvalue
                         var:
                           _type: Identifier
-                          args:
-                            name: lut_val
-                            scope: null
-                            lineno: 129
-                        lineno: 129
-                    ldelay: null
-                    rdelay: null
-                    lineno: 129
-              default_nettype: wire
-              lineno: 95
-            extras:
-              end_lineno: 130
-        lineno: 95
-    lineno: 95
+                          name: bucket
+                      right:
+                        _type: Rvalue
+                        var:
+                          _type: IntConst
+                          value: 2'd2
+                    false_statement:
+                      _type: IfStatement
+                      cond:
+                        _type: GreaterEq
+                        left:
+                          _type: Identifier
+                          name: abs_val
+                        right:
+                          _type: Srl
+                          left:
+                            _type: Identifier
+                            name: Q_ONE
+                          right:
+                            _type: IntConst
+                            value: '1'
+                      true_statement:
+                        _type: BlockingSubstitution
+                        left:
+                          _type: Lvalue
+                          var:
+                            _type: Identifier
+                            name: bucket
+                        right:
+                          _type: Rvalue
+                          var:
+                            _type: IntConst
+                            value: 2'd1
+                      false_statement:
+                        _type: BlockingSubstitution
+                        left:
+                          _type: Lvalue
+                          var:
+                            _type: Identifier
+                            name: bucket
+                        right:
+                          _type: Rvalue
+                          var:
+                            _type: IntConst
+                            value: 2'd0
+                - _type: IfStatement
+                  cond:
+                    _type: GreaterThan
+                    left:
+                      _type: IntConst
+                      value: '8'
+                    right:
+                      _type: IntConst
+                      value: '0'
+                  true_statement:
+                    _type: BlockingSubstitution
+                    left:
+                      _type: Lvalue
+                      var:
+                        _type: Identifier
+                        name: frac_flag
+                    right:
+                      _type: Rvalue
+                      var:
+                        _type: And
+                        left:
+                          _type: Srl
+                          left:
+                            _type: Identifier
+                            name: abs_val
+                          right:
+                            _type: Minus
+                            left:
+                              _type: IntConst
+                              value: '8'
+                            right:
+                              _type: IntConst
+                              value: '1'
+                        right:
+                          _type: IntConst
+                          value: 1'b1
+                  false_statement:
+                    _type: BlockingSubstitution
+                    left:
+                      _type: Lvalue
+                      var:
+                        _type: Identifier
+                        name: frac_flag
+                    right:
+                      _type: Rvalue
+                      var:
+                        _type: IntConst
+                        value: 1'b0
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: lut_idx
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: Concat
+                      list:
+                        _tuple:
+                        - _type: Pointer
+                          var:
+                            _type: Identifier
+                            name: value_in
+                          ptr:
+                            _type: Minus
+                            left:
+                              _type: IntConst
+                              value: '16'
+                            right:
+                              _type: IntConst
+                              value: '1'
+                        - _type: Identifier
+                          name: bucket
+                        - _type: Identifier
+                          name: frac_flag
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: lut_val
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: Pointer
+                      var:
+                        _type: Identifier
+                        name: micro_lut
+                      ptr:
+                        _type: Identifier
+                        name: lut_idx
+          - _type: Assign
+            left:
+              _type: Lvalue
+              var:
+                _type: Identifier
+                name: value_out
+            right:
+              _type: Rvalue
+              var:
+                _type: Identifier
+                name: lut_val
+        default_nettype: wire
+        end_lineno: 130
 parse_hints:
   functions: {}

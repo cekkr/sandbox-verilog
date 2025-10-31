@@ -25,17 +25,14 @@ summary:
     ports:
     - name: clk
       direction: input
-      width: null
       signed: false
       datatype: wire
     - name: rst
       direction: input
-      width: null
       signed: false
       datatype: wire
     - name: csr_we
       direction: input
-      width: null
       signed: false
       datatype: wire
     - name: csr_addr
@@ -50,7 +47,6 @@ summary:
       datatype: wire
     - name: csr_re
       direction: input
-      width: null
       signed: false
       datatype: wire
     - name: csr_rdata
@@ -60,7 +56,6 @@ summary:
       datatype: reg
     - name: seed_we
       direction: input
-      width: null
       signed: false
       datatype: wire
     - name: seed_job

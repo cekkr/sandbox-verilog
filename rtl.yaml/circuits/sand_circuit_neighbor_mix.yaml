@@ -13,2020 +13,1045 @@ summary:
       direction: input
       width: '[16-1:0]'
       signed: true
-      datatype: null
     - name: north
       direction: input
       width: '[16-1:0]'
       signed: true
-      datatype: null
     - name: south
       direction: input
       width: '[16-1:0]'
       signed: true
-      datatype: null
     - name: east
       direction: input
       width: '[16-1:0]'
       signed: true
-      datatype: null
     - name: west
       direction: input
       width: '[16-1:0]'
       signed: true
-      datatype: null
     - name: above
       direction: input
       width: '[16-1:0]'
       signed: true
-      datatype: null
     - name: below
       direction: input
       width: '[16-1:0]'
       signed: true
-      datatype: null
     - name: self_gain_q
       direction: input
       width: '[16-1:0]'
       signed: true
-      datatype: null
     - name: planar_gain_q
       direction: input
       width: '[16-1:0]'
       signed: true
-      datatype: null
     - name: vertical_gain_q
       direction: input
       width: '[16-1:0]'
       signed: true
-      datatype: null
     - name: bias_q
       direction: input
       width: '[16-1:0]'
       signed: true
-      datatype: null
     - name: mix_out
       direction: output
       width: '[16-1:0]'
       signed: true
-      datatype: null
 ast:
   _type: Source
-  args:
-    name: ''
-    description:
-      _type: Description
-      args:
-        definitions:
+  name: ''
+  description:
+    _type: Description
+    definitions:
+      _tuple:
+      - _type: ModuleDef
+        name: sand_circuit_neighbor_mix
+        paramlist:
+          _type: Paramlist
+          params:
+            _tuple: []
+        portlist:
+          _type: Portlist
+          ports:
+            _tuple:
+            - _type: Ioport
+              first:
+                _type: Input
+                name: self
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+            - _type: Ioport
+              first:
+                _type: Input
+                name: north
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+            - _type: Ioport
+              first:
+                _type: Input
+                name: south
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+            - _type: Ioport
+              first:
+                _type: Input
+                name: east
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+            - _type: Ioport
+              first:
+                _type: Input
+                name: west
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+            - _type: Ioport
+              first:
+                _type: Input
+                name: above
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+            - _type: Ioport
+              first:
+                _type: Input
+                name: below
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+            - _type: Ioport
+              first:
+                _type: Input
+                name: self_gain_q
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+            - _type: Ioport
+              first:
+                _type: Input
+                name: planar_gain_q
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+            - _type: Ioport
+              first:
+                _type: Input
+                name: vertical_gain_q
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+            - _type: Ioport
+              first:
+                _type: Input
+                name: bias_q
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+            - _type: Ioport
+              first:
+                _type: Output
+                name: mix_out
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+        items:
           _tuple:
-          - _type: ModuleDef
-            args:
-              name: sand_circuit_neighbor_mix
-              paramlist:
-                _type: Paramlist
-                args:
-                  params:
-                    _tuple: []
-                  lineno: 0
-              portlist:
-                _type: Portlist
-                args:
-                  ports:
-                    _tuple:
-                    - _type: Ioport
-                      args:
-                        first:
-                          _type: Input
-                          args:
-                            name: self
-                            width:
-                              _type: Width
-                              args:
-                                msb:
-                                  _type: Minus
-                                  args:
-                                    left:
-                                      _type: IntConst
-                                      args:
-                                        value: '16'
-                                        lineno: 135
-                                    right:
-                                      _type: IntConst
-                                      args:
-                                        value: '1'
-                                        lineno: 135
-                                    lineno: 135
-                                lsb:
-                                  _type: IntConst
-                                  args:
-                                    value: '0'
-                                    lineno: 135
-                                lineno: 135
-                            signed: true
-                            dimensions: null
-                            value: null
-                            lineno: 135
-                        second: null
-                        lineno: 135
-                    - _type: Ioport
-                      args:
-                        first:
-                          _type: Input
-                          args:
-                            name: north
-                            width:
-                              _type: Width
-                              args:
-                                msb:
-                                  _type: Minus
-                                  args:
-                                    left:
-                                      _type: IntConst
-                                      args:
-                                        value: '16'
-                                        lineno: 136
-                                    right:
-                                      _type: IntConst
-                                      args:
-                                        value: '1'
-                                        lineno: 136
-                                    lineno: 136
-                                lsb:
-                                  _type: IntConst
-                                  args:
-                                    value: '0'
-                                    lineno: 136
-                                lineno: 136
-                            signed: true
-                            dimensions: null
-                            value: null
-                            lineno: 136
-                        second: null
-                        lineno: 136
-                    - _type: Ioport
-                      args:
-                        first:
-                          _type: Input
-                          args:
-                            name: south
-                            width:
-                              _type: Width
-                              args:
-                                msb:
-                                  _type: Minus
-                                  args:
-                                    left:
-                                      _type: IntConst
-                                      args:
-                                        value: '16'
-                                        lineno: 137
-                                    right:
-                                      _type: IntConst
-                                      args:
-                                        value: '1'
-                                        lineno: 137
-                                    lineno: 137
-                                lsb:
-                                  _type: IntConst
-                                  args:
-                                    value: '0'
-                                    lineno: 137
-                                lineno: 137
-                            signed: true
-                            dimensions: null
-                            value: null
-                            lineno: 137
-                        second: null
-                        lineno: 137
-                    - _type: Ioport
-                      args:
-                        first:
-                          _type: Input
-                          args:
-                            name: east
-                            width:
-                              _type: Width
-                              args:
-                                msb:
-                                  _type: Minus
-                                  args:
-                                    left:
-                                      _type: IntConst
-                                      args:
-                                        value: '16'
-                                        lineno: 138
-                                    right:
-                                      _type: IntConst
-                                      args:
-                                        value: '1'
-                                        lineno: 138
-                                    lineno: 138
-                                lsb:
-                                  _type: IntConst
-                                  args:
-                                    value: '0'
-                                    lineno: 138
-                                lineno: 138
-                            signed: true
-                            dimensions: null
-                            value: null
-                            lineno: 138
-                        second: null
-                        lineno: 138
-                    - _type: Ioport
-                      args:
-                        first:
-                          _type: Input
-                          args:
-                            name: west
-                            width:
-                              _type: Width
-                              args:
-                                msb:
-                                  _type: Minus
-                                  args:
-                                    left:
-                                      _type: IntConst
-                                      args:
-                                        value: '16'
-                                        lineno: 139
-                                    right:
-                                      _type: IntConst
-                                      args:
-                                        value: '1'
-                                        lineno: 139
-                                    lineno: 139
-                                lsb:
-                                  _type: IntConst
-                                  args:
-                                    value: '0'
-                                    lineno: 139
-                                lineno: 139
-                            signed: true
-                            dimensions: null
-                            value: null
-                            lineno: 139
-                        second: null
-                        lineno: 139
-                    - _type: Ioport
-                      args:
-                        first:
-                          _type: Input
-                          args:
-                            name: above
-                            width:
-                              _type: Width
-                              args:
-                                msb:
-                                  _type: Minus
-                                  args:
-                                    left:
-                                      _type: IntConst
-                                      args:
-                                        value: '16'
-                                        lineno: 140
-                                    right:
-                                      _type: IntConst
-                                      args:
-                                        value: '1'
-                                        lineno: 140
-                                    lineno: 140
-                                lsb:
-                                  _type: IntConst
-                                  args:
-                                    value: '0'
-                                    lineno: 140
-                                lineno: 140
-                            signed: true
-                            dimensions: null
-                            value: null
-                            lineno: 140
-                        second: null
-                        lineno: 140
-                    - _type: Ioport
-                      args:
-                        first:
-                          _type: Input
-                          args:
-                            name: below
-                            width:
-                              _type: Width
-                              args:
-                                msb:
-                                  _type: Minus
-                                  args:
-                                    left:
-                                      _type: IntConst
-                                      args:
-                                        value: '16'
-                                        lineno: 141
-                                    right:
-                                      _type: IntConst
-                                      args:
-                                        value: '1'
-                                        lineno: 141
-                                    lineno: 141
-                                lsb:
-                                  _type: IntConst
-                                  args:
-                                    value: '0'
-                                    lineno: 141
-                                lineno: 141
-                            signed: true
-                            dimensions: null
-                            value: null
-                            lineno: 141
-                        second: null
-                        lineno: 141
-                    - _type: Ioport
-                      args:
-                        first:
-                          _type: Input
-                          args:
-                            name: self_gain_q
-                            width:
-                              _type: Width
-                              args:
-                                msb:
-                                  _type: Minus
-                                  args:
-                                    left:
-                                      _type: IntConst
-                                      args:
-                                        value: '16'
-                                        lineno: 142
-                                    right:
-                                      _type: IntConst
-                                      args:
-                                        value: '1'
-                                        lineno: 142
-                                    lineno: 142
-                                lsb:
-                                  _type: IntConst
-                                  args:
-                                    value: '0'
-                                    lineno: 142
-                                lineno: 142
-                            signed: true
-                            dimensions: null
-                            value: null
-                            lineno: 142
-                        second: null
-                        lineno: 142
-                    - _type: Ioport
-                      args:
-                        first:
-                          _type: Input
-                          args:
-                            name: planar_gain_q
-                            width:
-                              _type: Width
-                              args:
-                                msb:
-                                  _type: Minus
-                                  args:
-                                    left:
-                                      _type: IntConst
-                                      args:
-                                        value: '16'
-                                        lineno: 143
-                                    right:
-                                      _type: IntConst
-                                      args:
-                                        value: '1'
-                                        lineno: 143
-                                    lineno: 143
-                                lsb:
-                                  _type: IntConst
-                                  args:
-                                    value: '0'
-                                    lineno: 143
-                                lineno: 143
-                            signed: true
-                            dimensions: null
-                            value: null
-                            lineno: 143
-                        second: null
-                        lineno: 143
-                    - _type: Ioport
-                      args:
-                        first:
-                          _type: Input
-                          args:
-                            name: vertical_gain_q
-                            width:
-                              _type: Width
-                              args:
-                                msb:
-                                  _type: Minus
-                                  args:
-                                    left:
-                                      _type: IntConst
-                                      args:
-                                        value: '16'
-                                        lineno: 144
-                                    right:
-                                      _type: IntConst
-                                      args:
-                                        value: '1'
-                                        lineno: 144
-                                    lineno: 144
-                                lsb:
-                                  _type: IntConst
-                                  args:
-                                    value: '0'
-                                    lineno: 144
-                                lineno: 144
-                            signed: true
-                            dimensions: null
-                            value: null
-                            lineno: 144
-                        second: null
-                        lineno: 144
-                    - _type: Ioport
-                      args:
-                        first:
-                          _type: Input
-                          args:
-                            name: bias_q
-                            width:
-                              _type: Width
-                              args:
-                                msb:
-                                  _type: Minus
-                                  args:
-                                    left:
-                                      _type: IntConst
-                                      args:
-                                        value: '16'
-                                        lineno: 145
-                                    right:
-                                      _type: IntConst
-                                      args:
-                                        value: '1'
-                                        lineno: 145
-                                    lineno: 145
-                                lsb:
-                                  _type: IntConst
-                                  args:
-                                    value: '0'
-                                    lineno: 145
-                                lineno: 145
-                            signed: true
-                            dimensions: null
-                            value: null
-                            lineno: 145
-                        second: null
-                        lineno: 145
-                    - _type: Ioport
-                      args:
-                        first:
-                          _type: Output
-                          args:
-                            name: mix_out
-                            width:
-                              _type: Width
-                              args:
-                                msb:
-                                  _type: Minus
-                                  args:
-                                    left:
-                                      _type: IntConst
-                                      args:
-                                        value: '16'
-                                        lineno: 146
-                                    right:
-                                      _type: IntConst
-                                      args:
-                                        value: '1'
-                                        lineno: 146
-                                    lineno: 146
-                                lsb:
-                                  _type: IntConst
-                                  args:
-                                    value: '0'
-                                    lineno: 146
-                                lineno: 146
-                            signed: true
-                            dimensions: null
-                            value: null
-                            lineno: 146
-                        second: null
-                        lineno: 146
-                  lineno: 134
-              items:
-                _tuple:
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Localparam
-                        args:
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Localparam
+                name: POS_MAX
+                value:
+                  _type: Rvalue
+                  var:
+                    _type: Minus
+                    left:
+                      _type: Sll
+                      left:
+                        _type: IntConst
+                        value: '1'
+                      right:
+                        _type: Minus
+                        left:
+                          _type: IntConst
+                          value: '16'
+                        right:
+                          _type: IntConst
+                          value: '1'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Localparam
+                name: NEG_MIN
+                value:
+                  _type: Rvalue
+                  var:
+                    _type: Uminus
+                    right:
+                      _type: Sll
+                      left:
+                        _type: IntConst
+                        value: '1'
+                      right:
+                        _type: Minus
+                        left:
+                          _type: IntConst
+                          value: '16'
+                        right:
+                          _type: IntConst
+                          value: '1'
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Function
+            name: clamp_int
+            retwidth:
+              _type: Width
+              msb:
+                _type: Minus
+                left:
+                  _type: IntConst
+                  value: '16'
+                right:
+                  _type: IntConst
+                  value: '1'
+              lsb:
+                _type: IntConst
+                value: '0'
+            statement:
+              _tuple:
+              - _type: Decl
+                list:
+                  _tuple:
+                  - _type: Input
+                    name: value
+                    width:
+                      _type: Width
+                      msb:
+                        _type: IntConst
+                        value: '31'
+                      lsb:
+                        _type: IntConst
+                        value: '0'
+                    signed: false
+              - _type: Block
+                statements:
+                  _tuple:
+                  - _type: IfStatement
+                    cond:
+                      _type: GreaterThan
+                      left:
+                        _type: Identifier
+                        name: value
+                      right:
+                        _type: Identifier
+                        name: POS_MAX
+                    true_statement:
+                      _type: BlockingSubstitution
+                      left:
+                        _type: Lvalue
+                        var:
+                          _type: Identifier
+                          name: clamp_int
+                      right:
+                        _type: Rvalue
+                        var:
+                          _type: Identifier
                           name: POS_MAX
-                          value:
-                            _type: Rvalue
-                            args:
-                              var:
-                                _type: Minus
-                                args:
-                                  left:
-                                    _type: Sll
-                                    args:
-                                      left:
-                                        _type: IntConst
-                                        args:
-                                          value: '1'
-                                          lineno: 148
-                                      right:
-                                        _type: Minus
-                                        args:
-                                          left:
-                                            _type: IntConst
-                                            args:
-                                              value: '16'
-                                              lineno: 148
-                                          right:
-                                            _type: IntConst
-                                            args:
-                                              value: '1'
-                                              lineno: 148
-                                          lineno: 148
-                                      lineno: 148
-                                  right:
-                                    _type: IntConst
-                                    args:
-                                      value: '1'
-                                      lineno: 148
-                                  lineno: 148
-                              lineno: 148
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: Minus
-                                args:
-                                  left:
-                                    _type: IntConst
-                                    args:
-                                      value: '16'
-                                      lineno: 148
-                                  right:
-                                    _type: IntConst
-                                    args:
-                                      value: '1'
-                                      lineno: 148
-                                  lineno: 148
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 148
-                              lineno: 148
-                          signed: true
-                          lineno: 148
-                        extras:
-                          dimensions: null
-                    lineno: 148
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Localparam
-                        args:
+                    false_statement:
+                      _type: IfStatement
+                      cond:
+                        _type: LessThan
+                        left:
+                          _type: Identifier
+                          name: value
+                        right:
+                          _type: Identifier
                           name: NEG_MIN
-                          value:
-                            _type: Rvalue
-                            args:
-                              var:
-                                _type: Uminus
-                                args:
-                                  right:
-                                    _type: Sll
-                                    args:
-                                      left:
-                                        _type: IntConst
-                                        args:
-                                          value: '1'
-                                          lineno: 149
-                                      right:
-                                        _type: Minus
-                                        args:
-                                          left:
-                                            _type: IntConst
-                                            args:
-                                              value: '16'
-                                              lineno: 149
-                                          right:
-                                            _type: IntConst
-                                            args:
-                                              value: '1'
-                                              lineno: 149
-                                          lineno: 149
-                                      lineno: 149
-                                  lineno: 149
-                              lineno: 149
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: Minus
-                                args:
-                                  left:
-                                    _type: IntConst
-                                    args:
-                                      value: '16'
-                                      lineno: 149
-                                  right:
-                                    _type: IntConst
-                                    args:
-                                      value: '1'
-                                      lineno: 149
-                                  lineno: 149
-                              lsb:
+                      true_statement:
+                        _type: BlockingSubstitution
+                        left:
+                          _type: Lvalue
+                          var:
+                            _type: Identifier
+                            name: clamp_int
+                        right:
+                          _type: Rvalue
+                          var:
+                            _type: Identifier
+                            name: NEG_MIN
+                      false_statement:
+                        _type: BlockingSubstitution
+                        left:
+                          _type: Lvalue
+                          var:
+                            _type: Identifier
+                            name: clamp_int
+                        right:
+                          _type: Rvalue
+                          var:
+                            _type: Partselect
+                            var:
+                              _type: Identifier
+                              name: value
+                            msb:
+                              _type: Minus
+                              left:
                                 _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 149
-                              lineno: 149
-                          signed: true
-                          lineno: 149
-                        extras:
-                          dimensions: null
-                    lineno: 149
-                - _type: Function
-                  args:
-                    name: clamp_int
-                    retwidth:
-                      _type: Width
-                      args:
-                        msb:
-                          _type: Minus
-                          args:
-                            left:
-                              _type: IntConst
-                              args:
                                 value: '16'
-                                lineno: 151
-                            right:
-                              _type: IntConst
-                              args:
+                              right:
+                                _type: IntConst
                                 value: '1'
-                                lineno: 151
-                            lineno: 151
-                        lsb:
-                          _type: IntConst
-                          args:
-                            value: '0'
-                            lineno: 151
-                        lineno: 151
-                    statement:
-                      _tuple:
-                      - _type: Decl
-                        args:
-                          list:
-                            _tuple:
-                            - _type: Input
-                              args:
-                                name: value
-                                width:
-                                  _type: Width
-                                  args:
-                                    msb:
-                                      _type: IntConst
-                                      args:
-                                        value: '31'
-                                        lineno: 152
-                                    lsb:
-                                      _type: IntConst
-                                      args:
-                                        value: '0'
-                                        lineno: 152
-                                    lineno: 152
-                                signed: false
-                                dimensions: null
-                                value: null
-                                lineno: 152
-                          lineno: 152
-                      - _type: Block
-                        args:
-                          statements:
-                            _tuple:
-                            - _type: IfStatement
-                              args:
-                                cond:
-                                  _type: GreaterThan
-                                  args:
-                                    left:
-                                      _type: Identifier
-                                      args:
-                                        name: value
-                                        scope: null
-                                        lineno: 154
-                                    right:
-                                      _type: Identifier
-                                      args:
-                                        name: POS_MAX
-                                        scope: null
-                                        lineno: 154
-                                    lineno: 154
-                                true_statement:
-                                  _type: BlockingSubstitution
-                                  args:
-                                    left:
-                                      _type: Lvalue
-                                      args:
-                                        var:
-                                          _type: Identifier
-                                          args:
-                                            name: clamp_int
-                                            scope: null
-                                            lineno: 155
-                                        lineno: 155
-                                    right:
-                                      _type: Rvalue
-                                      args:
-                                        var:
-                                          _type: Identifier
-                                          args:
-                                            name: POS_MAX
-                                            scope: null
-                                            lineno: 155
-                                        lineno: 155
-                                    ldelay: null
-                                    rdelay: null
-                                    lineno: 155
-                                false_statement:
-                                  _type: IfStatement
-                                  args:
-                                    cond:
-                                      _type: LessThan
-                                      args:
-                                        left:
-                                          _type: Identifier
-                                          args:
-                                            name: value
-                                            scope: null
-                                            lineno: 156
-                                        right:
-                                          _type: Identifier
-                                          args:
-                                            name: NEG_MIN
-                                            scope: null
-                                            lineno: 156
-                                        lineno: 156
-                                    true_statement:
-                                      _type: BlockingSubstitution
-                                      args:
-                                        left:
-                                          _type: Lvalue
-                                          args:
-                                            var:
-                                              _type: Identifier
-                                              args:
-                                                name: clamp_int
-                                                scope: null
-                                                lineno: 157
-                                            lineno: 157
-                                        right:
-                                          _type: Rvalue
-                                          args:
-                                            var:
-                                              _type: Identifier
-                                              args:
-                                                name: NEG_MIN
-                                                scope: null
-                                                lineno: 157
-                                            lineno: 157
-                                        ldelay: null
-                                        rdelay: null
-                                        lineno: 157
-                                    false_statement:
-                                      _type: BlockingSubstitution
-                                      args:
-                                        left:
-                                          _type: Lvalue
-                                          args:
-                                            var:
-                                              _type: Identifier
-                                              args:
-                                                name: clamp_int
-                                                scope: null
-                                                lineno: 159
-                                            lineno: 159
-                                        right:
-                                          _type: Rvalue
-                                          args:
-                                            var:
-                                              _type: Partselect
-                                              args:
-                                                var:
-                                                  _type: Identifier
-                                                  args:
-                                                    name: value
-                                                    scope: null
-                                                    lineno: 159
-                                                msb:
-                                                  _type: Minus
-                                                  args:
-                                                    left:
-                                                      _type: IntConst
-                                                      args:
-                                                        value: '16'
-                                                        lineno: 159
-                                                    right:
-                                                      _type: IntConst
-                                                      args:
-                                                        value: '1'
-                                                        lineno: 159
-                                                    lineno: 159
-                                                lsb:
-                                                  _type: IntConst
-                                                  args:
-                                                    value: '0'
-                                                    lineno: 159
-                                                lineno: 159
-                                            lineno: 159
-                                        ldelay: null
-                                        rdelay: null
-                                        lineno: 159
-                                    lineno: 156
-                                lineno: 154
-                          scope: null
-                          lineno: 153
-                    lineno: 151
-                - _type: Function
-                  args:
-                    name: fp_mul_q
-                    retwidth:
+                            lsb:
+                              _type: IntConst
+                              value: '0'
+          - _type: Function
+            name: fp_mul_q
+            retwidth:
+              _type: Width
+              msb:
+                _type: Minus
+                left:
+                  _type: IntConst
+                  value: '16'
+                right:
+                  _type: IntConst
+                  value: '1'
+              lsb:
+                _type: IntConst
+                value: '0'
+            statement:
+              _tuple:
+              - _type: Decl
+                list:
+                  _tuple:
+                  - _type: Input
+                    name: value
+                    width:
                       _type: Width
-                      args:
-                        msb:
-                          _type: Minus
-                          args:
-                            left:
-                              _type: IntConst
-                              args:
-                                value: '16'
-                                lineno: 163
-                            right:
-                              _type: IntConst
-                              args:
-                                value: '1'
-                                lineno: 163
-                            lineno: 163
-                        lsb:
-                          _type: IntConst
-                          args:
-                            value: '0'
-                            lineno: 163
-                        lineno: 163
-                    statement:
-                      _tuple:
-                      - _type: Decl
-                        args:
-                          list:
-                            _tuple:
-                            - _type: Input
-                              args:
-                                name: value
-                                width:
-                                  _type: Width
-                                  args:
-                                    msb:
-                                      _type: IntConst
-                                      args:
-                                        value: '31'
-                                        lineno: 164
-                                    lsb:
-                                      _type: IntConst
-                                      args:
-                                        value: '0'
-                                        lineno: 164
-                                    lineno: 164
-                                signed: false
-                                dimensions: null
-                                value: null
-                                lineno: 164
-                          lineno: 164
-                      - _type: Decl
-                        args:
-                          list:
-                            _tuple:
-                            - _type: Input
-                              args:
-                                name: gain
-                                width:
-                                  _type: Width
-                                  args:
-                                    msb:
-                                      _type: IntConst
-                                      args:
-                                        value: '31'
-                                        lineno: 165
-                                    lsb:
-                                      _type: IntConst
-                                      args:
-                                        value: '0'
-                                        lineno: 165
-                                    lineno: 165
-                                signed: false
-                                dimensions: null
-                                value: null
-                                lineno: 165
-                          lineno: 165
-                      - _type: Block
-                        args:
-                          statements:
-                            _tuple:
-                            - _type: BlockingSubstitution
-                              args:
-                                left:
-                                  _type: Lvalue
-                                  args:
-                                    var:
-                                      _type: Identifier
-                                      args:
-                                        name: prod
-                                        scope: null
-                                        lineno: 169
-                                    lineno: 169
-                                right:
-                                  _type: Rvalue
-                                  args:
-                                    var:
-                                      _type: Times
-                                      args:
-                                        left:
-                                          _type: Identifier
-                                          args:
-                                            name: value
-                                            scope: null
-                                            lineno: 169
-                                        right:
-                                          _type: Identifier
-                                          args:
-                                            name: gain
-                                            scope: null
-                                            lineno: 169
-                                        lineno: 169
-                                    lineno: 169
-                                ldelay: null
-                                rdelay: null
-                                lineno: 169
-                            - _type: IfStatement
-                              args:
-                                cond:
-                                  _type: GreaterThan
-                                  args:
-                                    left:
-                                      _type: IntConst
-                                      args:
-                                        value: '8'
-                                        lineno: 170
-                                    right:
-                                      _type: IntConst
-                                      args:
-                                        value: '0'
-                                        lineno: 170
-                                    lineno: 170
-                                true_statement:
-                                  _type: Block
-                                  args:
-                                    statements:
-                                      _tuple:
-                                      - _type: BlockingSubstitution
-                                        args:
-                                          left:
-                                            _type: Lvalue
-                                            args:
-                                              var:
-                                                _type: Identifier
-                                                args:
-                                                  name: rounder
-                                                  scope: null
-                                                  lineno: 171
-                                              lineno: 171
-                                          right:
-                                            _type: Rvalue
-                                            args:
-                                              var:
-                                                _type: Sll
-                                                args:
-                                                  left:
-                                                    _type: IntConst
-                                                    args:
-                                                      value: '1'
-                                                      lineno: 171
-                                                  right:
-                                                    _type: Minus
-                                                    args:
-                                                      left:
-                                                        _type: IntConst
-                                                        args:
-                                                          value: '8'
-                                                          lineno: 171
-                                                      right:
-                                                        _type: IntConst
-                                                        args:
-                                                          value: '1'
-                                                          lineno: 171
-                                                      lineno: 171
-                                                  lineno: 171
-                                              lineno: 171
-                                          ldelay: null
-                                          rdelay: null
-                                          lineno: 171
-                                      - _type: IfStatement
-                                        args:
-                                          cond:
-                                            _type: GreaterEq
-                                            args:
-                                              left:
-                                                _type: Identifier
-                                                args:
-                                                  name: prod
-                                                  scope: null
-                                                  lineno: 172
-                                              right:
-                                                _type: IntConst
-                                                args:
-                                                  value: '0'
-                                                  lineno: 172
-                                              lineno: 172
-                                          true_statement:
-                                            _type: BlockingSubstitution
-                                            args:
-                                              left:
-                                                _type: Lvalue
-                                                args:
-                                                  var:
-                                                    _type: Identifier
-                                                    args:
-                                                      name: prod
-                                                      scope: null
-                                                      lineno: 173
-                                                  lineno: 173
-                                              right:
-                                                _type: Rvalue
-                                                args:
-                                                  var:
-                                                    _type: Plus
-                                                    args:
-                                                      left:
-                                                        _type: Identifier
-                                                        args:
-                                                          name: prod
-                                                          scope: null
-                                                          lineno: 173
-                                                      right:
-                                                        _type: Identifier
-                                                        args:
-                                                          name: rounder
-                                                          scope: null
-                                                          lineno: 173
-                                                      lineno: 173
-                                                  lineno: 173
-                                              ldelay: null
-                                              rdelay: null
-                                              lineno: 173
-                                          false_statement:
-                                            _type: BlockingSubstitution
-                                            args:
-                                              left:
-                                                _type: Lvalue
-                                                args:
-                                                  var:
-                                                    _type: Identifier
-                                                    args:
-                                                      name: prod
-                                                      scope: null
-                                                      lineno: 175
-                                                  lineno: 175
-                                              right:
-                                                _type: Rvalue
-                                                args:
-                                                  var:
-                                                    _type: Minus
-                                                    args:
-                                                      left:
-                                                        _type: Identifier
-                                                        args:
-                                                          name: prod
-                                                          scope: null
-                                                          lineno: 175
-                                                      right:
-                                                        _type: Identifier
-                                                        args:
-                                                          name: rounder
-                                                          scope: null
-                                                          lineno: 175
-                                                      lineno: 175
-                                                  lineno: 175
-                                              ldelay: null
-                                              rdelay: null
-                                              lineno: 175
-                                          lineno: 172
-                                      - _type: BlockingSubstitution
-                                        args:
-                                          left:
-                                            _type: Lvalue
-                                            args:
-                                              var:
-                                                _type: Identifier
-                                                args:
-                                                  name: prod
-                                                  scope: null
-                                                  lineno: 176
-                                              lineno: 176
-                                          right:
-                                            _type: Rvalue
-                                            args:
-                                              var:
-                                                _type: Sra
-                                                args:
-                                                  left:
-                                                    _type: Identifier
-                                                    args:
-                                                      name: prod
-                                                      scope: null
-                                                      lineno: 176
-                                                  right:
-                                                    _type: IntConst
-                                                    args:
-                                                      value: '8'
-                                                      lineno: 176
-                                                  lineno: 176
-                                              lineno: 176
-                                          ldelay: null
-                                          rdelay: null
-                                          lineno: 176
-                                    scope: null
-                                    lineno: 170
-                                false_statement: null
-                                lineno: 170
-                            - _type: BlockingSubstitution
-                              args:
-                                left:
-                                  _type: Lvalue
-                                  args:
-                                    var:
-                                      _type: Identifier
-                                      args:
-                                        name: fp_mul_q
-                                        scope: null
-                                        lineno: 178
-                                    lineno: 178
-                                right:
-                                  _type: Rvalue
-                                  args:
-                                    var:
-                                      _type: FunctionCall
-                                      args:
-                                        name:
-                                          _type: Identifier
-                                          args:
-                                            name: clamp_int
-                                            scope: null
-                                            lineno: 178
-                                        args:
-                                          _tuple:
-                                          - _type: Identifier
-                                            args:
-                                              name: prod
-                                              scope: null
-                                              lineno: 178
-                                        lineno: 178
-                                    lineno: 178
-                                ldelay: null
-                                rdelay: null
-                                lineno: 178
-                          scope: null
-                          lineno: 168
-                    lineno: 163
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Reg
-                        args:
-                          name: mix_reg
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: Minus
-                                args:
-                                  left:
-                                    _type: IntConst
-                                    args:
-                                      value: '16'
-                                      lineno: 182
-                                  right:
-                                    _type: IntConst
-                                    args:
-                                      value: '1'
-                                      lineno: 182
-                                  lineno: 182
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 182
-                              lineno: 182
-                          signed: true
-                          dimensions: null
-                          value: null
-                          lineno: 182
-                    lineno: 182
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Integer
-                        args:
-                          name: planar_sum
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: IntConst
-                                args:
-                                  value: '31'
-                                  lineno: 183
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 183
-                              lineno: 183
-                          signed: true
-                          dimensions: null
-                          value: null
-                          lineno: 183
-                    lineno: 183
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Integer
-                        args:
-                          name: vertical_sum
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: IntConst
-                                args:
-                                  value: '31'
-                                  lineno: 184
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 184
-                              lineno: 184
-                          signed: true
-                          dimensions: null
-                          value: null
-                          lineno: 184
-                    lineno: 184
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Integer
-                        args:
-                          name: planar_avg
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: IntConst
-                                args:
-                                  value: '31'
-                                  lineno: 185
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 185
-                              lineno: 185
-                          signed: true
-                          dimensions: null
-                          value: null
-                          lineno: 185
-                    lineno: 185
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Integer
-                        args:
-                          name: vertical_avg
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: IntConst
-                                args:
-                                  value: '31'
-                                  lineno: 186
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 186
-                              lineno: 186
-                          signed: true
-                          dimensions: null
-                          value: null
-                          lineno: 186
-                    lineno: 186
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Integer
-                        args:
-                          name: accum
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: IntConst
-                                args:
-                                  value: '31'
-                                  lineno: 187
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 187
-                              lineno: 187
-                          signed: true
-                          dimensions: null
-                          value: null
-                          lineno: 187
-                    lineno: 187
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Integer
-                        args:
-                          name: temp
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: IntConst
-                                args:
-                                  value: '31'
-                                  lineno: 188
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 188
-                              lineno: 188
-                          signed: true
-                          dimensions: null
-                          value: null
-                          lineno: 188
-                    lineno: 188
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Integer
-                        args:
-                          name: prod
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: IntConst
-                                args:
-                                  value: '31'
-                                  lineno: 192
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 192
-                              lineno: 192
-                          signed: true
-                          dimensions: null
-                          value: null
-                          lineno: 192
-                    lineno: 192
-                - _type: Decl
-                  args:
-                    list:
-                      _tuple:
-                      - _type: Integer
-                        args:
-                          name: rounder
-                          width:
-                            _type: Width
-                            args:
-                              msb:
-                                _type: IntConst
-                                args:
-                                  value: '31'
-                                  lineno: 193
-                              lsb:
-                                _type: IntConst
-                                args:
-                                  value: '0'
-                                  lineno: 193
-                              lineno: 193
-                          signed: true
-                          dimensions: null
-                          value: null
-                          lineno: 193
-                    lineno: 193
-                - _type: Always
-                  args:
-                    sens_list:
-                      _type: SensList
-                      args:
-                        list:
-                          _tuple:
-                          - _type: Sens
-                            args:
-                              sig: null
-                              type: all
-                              lineno: 194
-                        lineno: 194
-                    statement:
-                      _type: Block
-                      args:
-                        statements:
-                          _tuple:
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: planar_sum
-                                      scope: null
-                                      lineno: 195
-                                  lineno: 195
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: Plus
-                                    args:
-                                      left:
-                                        _type: Plus
-                                        args:
-                                          left:
-                                            _type: Plus
-                                            args:
-                                              left:
-                                                _type: SystemCall
-                                                args:
-                                                  syscall: signed
-                                                  args:
-                                                    _tuple:
-                                                    - _type: Identifier
-                                                      args:
-                                                        name: north
-                                                        scope: null
-                                                        lineno: 195
-                                                  lineno: 195
-                                              right:
-                                                _type: SystemCall
-                                                args:
-                                                  syscall: signed
-                                                  args:
-                                                    _tuple:
-                                                    - _type: Identifier
-                                                      args:
-                                                        name: south
-                                                        scope: null
-                                                        lineno: 195
-                                                  lineno: 195
-                                              lineno: 195
-                                          right:
-                                            _type: SystemCall
-                                            args:
-                                              syscall: signed
-                                              args:
-                                                _tuple:
-                                                - _type: Identifier
-                                                  args:
-                                                    name: east
-                                                    scope: null
-                                                    lineno: 195
-                                              lineno: 195
-                                          lineno: 195
-                                      right:
-                                        _type: SystemCall
-                                        args:
-                                          syscall: signed
-                                          args:
-                                            _tuple:
-                                            - _type: Identifier
-                                              args:
-                                                name: west
-                                                scope: null
-                                                lineno: 195
-                                          lineno: 195
-                                      lineno: 195
-                                  lineno: 195
-                              ldelay: null
-                              rdelay: null
-                              lineno: 195
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: planar_avg
-                                      scope: null
-                                      lineno: 196
-                                  lineno: 196
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: Sra
-                                    args:
-                                      left:
-                                        _type: Identifier
-                                        args:
-                                          name: planar_sum
-                                          scope: null
-                                          lineno: 196
-                                      right:
-                                        _type: IntConst
-                                        args:
-                                          value: '2'
-                                          lineno: 196
-                                      lineno: 196
-                                  lineno: 196
-                              ldelay: null
-                              rdelay: null
-                              lineno: 196
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: vertical_sum
-                                      scope: null
-                                      lineno: 197
-                                  lineno: 197
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: Plus
-                                    args:
-                                      left:
-                                        _type: SystemCall
-                                        args:
-                                          syscall: signed
-                                          args:
-                                            _tuple:
-                                            - _type: Identifier
-                                              args:
-                                                name: above
-                                                scope: null
-                                                lineno: 197
-                                          lineno: 197
-                                      right:
-                                        _type: SystemCall
-                                        args:
-                                          syscall: signed
-                                          args:
-                                            _tuple:
-                                            - _type: Identifier
-                                              args:
-                                                name: below
-                                                scope: null
-                                                lineno: 197
-                                          lineno: 197
-                                      lineno: 197
-                                  lineno: 197
-                              ldelay: null
-                              rdelay: null
-                              lineno: 197
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: vertical_avg
-                                      scope: null
-                                      lineno: 198
-                                  lineno: 198
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: Sra
-                                    args:
-                                      left:
-                                        _type: Identifier
-                                        args:
-                                          name: vertical_sum
-                                          scope: null
-                                          lineno: 198
-                                      right:
-                                        _type: IntConst
-                                        args:
-                                          value: '1'
-                                          lineno: 198
-                                      lineno: 198
-                                  lineno: 198
-                              ldelay: null
-                              rdelay: null
-                              lineno: 198
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: accum
-                                      scope: null
-                                      lineno: 200
-                                  lineno: 200
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: FunctionCall
-                                    args:
-                                      name:
-                                        _type: Identifier
-                                        args:
-                                          name: fp_mul_q
-                                          scope: null
-                                          lineno: 200
-                                      args:
-                                        _tuple:
-                                        - _type: Identifier
-                                          args:
-                                            name: self
-                                            scope: null
-                                            lineno: 200
-                                        - _type: Identifier
-                                          args:
-                                            name: self_gain_q
-                                            scope: null
-                                            lineno: 200
-                                      lineno: 200
-                                  lineno: 200
-                              ldelay: null
-                              rdelay: null
-                              lineno: 200
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: temp
-                                      scope: null
-                                      lineno: 201
-                                  lineno: 201
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: FunctionCall
-                                    args:
-                                      name:
-                                        _type: Identifier
-                                        args:
-                                          name: fp_mul_q
-                                          scope: null
-                                          lineno: 201
-                                      args:
-                                        _tuple:
-                                        - _type: Identifier
-                                          args:
-                                            name: planar_avg
-                                            scope: null
-                                            lineno: 201
-                                        - _type: Identifier
-                                          args:
-                                            name: planar_gain_q
-                                            scope: null
-                                            lineno: 201
-                                      lineno: 201
-                                  lineno: 201
-                              ldelay: null
-                              rdelay: null
-                              lineno: 201
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: accum
-                                      scope: null
-                                      lineno: 202
-                                  lineno: 202
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: Plus
-                                    args:
-                                      left:
-                                        _type: Identifier
-                                        args:
-                                          name: accum
-                                          scope: null
-                                          lineno: 202
-                                      right:
-                                        _type: Identifier
-                                        args:
-                                          name: temp
-                                          scope: null
-                                          lineno: 202
-                                      lineno: 202
-                                  lineno: 202
-                              ldelay: null
-                              rdelay: null
-                              lineno: 202
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: accum
-                                      scope: null
-                                      lineno: 203
-                                  lineno: 203
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: FunctionCall
-                                    args:
-                                      name:
-                                        _type: Identifier
-                                        args:
-                                          name: clamp_int
-                                          scope: null
-                                          lineno: 203
-                                      args:
-                                        _tuple:
-                                        - _type: Identifier
-                                          args:
-                                            name: accum
-                                            scope: null
-                                            lineno: 203
-                                      lineno: 203
-                                  lineno: 203
-                              ldelay: null
-                              rdelay: null
-                              lineno: 203
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: temp
-                                      scope: null
-                                      lineno: 205
-                                  lineno: 205
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: FunctionCall
-                                    args:
-                                      name:
-                                        _type: Identifier
-                                        args:
-                                          name: fp_mul_q
-                                          scope: null
-                                          lineno: 205
-                                      args:
-                                        _tuple:
-                                        - _type: Identifier
-                                          args:
-                                            name: vertical_avg
-                                            scope: null
-                                            lineno: 205
-                                        - _type: Identifier
-                                          args:
-                                            name: vertical_gain_q
-                                            scope: null
-                                            lineno: 205
-                                      lineno: 205
-                                  lineno: 205
-                              ldelay: null
-                              rdelay: null
-                              lineno: 205
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: accum
-                                      scope: null
-                                      lineno: 206
-                                  lineno: 206
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: Plus
-                                    args:
-                                      left:
-                                        _type: Identifier
-                                        args:
-                                          name: accum
-                                          scope: null
-                                          lineno: 206
-                                      right:
-                                        _type: Identifier
-                                        args:
-                                          name: temp
-                                          scope: null
-                                          lineno: 206
-                                      lineno: 206
-                                  lineno: 206
-                              ldelay: null
-                              rdelay: null
-                              lineno: 206
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: accum
-                                      scope: null
-                                      lineno: 207
-                                  lineno: 207
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: FunctionCall
-                                    args:
-                                      name:
-                                        _type: Identifier
-                                        args:
-                                          name: clamp_int
-                                          scope: null
-                                          lineno: 207
-                                      args:
-                                        _tuple:
-                                        - _type: Identifier
-                                          args:
-                                            name: accum
-                                            scope: null
-                                            lineno: 207
-                                      lineno: 207
-                                  lineno: 207
-                              ldelay: null
-                              rdelay: null
-                              lineno: 207
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: accum
-                                      scope: null
-                                      lineno: 209
-                                  lineno: 209
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: Plus
-                                    args:
-                                      left:
-                                        _type: Identifier
-                                        args:
-                                          name: accum
-                                          scope: null
-                                          lineno: 209
-                                      right:
-                                        _type: Identifier
-                                        args:
-                                          name: bias_q
-                                          scope: null
-                                          lineno: 209
-                                      lineno: 209
-                                  lineno: 209
-                              ldelay: null
-                              rdelay: null
-                              lineno: 209
-                          - _type: BlockingSubstitution
-                            args:
-                              left:
-                                _type: Lvalue
-                                args:
-                                  var:
-                                    _type: Identifier
-                                    args:
-                                      name: mix_reg
-                                      scope: null
-                                      lineno: 210
-                                  lineno: 210
-                              right:
-                                _type: Rvalue
-                                args:
-                                  var:
-                                    _type: FunctionCall
-                                    args:
-                                      name:
-                                        _type: Identifier
-                                        args:
-                                          name: clamp_int
-                                          scope: null
-                                          lineno: 210
-                                      args:
-                                        _tuple:
-                                        - _type: Identifier
-                                          args:
-                                            name: accum
-                                            scope: null
-                                            lineno: 210
-                                      lineno: 210
-                                  lineno: 210
-                              ldelay: null
-                              rdelay: null
-                              lineno: 210
-                        scope: null
-                        lineno: 194
-                    lineno: 194
-                - _type: Assign
-                  args:
+                      msb:
+                        _type: IntConst
+                        value: '31'
+                      lsb:
+                        _type: IntConst
+                        value: '0'
+                    signed: false
+              - _type: Decl
+                list:
+                  _tuple:
+                  - _type: Input
+                    name: gain
+                    width:
+                      _type: Width
+                      msb:
+                        _type: IntConst
+                        value: '31'
+                      lsb:
+                        _type: IntConst
+                        value: '0'
+                    signed: false
+              - _type: Block
+                statements:
+                  _tuple:
+                  - _type: BlockingSubstitution
                     left:
                       _type: Lvalue
-                      args:
-                        var:
-                          _type: Identifier
-                          args:
-                            name: mix_out
-                            scope: null
-                            lineno: 213
-                        lineno: 213
+                      var:
+                        _type: Identifier
+                        name: prod
                     right:
                       _type: Rvalue
-                      args:
-                        var:
+                      var:
+                        _type: Times
+                        left:
                           _type: Identifier
+                          name: value
+                        right:
+                          _type: Identifier
+                          name: gain
+                  - _type: IfStatement
+                    cond:
+                      _type: GreaterThan
+                      left:
+                        _type: IntConst
+                        value: '8'
+                      right:
+                        _type: IntConst
+                        value: '0'
+                    true_statement:
+                      _type: Block
+                      statements:
+                        _tuple:
+                        - _type: BlockingSubstitution
+                          left:
+                            _type: Lvalue
+                            var:
+                              _type: Identifier
+                              name: rounder
+                          right:
+                            _type: Rvalue
+                            var:
+                              _type: Sll
+                              left:
+                                _type: IntConst
+                                value: '1'
+                              right:
+                                _type: Minus
+                                left:
+                                  _type: IntConst
+                                  value: '8'
+                                right:
+                                  _type: IntConst
+                                  value: '1'
+                        - _type: IfStatement
+                          cond:
+                            _type: GreaterEq
+                            left:
+                              _type: Identifier
+                              name: prod
+                            right:
+                              _type: IntConst
+                              value: '0'
+                          true_statement:
+                            _type: BlockingSubstitution
+                            left:
+                              _type: Lvalue
+                              var:
+                                _type: Identifier
+                                name: prod
+                            right:
+                              _type: Rvalue
+                              var:
+                                _type: Plus
+                                left:
+                                  _type: Identifier
+                                  name: prod
+                                right:
+                                  _type: Identifier
+                                  name: rounder
+                          false_statement:
+                            _type: BlockingSubstitution
+                            left:
+                              _type: Lvalue
+                              var:
+                                _type: Identifier
+                                name: prod
+                            right:
+                              _type: Rvalue
+                              var:
+                                _type: Minus
+                                left:
+                                  _type: Identifier
+                                  name: prod
+                                right:
+                                  _type: Identifier
+                                  name: rounder
+                        - _type: BlockingSubstitution
+                          left:
+                            _type: Lvalue
+                            var:
+                              _type: Identifier
+                              name: prod
+                          right:
+                            _type: Rvalue
+                            var:
+                              _type: Sra
+                              left:
+                                _type: Identifier
+                                name: prod
+                              right:
+                                _type: IntConst
+                                value: '8'
+                  - _type: BlockingSubstitution
+                    left:
+                      _type: Lvalue
+                      var:
+                        _type: Identifier
+                        name: fp_mul_q
+                    right:
+                      _type: Rvalue
+                      var:
+                        _type: FunctionCall
+                        name:
+                          _type: Identifier
+                          name: clamp_int
+                        args:
+                          _tuple:
+                          - _type: Identifier
+                            name: prod
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Reg
+                name: mix_reg
+                width:
+                  _type: Width
+                  msb:
+                    _type: Minus
+                    left:
+                      _type: IntConst
+                      value: '16'
+                    right:
+                      _type: IntConst
+                      value: '1'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Integer
+                name: planar_sum
+                width:
+                  _type: Width
+                  msb:
+                    _type: IntConst
+                    value: '31'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Integer
+                name: vertical_sum
+                width:
+                  _type: Width
+                  msb:
+                    _type: IntConst
+                    value: '31'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Integer
+                name: planar_avg
+                width:
+                  _type: Width
+                  msb:
+                    _type: IntConst
+                    value: '31'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Integer
+                name: vertical_avg
+                width:
+                  _type: Width
+                  msb:
+                    _type: IntConst
+                    value: '31'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Integer
+                name: accum
+                width:
+                  _type: Width
+                  msb:
+                    _type: IntConst
+                    value: '31'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Integer
+                name: temp
+                width:
+                  _type: Width
+                  msb:
+                    _type: IntConst
+                    value: '31'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Integer
+                name: prod
+                width:
+                  _type: Width
+                  msb:
+                    _type: IntConst
+                    value: '31'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Decl
+            list:
+              _tuple:
+              - _type: Integer
+                name: rounder
+                width:
+                  _type: Width
+                  msb:
+                    _type: IntConst
+                    value: '31'
+                  lsb:
+                    _type: IntConst
+                    value: '0'
+                signed: true
+          - _type: Always
+            sens_list:
+              _type: SensList
+              list:
+                _tuple:
+                - _type: Sens
+                  type: all
+            statement:
+              _type: Block
+              statements:
+                _tuple:
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: planar_sum
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: Plus
+                      left:
+                        _type: Plus
+                        left:
+                          _type: Plus
+                          left:
+                            _type: SystemCall
+                            syscall: signed
+                            args:
+                              _tuple:
+                              - _type: Identifier
+                                name: north
+                          right:
+                            _type: SystemCall
+                            syscall: signed
+                            args:
+                              _tuple:
+                              - _type: Identifier
+                                name: south
+                        right:
+                          _type: SystemCall
+                          syscall: signed
                           args:
-                            name: mix_reg
-                            scope: null
-                            lineno: 213
-                        lineno: 213
-                    ldelay: null
-                    rdelay: null
-                    lineno: 213
-              default_nettype: wire
-              lineno: 134
-            extras:
-              end_lineno: 214
-        lineno: 134
-    lineno: 134
+                            _tuple:
+                            - _type: Identifier
+                              name: east
+                      right:
+                        _type: SystemCall
+                        syscall: signed
+                        args:
+                          _tuple:
+                          - _type: Identifier
+                            name: west
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: planar_avg
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: Sra
+                      left:
+                        _type: Identifier
+                        name: planar_sum
+                      right:
+                        _type: IntConst
+                        value: '2'
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: vertical_sum
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: Plus
+                      left:
+                        _type: SystemCall
+                        syscall: signed
+                        args:
+                          _tuple:
+                          - _type: Identifier
+                            name: above
+                      right:
+                        _type: SystemCall
+                        syscall: signed
+                        args:
+                          _tuple:
+                          - _type: Identifier
+                            name: below
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: vertical_avg
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: Sra
+                      left:
+                        _type: Identifier
+                        name: vertical_sum
+                      right:
+                        _type: IntConst
+                        value: '1'
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: accum
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: FunctionCall
+                      name:
+                        _type: Identifier
+                        name: fp_mul_q
+                      args:
+                        _tuple:
+                        - _type: Identifier
+                          name: self
+                        - _type: Identifier
+                          name: self_gain_q
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: temp
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: FunctionCall
+                      name:
+                        _type: Identifier
+                        name: fp_mul_q
+                      args:
+                        _tuple:
+                        - _type: Identifier
+                          name: planar_avg
+                        - _type: Identifier
+                          name: planar_gain_q
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: accum
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: Plus
+                      left:
+                        _type: Identifier
+                        name: accum
+                      right:
+                        _type: Identifier
+                        name: temp
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: accum
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: FunctionCall
+                      name:
+                        _type: Identifier
+                        name: clamp_int
+                      args:
+                        _tuple:
+                        - _type: Identifier
+                          name: accum
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: temp
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: FunctionCall
+                      name:
+                        _type: Identifier
+                        name: fp_mul_q
+                      args:
+                        _tuple:
+                        - _type: Identifier
+                          name: vertical_avg
+                        - _type: Identifier
+                          name: vertical_gain_q
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: accum
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: Plus
+                      left:
+                        _type: Identifier
+                        name: accum
+                      right:
+                        _type: Identifier
+                        name: temp
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: accum
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: FunctionCall
+                      name:
+                        _type: Identifier
+                        name: clamp_int
+                      args:
+                        _tuple:
+                        - _type: Identifier
+                          name: accum
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: accum
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: Plus
+                      left:
+                        _type: Identifier
+                        name: accum
+                      right:
+                        _type: Identifier
+                        name: bias_q
+                - _type: BlockingSubstitution
+                  left:
+                    _type: Lvalue
+                    var:
+                      _type: Identifier
+                      name: mix_reg
+                  right:
+                    _type: Rvalue
+                    var:
+                      _type: FunctionCall
+                      name:
+                        _type: Identifier
+                        name: clamp_int
+                      args:
+                        _tuple:
+                        - _type: Identifier
+                          name: accum
+          - _type: Assign
+            left:
+              _type: Lvalue
+              var:
+                _type: Identifier
+                name: mix_out
+            right:
+              _type: Rvalue
+              var:
+                _type: Identifier
+                name: mix_reg
+        default_nettype: wire
+        end_lineno: 214
 parse_hints:
   functions:
     clamp_int:
