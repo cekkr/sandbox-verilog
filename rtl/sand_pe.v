@@ -31,7 +31,7 @@ module sand_pe #(
     // Config
     input  wire [`OPCODE_W-1:0]   opcode,
     input  wire                   use_diagonals, // 0 => 4-neigh, 1 => 8-neigh
-    input  wire [DATA_W-1:0]      constA,
+    input  wire [DATA_W-1:0]      constA, //todo: what's capability, channel and friction? Make it evident.
     input  wire [DATA_W-1:0]      constB,
     input  wire [DATA_W-1:0]      constC,
     input  wire [DATA_W-1:0]      constD,
