@@ -82,6 +82,7 @@ PYTHON TOOLING (`tools/sand_runner.py`, `tools/sand_configurator.py`, `tools/san
 - `sand_dynamic_configurator`: kernel-style feature configurator that consumes high-level YAML/JSON, resolves feature/type/operation dependencies, checks resource budgets, emits `build_plan.json` (sources/defines/notes) plus `sand_dynamic_types.vh` summarising active data types/macros. CLI supports `list` (features/types/operations) and `build` (config → artefacts).
 - `sample_dynamic_config.yaml`: example profile enabling ML-centric features, multiple type families (float32 default, extra fixed/float options), and two composite units; use it as a template with `python3 -m tools.sand_dynamic_configurator build tools/sample_dynamic_config.yaml --output build/dynamic_profile`.
 - `verilog_yaml_bridge`: exports RTL into structured YAML (`export`) and regenerates RTL (`restore`). PyVerilog drives the AST path; the streaming RTL blocks still emit `kind: verilog_module_fallback` records (original text + interface summary) until the bridge grows full SystemVerilog coverage.
+- `rtl_yaml.sh`: convenience wrapper for the bridge that also deletes PyVerilog's `parsetab.py` / `parser.out` cache files after each run.
 - `__init__.py`: re-exports helpers (runner + configurator) for convenience.
 
 EXAMPLE DEMOS (`examples/`):

@@ -137,6 +137,42 @@ module sand_pe #(
                        (unit_pressure_diag_override && (opcode == `OP_PRESSURE));
 
     integer i;
+    integer iter;
+
+    // Temporary registers used inside the ALU case statement.
+    reg signed [EXT_W-1:0] flux_accum;
+    reg signed [EXT_W-1:0] flow_term;
+    reg [DATA_W-1:0]       retain_val;
+    reg [DATA_W-1:0]       prev_val;
+    reg [EXT_W-1:0]        cap_ext;
+    reg [DATA_W-1:0]       friction_top;
+    reg [DATA_W-1:0]       friction_bottom;
+    reg [DATA_W-1:0]       friction_side;
+
+    reg [7:0]              iter_limit;
+    reg [DATA_W-1:0]       gain_sel;
+    reg [DATA_W-1:0]       delta_val;
+    reg [DATA_W-1:0]       pressure_val;
+
+    reg [DATA_W-1:0]       lr_sel;
+    reg [DATA_W-1:0]       neigh_sel;
+    reg [DATA_W-1:0]       decay_sel;
+    reg [DATA_W-1:0]       err;
+    reg [DATA_W-1:0]       grad_term;
+    reg [DATA_W-1:0]       neigh_term;
+    reg [DATA_W-1:0]       decay_term;
+    reg [DATA_W-1:0]       update_term;
+
+    reg [DATA_W-1:0]       lap_gain;
+    reg [DATA_W-1:0]       sharpen_val;
+
+    reg [DATA_W-1:0]       edge_mag;
+
+    reg [DATA_W-1:0]       mix_self;
+    reg [DATA_W-1:0]       mix_avg;
+    reg [DATA_W-1:0]       mix_sum;
+    reg [DATA_W-1:0]       acc;
+
     always @* begin
         sum_nbrs = { (DATA_W+4){1'b0} };
         sum4_only = {(DATA_W+3){1'b0}};
@@ -184,8 +220,10 @@ module sand_pe #(
 
     wire signed [EXT_W-1:0] dx_signed = e_s - w_s;
     wire signed [EXT_W-1:0] dy_signed = s_s - n_s;
-    wire [DATA_W-1:0]       dx_abs = (dx_signed[EXT_W-1]) ? (-dx_signed)[DATA_W-1:0] : dx_signed[DATA_W-1:0];
-    wire [DATA_W-1:0]       dy_abs = (dy_signed[EXT_W-1]) ? (-dy_signed)[DATA_W-1:0] : dy_signed[DATA_W-1:0];
+    wire signed [EXT_W-1:0] dx_signed_neg = -dx_signed;
+    wire signed [EXT_W-1:0] dy_signed_neg = -dy_signed;
+    wire [DATA_W-1:0]       dx_abs = dx_signed[EXT_W-1] ? dx_signed_neg[DATA_W-1:0] : dx_signed[DATA_W-1:0];
+    wire [DATA_W-1:0]       dy_abs = dy_signed[EXT_W-1] ? dy_signed_neg[DATA_W-1:0] : dy_signed[DATA_W-1:0];
 
     wire signed [EXT_W-1:0] sum4_signed = n_s + s_s + e_s + w_s;
     wire signed [EXT_W-1:0] sum3d_signed = sum4_signed + above_s + below_s;
@@ -221,14 +259,6 @@ module sand_pe #(
             `OP_CLAMP:      alu_res = (self_in < constA) ? constA :
                                        (self_in > constB) ? constB : self_in;
             `OP_WATER_FLUX: begin
-                reg signed [EXT_W-1:0] flux_accum;
-                reg signed [EXT_W-1:0] flow_term;
-                reg [DATA_W-1:0]       retain_val;
-                reg [DATA_W-1:0]       prev_val;
-                reg [EXT_W-1:0]        cap_ext;
-                reg [DATA_W-1:0]       friction_top;
-                reg [DATA_W-1:0]       friction_bottom;
-                reg [DATA_W-1:0]       friction_side;
                 if (!unit_flux_enable) begin
                     // Legacy behaviour: rely solely on constA..constD
                     retain_val = fp_mul_const(self_in, constA);
@@ -322,11 +352,6 @@ module sand_pe #(
                 alu_res = flux_accum[DATA_W-1:0];
             end
             `OP_PRESSURE: begin
-                integer iter;
-                reg [7:0]        iter_limit;
-                reg [DATA_W-1:0] gain_sel;
-                reg [DATA_W-1:0] delta_val;
-                reg [DATA_W-1:0] pressure_val;
                 gain_sel = (unit_pressure_gain != {DATA_W{1'b0}}) ? unit_pressure_gain : constA;
                 iter_limit = (unit_pressure_iters < 8'd1) ? 8'd1 :
                              (unit_pressure_iters > 8'd8) ? 8'd8 :
@@ -339,14 +364,6 @@ module sand_pe #(
                 alu_res = pressure_val;
             end
             `OP_BACKPROP: begin
-                reg [DATA_W-1:0] lr_sel;
-                reg [DATA_W-1:0] neigh_sel;
-                reg [DATA_W-1:0] decay_sel;
-                reg [DATA_W-1:0] err;
-                reg [DATA_W-1:0] grad_term;
-                reg [DATA_W-1:0] neigh_term;
-                reg [DATA_W-1:0] decay_term;
-                reg [DATA_W-1:0] update_term;
                 lr_sel    = (unit_backprop_lr    != {DATA_W{1'b0}}) ? unit_backprop_lr    : constA;
                 neigh_sel = (unit_backprop_neigh != {DATA_W{1'b0}}) ? unit_backprop_neigh : constC;
                 decay_sel = (unit_backprop_decay != {DATA_W{1'b0}}) ? unit_backprop_decay : constD;
@@ -360,22 +377,15 @@ module sand_pe #(
             `OP_MICRO:      alu_res = micro_val;
             `OP_LAPLACIAN:  alu_res = laplacian;
             `OP_SHARPEN: begin
-                reg [DATA_W-1:0] lap_gain;
-                reg [DATA_W-1:0] sharpen_val;
                 lap_gain    = fp_mul_const(laplacian, constA);
                 sharpen_val = fp_sub(self_in, lap_gain);
                 alu_res     = sharpen_val;
             end
             `OP_EDGE: begin
-                reg [DATA_W-1:0] edge_mag;
                 edge_mag = fp_add(dx_abs, dy_abs);
                 alu_res  = edge_mag;
             end
             `OP_MIX: begin
-                reg [DATA_W-1:0] mix_self;
-                reg [DATA_W-1:0] mix_avg;
-                reg [DATA_W-1:0] mix_sum;
-                reg [DATA_W-1:0] acc;
                 mix_self = fp_mul_const(self_in, constA);
                 mix_avg  = fp_mul_const(avg_nbrs, constB);
                 mix_sum  = fp_mul_const(sum_with_vert, constC);

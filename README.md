@@ -80,6 +80,7 @@
 - `python3 tools/sand_configurator.py --config examples/<demo>/configs/<name>.yaml` — expands YAML/JSON presets into Verilog headers plus circuit manifests for example harnesses.
 - `python3 -m tools.sand_dynamic_configurator <command>` — kernel-style feature configurator that resolves dependencies, enforces resource budgets, and emits `build_plan.json` + `sand_dynamic_types.vh`.
 - `python3 tools/verilog_yaml_bridge.py export --rtl-root rtl --yaml-root rtl.yaml` — mirrors synthesizable RTL into YAML (and `restore` rebuilds the Verilog).
+- `tools/rtl_yaml.sh export|restore` — shell wrapper for the bridge that cleans up PyVerilog cache files.
 
 ### RTL YAML mirror
 
