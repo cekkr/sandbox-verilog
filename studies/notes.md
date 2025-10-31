@@ -3,6 +3,7 @@ Author's notes file
 Next steps:
 - Remember "malleable sandbox" while execution implementation checking, and theorization of "micro sand infiltration", changing the sand properties during "training" and execution
 - Convert rtl to yaml with python script(?)
+- Create python simulator of current behavior (simplest if rtl in yaml)
 - Improve examples/neutal_activation_field: efficiency with "not used" units, like for cone-shaped models, where the grid size changes belong the layers, in practice "de-activating" some units for smaller grids.
 
 
