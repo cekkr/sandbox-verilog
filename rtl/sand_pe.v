@@ -229,6 +229,8 @@ module sand_pe #(
                 cap_ext = {{(EXT_W-DATA_W){constB[DATA_W-1]}}, constB};
                 if (flux_accum > cap_ext) flux_accum = cap_ext;
                 alu_res = flux_accum[DATA_W-1:0];
+
+                //todo: Implement "malleable sand", so in runtime sand's units changes weights by flux * X (for pressure too)                
             end
             `OP_PRESSURE: begin
                 reg [DATA_W-1:0] delta;
