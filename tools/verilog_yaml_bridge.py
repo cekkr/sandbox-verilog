@@ -12,6 +12,7 @@ import argparse
 import inspect
 import re
 import tempfile
+from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence
@@ -561,6 +562,572 @@ def summarise_ast(ast_root: vast.Node) -> Dict[str, Any]:
 
 
 # ------------------------------------------------------------------------------
+# Human-readable module extraction
+# ------------------------------------------------------------------------------
+
+def _width_to_str(width: Any) -> Optional[str]:
+    if width is None:
+        return None
+    rendered = _expr_to_str(width)
+    if rendered is None:
+        return None
+    return rendered.strip()
+
+
+def _dimensions_to_str(dimensions: Any) -> Optional[List[str]]:
+    if dimensions in (None, []):
+        return None
+    if isinstance(dimensions, (list, tuple)):
+        parts: List[str] = []
+        for item in dimensions:
+            rendered = _expr_to_str(item)
+            if rendered:
+                parts.append(rendered.strip())
+        return parts or None
+    rendered = _expr_to_str(dimensions)
+    if rendered is None:
+        return None
+    return [rendered.strip()]
+
+
+def _normalise_named_list(section: Any) -> "OrderedDict[str, Dict[str, Any]]":
+    normalised: "OrderedDict[str, Dict[str, Any]]" = OrderedDict()
+    if not section:
+        return normalised
+    if isinstance(section, dict):
+        for name, meta in section.items():
+            data = dict(meta) if isinstance(meta, dict) else {"value": meta}
+            normalised[name] = data
+        return normalised
+    if isinstance(section, list):
+        for item in section:
+            if not isinstance(item, dict):
+                continue
+            name = item.get("name")
+            if not name:
+                continue
+            meta = dict(item)
+            meta.pop("name", None)
+            normalised[name] = meta
+    return normalised
+
+
+def _normalise_ports(section: Any) -> "OrderedDict[str, Dict[str, Any]]":
+    if isinstance(section, dict):
+        return OrderedDict(
+            (name, dict(meta) if isinstance(meta, dict) else {"value": meta})
+            for name, meta in section.items()
+        )
+    return _normalise_named_list(section)
+
+
+def _ordered_dict_to_list(mapping: "OrderedDict[str, Dict[str, Any]]") -> List[Dict[str, Any]]:
+    result: List[Dict[str, Any]] = []
+    for name, meta in mapping.items():
+        entry = {"name": name}
+        entry.update(meta)
+        compacted = _compact_dict(entry)
+        if compacted:
+            result.append(compacted)
+    return result
+
+
+def _merge_named_sections(existing: Any, generated: Any) -> "OrderedDict[str, Dict[str, Any]]":
+    existing_map = _normalise_named_list(existing)
+    generated_map = _normalise_named_list(generated)
+    merged: "OrderedDict[str, Dict[str, Any]]" = OrderedDict()
+    for name, data in generated_map.items():
+        merged_entry = dict(data)
+        existing_entry = existing_map.get(name, {})
+        for key, value in existing_entry.items():
+            if key not in merged_entry:
+                merged_entry[key] = value
+        merged[name] = _compact_dict(merged_entry)
+    return merged
+
+
+def _merge_ports(existing: Any, generated: Any) -> "OrderedDict[str, Dict[str, Any]]":
+    existing_map = _normalise_ports(existing)
+    generated_map = _normalise_ports(generated)
+    merged: "OrderedDict[str, Dict[str, Any]]" = OrderedDict()
+    for name, data in generated_map.items():
+        merged_entry = dict(data)
+        existing_entry = existing_map.get(name, {})
+        for key, value in existing_entry.items():
+            if key not in merged_entry:
+                merged_entry[key] = value
+        merged[name] = _compact_dict(merged_entry)
+    return merged
+
+
+def _stringify(value: Any) -> Optional[str]:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (int, float)):
+        return str(value)
+    rendered = _expr_to_str(value)
+    if rendered is None:
+        return None
+    return rendered.strip()
+
+
+def _update_port_entry(
+    ports: "OrderedDict[str, Dict[str, Any]]",
+    name: Optional[str],
+    *,
+    direction: Optional[str] = None,
+    datatype: Optional[str] = None,
+    width: Optional[str] = None,
+    signed: Optional[bool] = None,
+    dimensions: Optional[List[str]] = None,
+) -> None:
+    if not name:
+        return
+    entry = ports.setdefault(name, OrderedDict())
+    if direction:
+        entry["direction"] = direction
+    if datatype and datatype != "wire":
+        entry["type"] = datatype
+    if width:
+        entry["width"] = width
+    if signed:
+        entry["signed"] = True
+    if dimensions:
+        entry["dimensions"] = dimensions
+
+
+def _statement_to_items(statement: Any) -> List[Any]:
+    if statement is None:
+        return []
+    if isinstance(statement, vast.Block):
+        items: List[Any] = []
+        for sub in getattr(statement, "statements", []) or []:
+            items.extend(_statement_to_items(sub))
+        return items
+    if isinstance(statement, vast.IfStatement):
+        item: Dict[str, Any] = {"if": _expr_to_str(statement.cond)}
+        then_body = _statement_to_items(statement.true_statement)
+        if then_body:
+            item["then"] = then_body
+        else:
+            item["then"] = []
+        else_body = _statement_to_items(statement.false_statement)
+        if else_body:
+            item["else"] = else_body
+        return [item]
+    if isinstance(statement, vast.CaseStatement):
+        item: Dict[str, Any] = {"case": _expr_to_str(statement.comp)}
+        branches: "OrderedDict[str, List[Any]]" = OrderedDict()
+        default_body: List[Any] = []
+        for case_item in statement.caselist:
+            labels: List[str] = []
+            for cond in case_item.cond:
+                if isinstance(cond, vast.Default):
+                    labels.append("default")
+                else:
+                    rendered = _expr_to_str(cond)
+                    if rendered is not None:
+                        labels.append(rendered)
+            body = _statement_to_items(case_item.statement)
+            if labels == ["default"]:
+                default_body = body
+            else:
+                branches[", ".join(labels)] = body
+        if branches:
+            item["branches"] = branches
+        if default_body:
+            item["default"] = default_body
+        return [item]
+    rendered = _expr_to_str(statement)
+    if rendered is None:
+        return []
+    return [rendered.strip()]
+
+
+def _classify_always(sensitivity: List[str]) -> Optional[str]:
+    if not sensitivity:
+        return None
+    if sensitivity == ["*"]:
+        return "combinational"
+    if any(entry.startswith("posedge") or entry.startswith("negedge") for entry in sensitivity):
+        return "sequential"
+    return None
+
+
+def _humanise_module(module: vast.ModuleDef) -> Dict[str, Any]:
+    parameters: "OrderedDict[str, Dict[str, Any]]" = OrderedDict()
+    if module.paramlist is not None:
+        for decl in module.paramlist.params:
+            for param in getattr(decl, "list", []) or []:
+                name = getattr(param, "name", None)
+                if not name:
+                    continue
+                entry: Dict[str, Any] = OrderedDict()
+                default = _expr_to_str(getattr(param, "value", None))
+                if default is not None:
+                    entry["default"] = default
+                width = _width_to_str(getattr(param, "width", None))
+                if width:
+                    entry["width"] = width
+                if bool(getattr(param, "signed", False)):
+                    entry["signed"] = True
+                parameters[name] = _compact_dict(entry)
+
+    ports: "OrderedDict[str, Dict[str, Any]]" = OrderedDict()
+    if module.portlist is not None:
+        for port in module.portlist.ports or []:
+            decl = getattr(port, "first", None)
+            direction: Optional[str] = None
+            width: Optional[str] = None
+            signed: Optional[bool] = None
+            dimensions: Optional[List[str]] = None
+            name: Optional[str] = None
+            datatype: Optional[str] = None
+            if decl is not None:
+                direction_map = {
+                    "Input": "input",
+                    "Output": "output",
+                    "Inout": "inout",
+                }
+                direction = direction_map.get(decl.__class__.__name__)
+                name = getattr(decl, "name", None)
+                width = _width_to_str(getattr(decl, "width", None))
+                signed = bool(getattr(decl, "signed", False))
+                dimensions = _dimensions_to_str(getattr(decl, "dimensions", None))
+            second = getattr(port, "second", None)
+            if second is not None:
+                if name is None:
+                    name = getattr(second, "name", None)
+                datatype = second.__class__.__name__.lower()
+                if width is None:
+                    width = _width_to_str(getattr(second, "width", None))
+                if not signed:
+                    signed = bool(getattr(second, "signed", False))
+            if name is None and hasattr(port, "name"):
+                name = getattr(port, "name")
+            _update_port_entry(
+                ports,
+                name,
+                direction=direction,
+                datatype=datatype,
+                width=width,
+                signed=signed,
+                dimensions=dimensions,
+            )
+
+    signals: "OrderedDict[str, Dict[str, Any]]" = OrderedDict()
+    constants: "OrderedDict[str, Dict[str, Any]]" = OrderedDict()
+
+    for item in module.items or []:
+        if isinstance(item, vast.Decl):
+            for decl in item.list or []:
+                if isinstance(decl, (vast.Input, vast.Output, vast.Inout)):
+                    direction_map = {
+                        "Input": "input",
+                        "Output": "output",
+                        "Inout": "inout",
+                    }
+                    direction = direction_map.get(decl.__class__.__name__)
+                    _update_port_entry(
+                        ports,
+                        getattr(decl, "name", None),
+                        direction=direction,
+                        width=_width_to_str(getattr(decl, "width", None)),
+                        signed=bool(getattr(decl, "signed", False)),
+                        dimensions=_dimensions_to_str(getattr(decl, "dimensions", None)),
+                    )
+                    continue
+                name = getattr(decl, "name", None)
+                if not name:
+                    continue
+                if isinstance(decl, vast.Reg):
+                    if name in ports:
+                        _update_port_entry(
+                            ports,
+                            name,
+                            datatype="reg",
+                            width=_width_to_str(getattr(decl, "width", None)),
+                            signed=bool(getattr(decl, "signed", False)),
+                            dimensions=_dimensions_to_str(getattr(decl, "dimensions", None)),
+                        )
+                    else:
+                        entry = _compact_dict(
+                            {
+                                "kind": "reg",
+                                "width": _width_to_str(getattr(decl, "width", None)),
+                                "signed": True if bool(getattr(decl, "signed", False)) else None,
+                                "dimensions": _dimensions_to_str(getattr(decl, "dimensions", None)),
+                                "init": _stringify(getattr(decl, "value", None)),
+                            }
+                        )
+                        if entry:
+                            signals[name] = entry
+                    continue
+                if isinstance(decl, vast.Wire):
+                    entry = _compact_dict(
+                        {
+                            "kind": "wire",
+                            "width": _width_to_str(getattr(decl, "width", None)),
+                            "signed": True if bool(getattr(decl, "signed", False)) else None,
+                            "dimensions": _dimensions_to_str(getattr(decl, "dimensions", None)),
+                            "init": _stringify(getattr(decl, "value", None)),
+                        }
+                    )
+                    if entry:
+                        signals[name] = entry
+                    continue
+                if isinstance(decl, vast.Integer):
+                    entry = _compact_dict({"kind": "integer"})
+                    if entry:
+                        signals[name] = entry
+                    continue
+                if isinstance(decl, vast.Localparam):
+                    entry = _compact_dict(
+                        {
+                            "value": _expr_to_str(getattr(decl, "value", None)),
+                            "signed": True if bool(getattr(decl, "signed", False)) else None,
+                        }
+                    )
+                    if entry:
+                        constants[name] = entry
+                    continue
+                if isinstance(decl, vast.Parameter):
+                    # Local parameter declared inside body.
+                    entry = _compact_dict(
+                        {
+                            "value": _expr_to_str(getattr(decl, "value", None)),
+                            "signed": True if bool(getattr(decl, "signed", False)) else None,
+                        }
+                    )
+                    if entry:
+                        constants[name] = entry
+
+    assignments: List[Dict[str, Any]] = []
+    always_blocks: List[Dict[str, Any]] = []
+    instances: List[Dict[str, Any]] = []
+
+    for item in module.items or []:
+        if isinstance(item, vast.Assign):
+            entry = _compact_dict(
+                {
+                    "out": _expr_to_str(getattr(item, "left", None)),
+                    "value": _expr_to_str(getattr(item, "right", None)),
+                }
+            )
+            if entry:
+                assignments.append(entry)
+        elif isinstance(item, vast.Always):
+            sensitivity: List[str] = []
+            sens_list = getattr(item, "sens_list", None)
+            if isinstance(sens_list, vast.SensList):
+                for sens in sens_list.list or []:
+                    if sens.type == "all":
+                        sensitivity.append("*")
+                    elif sens.type:
+                        rendered = _expr_to_str(getattr(sens, "sig", None))
+                        if rendered:
+                            sensitivity.append(f"{sens.type} {rendered}")
+                    else:
+                        rendered = _expr_to_str(getattr(sens, "sig", None))
+                        if rendered:
+                            sensitivity.append(rendered)
+            body = _statement_to_items(getattr(item, "statement", None))
+            entry = _compact_dict(
+                {
+                    "on": sensitivity or None,
+                    "type": _classify_always(sensitivity),
+                    "body": body or None,
+                }
+            )
+            if entry:
+                always_blocks.append(entry)
+        elif isinstance(item, vast.InstanceList):
+            module_name = getattr(item, "module", None)
+            for inst in getattr(item, "instances", []) or []:
+                connections: Dict[str, Any] = OrderedDict()
+                for conn in getattr(inst, "portlist", []) or []:
+                    arg = getattr(conn, "argname", None)
+                    rendered = _stringify(arg if arg is not None else getattr(conn, "arg", None))
+                    if rendered is None:
+                        continue
+                    connections[conn.portname] = rendered
+                parameters_map: Dict[str, Any] = OrderedDict()
+                for param in getattr(inst, "parameterlist", []) or []:
+                    rendered = _stringify(getattr(param, "argname", None))
+                    if rendered is None:
+                        rendered = _stringify(getattr(param, "arg", None))
+                    if rendered is None:
+                        continue
+                    parameters_map[param.paramname] = rendered
+                entry = _compact_dict(
+                    {
+                        "module": module_name,
+                        "instance": getattr(inst, "name", None),
+                        "parameters": parameters_map or None,
+                        "connections": connections or None,
+                    }
+                )
+                if entry:
+                    instances.append(entry)
+
+    interface: Dict[str, Any] = {}
+    if parameters:
+        interface["parameters"] = _ordered_dict_to_list(parameters)
+    if ports:
+        port_map: Dict[str, Dict[str, Any]] = {}
+        for name, meta in ports.items():
+            data = _compact_dict(dict(meta))
+            if data:
+                port_map[name] = data
+        if port_map:
+            interface["ports"] = port_map
+
+    module_block: Dict[str, Any] = {
+        "name": module.name,
+        "interface": interface or None,
+        "signals": _ordered_dict_to_list(signals) if signals else None,
+        "constants": _ordered_dict_to_list(constants) if constants else None,
+        "assignments": assignments or None,
+        "always_blocks": always_blocks or None,
+        "instances": instances or None,
+    }
+    return _compact_dict(module_block)
+
+
+def humanise_ast(ast_root: vast.Node) -> List[Dict[str, Any]]:
+    modules: List[Dict[str, Any]] = []
+    if not isinstance(ast_root, vast.Source):
+        return modules
+    description = getattr(ast_root, "description", None)
+    if description is None:
+        return modules
+    for definition in getattr(description, "definitions", []):
+        if isinstance(definition, vast.ModuleDef):
+            modules.append(_humanise_module(definition))
+    return modules
+
+
+def build_sand_module_record(
+    modules: List[Dict[str, Any]],
+    ast_summary: Dict[str, Any],
+    includes: List[str],
+    source: Path,
+    rtl_root: Path,
+) -> Dict[str, Any]:
+    if not modules:
+        raise ValueError("No modules available to build sand_module record")
+    primary = modules[0]
+    original_rel = str(source.relative_to(rtl_root)).replace("\\", "/")
+    machine_rel = Path("machine") / source.relative_to(rtl_root)
+    record: Dict[str, Any] = {
+        "version": YAML_VERSION,
+        "kind": "sand_module",
+        "module": primary.get("name"),
+        "original_path": original_rel,
+        "includes": includes,
+        "interface": primary.get("interface"),
+        "signals": primary.get("signals"),
+        "constants": primary.get("constants"),
+        "assignments": primary.get("assignments"),
+        "always_blocks": primary.get("always_blocks"),
+        "instances": primary.get("instances"),
+        "implementation": {
+            "machine_path": str(machine_rel).replace("\\", "/"),
+            "kind": "verilog_module",
+        },
+        "summary": ast_summary,
+    }
+    if len(modules) > 1:
+        record["modules"] = modules
+    return _compact_dict(record)
+
+
+def merge_sand_module(existing: Dict[str, Any], generated: Dict[str, Any]) -> Dict[str, Any]:
+    if not existing:
+        return generated
+    merged: Dict[str, Any] = dict(generated)
+    for key in ("tags", "behaviour", "notes", "summary"):
+        if key in existing:
+            merged[key] = existing[key]
+    existing_includes = existing.get("includes", []) or []
+    generated_includes = generated.get("includes", []) or []
+    seen: set[str] = set()
+    combined_includes: List[str] = []
+    for value in generated_includes + existing_includes:
+        if value in seen:
+            continue
+        seen.add(value)
+        combined_includes.append(value)
+    if combined_includes:
+        merged["includes"] = combined_includes
+
+    interface_existing = existing.get("interface")
+    interface_generated = generated.get("interface")
+    if interface_generated:
+        interface: Dict[str, Any] = {}
+        generated_params = interface_generated.get("parameters")
+        if generated_params is not None:
+            merged_params = _merge_named_sections(
+                interface_existing.get("parameters") if interface_existing else None,
+                generated_params,
+            )
+            params_list = _ordered_dict_to_list(merged_params)
+            if params_list:
+                interface["parameters"] = params_list
+        elif interface_existing and interface_existing.get("parameters") is not None:
+            interface["parameters"] = interface_existing.get("parameters")
+        generated_ports = interface_generated.get("ports")
+        if generated_ports is not None:
+            merged_ports = _merge_ports(
+                interface_existing.get("ports") if interface_existing else None,
+                generated_ports,
+            )
+            if merged_ports:
+                port_map: Dict[str, Dict[str, Any]] = {}
+                for name, meta in merged_ports.items():
+                    data = _compact_dict(dict(meta))
+                    if data:
+                        port_map[name] = data
+                if port_map:
+                    interface["ports"] = port_map
+        elif interface_existing and interface_existing.get("ports") is not None:
+            interface["ports"] = interface_existing.get("ports")
+        if interface_existing:
+            for key, value in interface_existing.items():
+                if key in interface:
+                    continue
+                interface[key] = value
+        if interface:
+            merged["interface"] = interface
+    elif interface_existing:
+        merged["interface"] = interface_existing
+
+    for key in ("signals", "constants"):
+        generated_section = generated.get(key)
+        if generated_section is None:
+            if key in existing:
+                merged[key] = existing[key]
+            continue
+        merged_section = _merge_named_sections(existing.get(key), generated_section)
+        section_list = _ordered_dict_to_list(merged_section)
+        if section_list:
+            merged[key] = section_list
+
+    for key in ("assignments", "always_blocks", "instances"):
+        if not generated.get(key) and existing.get(key):
+            merged[key] = existing[key]
+
+    if "implementation" in existing:
+        impl = dict(existing["implementation"])
+        impl.update(generated.get("implementation", {}))
+        merged["implementation"] = impl
+
+    return merged
+
+
+# ------------------------------------------------------------------------------
 # Export / Restore paths
 # ------------------------------------------------------------------------------
 
@@ -588,19 +1155,48 @@ def export_module(source: Path, rtl_root: Path, yaml_root: Path) -> None:
             "parse_error": str(error),
             "body_text": text,
         }
+        yaml_path = yaml_root / source.relative_to(rtl_root)
+        yaml_path = yaml_path.with_suffix(".yaml")
+        save_text(yaml_path, yaml.safe_dump(record, sort_keys=False))
+        return
     else:
         tmp_path.unlink(missing_ok=True)
-        record = {
-            "version": YAML_VERSION,
-            "kind": "verilog_module",
-            "original_path": str(source.relative_to(rtl_root)).replace("\\", "/"),
-            "includes": includes,
-            "summary": summarise_ast(ast_root),
-            "ast": ast_to_dict(ast_root),
-            "parse_hints": hints,
-        }
-    yaml_path = yaml_root / source.relative_to(rtl_root)
+    relative_path = source.relative_to(rtl_root)
+    yaml_path = yaml_root / relative_path
     yaml_path = yaml_path.with_suffix(".yaml")
+    existing: Optional[Dict[str, Any]] = None
+    if yaml_path.exists():
+        try:
+            existing = yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
+        except Exception:
+            existing = None
+
+    ast_summary = summarise_ast(ast_root)
+    modules = humanise_ast(ast_root)
+    should_emit_human = False
+    if existing and existing.get("kind") == "sand_module":
+        should_emit_human = True
+    elif "circuits" in relative_path.parts:
+        should_emit_human = True
+
+    if should_emit_human and modules:
+        record = build_sand_module_record(modules, ast_summary, includes, source, rtl_root)
+        if existing and existing.get("kind") == "sand_module":
+            record = merge_sand_module(existing, record)
+        save_text(yaml_path, yaml.safe_dump(record, sort_keys=False))
+        machine_path = yaml_root / "machine" / relative_path
+        save_text(machine_path, text)
+        return
+
+    record = {
+        "version": YAML_VERSION,
+        "kind": "verilog_module",
+        "original_path": str(relative_path).replace("\\", "/"),
+        "includes": includes,
+        "summary": ast_summary,
+        "ast": ast_to_dict(ast_root),
+        "parse_hints": hints,
+    }
     save_text(yaml_path, yaml.safe_dump(record, sort_keys=False))
 
 
