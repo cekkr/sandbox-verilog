@@ -764,7 +764,7 @@ def _merge_named_sections(existing: Any, generated: Any) -> "OrderedDict[str, Di
             if key not in merged_entry:
                 merged_entry[key] = value
         merged[name] = _compact_dict(merged_entry)
-    return merged
+    return _plainify(merged)
 
 
 def _merge_ports(existing: Any, generated: Any) -> "OrderedDict[str, Dict[str, Any]]":
@@ -778,7 +778,7 @@ def _merge_ports(existing: Any, generated: Any) -> "OrderedDict[str, Dict[str, A
             if key not in merged_entry:
                 merged_entry[key] = value
         merged[name] = _compact_dict(merged_entry)
-    return merged
+    return _plainify(merged)
 
 
 def _stringify(value: Any) -> Optional[str]:
@@ -1135,6 +1135,43 @@ def humanise_ast(ast_root: vast.Node) -> List[Dict[str, Any]]:
     return modules
 
 
+def _plainify(value: Any) -> Any:
+    """Recursively convert OrderedDict instances into regular Python types."""
+    if isinstance(value, OrderedDict):
+        return {key: _plainify(item) for key, item in value.items()}
+    if isinstance(value, dict):
+        return {key: _plainify(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_plainify(item) for item in value]
+    if isinstance(value, tuple):
+        return [_plainify(item) for item in value]
+    return value
+
+
+def _module_doc_view(module: Dict[str, Any]) -> Dict[str, Any]:
+    """Reformat a humanised module into the concise study layout."""
+    interface = module.get("interface") or {}
+    doc_module: Dict[str, Any] = {}
+    doc_module["name"] = module.get("name")
+    params = interface.get("parameters")
+    if params:
+        doc_module["parameters"] = _plainify(params)
+    ports = interface.get("ports")
+    if ports:
+        port_map: Dict[str, Any] = {}
+        for name, meta in ports.items():
+            if not meta:
+                port_map[name] = {}
+                continue
+            port_map[name] = _plainify(dict(meta))
+        doc_module["ports"] = port_map
+    for key in ("signals", "constants", "assignments", "always_blocks", "instances"):
+        value = module.get(key)
+        if value:
+            doc_module[key] = _plainify(value)
+    return _compact_dict(doc_module)
+
+
 def build_sand_module_record(
     modules: List[Dict[str, Any]],
     ast_summary: Dict[str, Any],
@@ -1154,11 +1191,11 @@ def build_sand_module_record(
         "original_path": original_rel,
         "includes": includes,
         "interface": primary.get("interface"),
-        "signals": primary.get("signals"),
-        "constants": primary.get("constants"),
-        "assignments": primary.get("assignments"),
-        "always_blocks": primary.get("always_blocks"),
-        "instances": primary.get("instances"),
+        "signals": _plainify(primary.get("signals")),
+        "constants": _plainify(primary.get("constants")),
+        "assignments": _plainify(primary.get("assignments")),
+        "always_blocks": _plainify(primary.get("always_blocks")),
+        "instances": _plainify(primary.get("instances")),
         "implementation": {
             "machine_path": str(machine_rel).replace("\\", "/"),
             "kind": "verilog_module",
@@ -1250,7 +1287,7 @@ def merge_sand_module(existing: Dict[str, Any], generated: Dict[str, Any]) -> Di
         impl.update(generated.get("implementation", {}))
         merged["implementation"] = impl
 
-    return merged
+    return _plainify(merged)
 
 
 # ------------------------------------------------------------------------------
@@ -1314,15 +1351,18 @@ def export_module(source: Path, rtl_root: Path, yaml_root: Path) -> None:
 
     ast_summary = summarise_ast(ast_root)
     modules = humanise_ast(ast_root)
-    machine_record = {
+    doc_modules = [_module_doc_view(module) for module in modules if module]
+    machine_record: Dict[str, Any] = {
         "version": YAML_VERSION,
         "kind": "verilog_module",
         "original_path": str(relative_path).replace("\\", "/"),
         "includes": includes,
-        "summary": ast_summary,
-        "ast": ast_to_dict(ast_root),
-        "parse_hints": hints,
     }
+    if doc_modules:
+        machine_record["modules"] = doc_modules
+    machine_record["summary"] = ast_summary
+    machine_record["ast"] = ast_to_dict(ast_root)
+    machine_record["parse_hints"] = hints
     machine_root = yaml_root if not human_tree else yaml_root / "machine"
     machine_yaml_path = (machine_root / relative_path).with_suffix(".yaml")
     machine_yaml_path.parent.mkdir(parents=True, exist_ok=True)

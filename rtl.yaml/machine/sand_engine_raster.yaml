@@ -4,6 +4,1015 @@ original_path: sand_engine_raster.v
 includes:
 - sand_defs.vh
 - sand_math.vh
+modules:
+- name: sand_engine_raster
+  parameters:
+  - name: DATA_W
+    default: '16'
+  - name: FRAC_W
+    default: '8'
+  - name: WIDTH
+    default: '32'
+  - name: HEIGHT
+    default: '32'
+  - name: N_JOBS
+    default: '4'
+  - name: DEPTH
+    default: '4'
+  - name: JOB_W
+    default: '(N_JOBS > 1)? $clog2(N_JOBS) : 1'
+  - name: LAYER_W
+    default: '(DEPTH > 1)? $clog2(DEPTH) : 1'
+  - name: CELL_W
+    default: '(WIDTH * HEIGHT > 1)? $clog2((WIDTH * HEIGHT)) : 1'
+  ports:
+    clk:
+      direction: input
+    rst:
+      direction: input
+    start_frame:
+      direction: input
+    busy:
+      direction: output
+      type: reg
+    frame_done:
+      direction: output
+      type: reg
+    opcode:
+      direction: input
+      width: '[5-1:0]'
+    use_diagonals:
+      direction: input
+    constA:
+      direction: input
+      width: '[DATA_W-1:0]'
+    constB:
+      direction: input
+      width: '[DATA_W-1:0]'
+    constC:
+      direction: input
+      width: '[DATA_W-1:0]'
+    constD:
+      direction: input
+      width: '[DATA_W-1:0]'
+    micro_lut:
+      direction: input
+      width: '[DATA_W-1:0]'
+      dimensions:
+      - '[0:15]'
+    micro_lut_we:
+      direction: input
+    micro_lut_waddr:
+      direction: input
+      width: '[3:0]'
+    micro_lut_wdata:
+      direction: input
+      width: '[DATA_W-1:0]'
+    job_id:
+      direction: input
+      width: '[JOB_W-1:0]'
+    layer_id:
+      direction: input
+      width: '[LAYER_W-1:0]'
+    plane_read_sel:
+      direction: input
+    unit_flux_enable:
+      direction: input
+    unit_overflow_reverse_top:
+      direction: input
+    unit_overflow_reverse_bottom:
+      direction: input
+    unit_pressure_diag_override:
+      direction: input
+    unit_pressure_iters:
+      direction: input
+      width: '[7:0]'
+    unit_weight_top:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_weight_bottom:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_weight_side:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_weight_retain:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_weight_prev:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_flux_threshold:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_flux_reverse_top:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_flux_reverse_bottom:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_pressure_gain:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_backprop_lr:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_backprop_neigh:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_backprop_decay:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_window_width:
+      direction: input
+      width: '[15:0]'
+    unit_window_height:
+      direction: input
+      width: '[15:0]'
+    unit_window_x_offset:
+      direction: input
+      width: '[15:0]'
+    unit_window_y_offset:
+      direction: input
+      width: '[15:0]'
+    jm_we:
+      direction: output
+      type: reg
+    jm_job:
+      direction: output
+      type: reg
+      width: '[JOB_W-1:0]'
+    jm_layer:
+      direction: output
+      type: reg
+      width: '[LAYER_W-1:0]'
+    jm_plane_sel:
+      direction: output
+      type: reg
+    jm_write_other_plane:
+      direction: output
+      type: reg
+    jm_idx:
+      direction: output
+      type: reg
+      width: '[CELL_W-1:0]'
+    jm_wdata:
+      direction: output
+      type: reg
+      width: '[DATA_W-1:0]'
+    jm_rdata:
+      direction: input
+      width: '[DATA_W-1:0]'
+    frame_activity:
+      direction: output
+      type: reg
+      width: '[31:0]'
+    frame_cycles:
+      direction: output
+      type: reg
+      width: '[31:0]'
+  signals:
+  - name: st
+    kind: reg
+    width: '[2:0]'
+  - name: cur_x
+    kind: reg
+    width: '[X_W-1:0]'
+  - name: cur_y
+    kind: reg
+    width: '[Y_W-1:0]'
+  - name: read_phase
+    kind: reg
+    width: '[3:0]'
+  - name: diag_active
+    kind: reg
+  - name: opcode_reg
+    kind: reg
+    width: '[5-1:0]'
+  - name: constA_reg
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: constB_reg
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: constC_reg
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: constD_reg
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: self_in
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: n_in
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: s_in
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: e_in
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: w_in
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: ne_in
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: nw_in
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: se_in
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: sw_in
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: above_in
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: below_in
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: alu_res
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: cell_changed
+    kind: reg
+  - name: unit_flux_enable_reg
+    kind: reg
+  - name: unit_overflow_reverse_top_reg
+    kind: reg
+  - name: unit_overflow_reverse_bottom_reg
+    kind: reg
+  - name: unit_pressure_iters_reg
+    kind: reg
+    width: '[7:0]'
+  - name: unit_weight_top_reg
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: unit_weight_bottom_reg
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: unit_weight_side_reg
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: unit_weight_retain_reg
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: unit_weight_prev_reg
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: unit_flux_threshold_reg
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: unit_flux_reverse_top_reg
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: unit_flux_reverse_bottom_reg
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: unit_pressure_gain_reg
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: unit_backprop_lr_reg
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: unit_backprop_neigh_reg
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: unit_backprop_decay_reg
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: x_start_reg
+    kind: reg
+    width: '[X_W-1:0]'
+  - name: x_end_reg
+    kind: reg
+    width: '[X_W-1:0]'
+  - name: y_start_reg
+    kind: reg
+    width: '[Y_W-1:0]'
+  - name: y_end_reg
+    kind: reg
+    width: '[Y_W-1:0]'
+  - name: activity_counter
+    kind: reg
+    width: '[31:0]'
+  - name: cycle_counter
+    kind: reg
+    width: '[31:0]'
+  - name: layer_reg
+    kind: reg
+    width: '[LAYER_W-1:0]'
+  - name: layer_above_reg
+    kind: reg
+    width: '[LAYER_W-1:0]'
+  - name: layer_below_reg
+    kind: reg
+    width: '[LAYER_W-1:0]'
+  - name: micro_lut_reg
+    kind: reg
+    width: '[DATA_W-1:0]'
+    dimensions:
+    - '[0:15]'
+  - name: micro_idx
+    kind: wire
+    width: '[3:0]'
+  - name: micro_val
+    kind: wire
+    width: '[DATA_W-1:0]'
+  - name: self_s
+    kind: wire
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: above_s
+    kind: wire
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: below_s
+    kind: wire
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: n_s
+    kind: wire
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: s_s
+    kind: wire
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: e_s
+    kind: wire
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: w_s
+    kind: wire
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: dx_signed
+    kind: wire
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: dy_signed
+    kind: wire
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: dx_abs_val
+    kind: wire
+    width: '[DATA_W-1:0]'
+  - name: dy_abs_val
+    kind: wire
+    width: '[DATA_W-1:0]'
+  - name: sum4_signed
+    kind: wire
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: sum3d_signed
+    kind: wire
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: self_x4
+    kind: wire
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: self_x2
+    kind: wire
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: self_x6
+    kind: wire
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: laplacian_signed
+    kind: wire
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: laplacian_val
+    kind: wire
+    width: '[DATA_W-1:0]'
+  - name: xi
+    kind: integer
+  - name: yi
+    kind: integer
+  - name: mi
+    kind: integer
+  - name: sum_tmp
+    kind: reg
+    width: '[DATA_W+3:0]'
+  - name: avg_tmp
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: min_tmp
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: max_tmp
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: avg_tmp_reg
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: pressure_value
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: pressure_iters_rem
+    kind: reg
+    width: '[7:0]'
+  - name: sum_with_vert_tmp
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: acc0
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: acc1
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: cap_ext
+    kind: reg
+    width: '[EXT_W-1:0]'
+  - name: decay_term
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: delta
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: delta_abs_clamped
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: delta_abs_ext
+    kind: reg
+    width: '[EXT_W-1:0]'
+  - name: delta_eff
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: delta_ext
+    kind: reg
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: diff
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: edge_mag
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: err_term
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: flow_mag
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: flow_signed
+    kind: reg
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: flow_term
+    kind: reg
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: flow_unsigned_ext
+    kind: reg
+    width: '[EXT_W-1:0]'
+  - name: flux_accum
+    kind: reg
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: friction_bottom
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: friction_side
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: friction_top
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: grad_term
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: height_max
+    kind: integer
+  - name: height_tmp
+    kind: integer
+  - name: lap_gain
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: mix_avg
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: mix_bias
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: mix_self
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: mix_sum
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: neigh_ext
+    kind: reg
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: neigh_term
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: next_pressure
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: prev_val
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: retain_val
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: self_ext
+    kind: reg
+    width: '[EXT_W-1:0]'
+    signed: true
+  - name: sharpen_val
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: update_term
+    kind: reg
+    width: '[DATA_W-1:0]'
+  - name: width_max
+    kind: integer
+  - name: width_tmp
+    kind: integer
+  - name: x_end_tmp
+    kind: integer
+  - name: x_off_tmp
+    kind: integer
+  - name: y_end_tmp
+    kind: integer
+  - name: y_off_tmp
+    kind: integer
+  constants:
+  - name: CELLS
+    value: WIDTH * HEIGHT
+  - name: X_W
+    value: '(WIDTH > 1)? $clog2(WIDTH) : 1'
+  - name: Y_W
+    value: '(HEIGHT > 1)? $clog2(HEIGHT) : 1'
+  - name: EXT_W
+    value: DATA_W + 4
+  - name: S_IDLE
+    value: 3'd0
+  - name: S_READ
+    value: 3'd1
+  - name: S_ALU
+    value: 3'd2
+  - name: S_WRITE
+    value: 3'd3
+  - name: S_NEXT
+    value: 3'd4
+  - name: S_DONE
+    value: 3'd5
+  - name: S_ALU_PRESS
+    value: 3'd6
+  always_blocks:
+  - 'on':
+    - posedge clk
+    type: sequential
+    body:
+    - if: rst
+      then:
+      - st <= S_IDLE;
+      - busy <= 1'b0;
+      - frame_done <= 1'b0;
+      - frame_activity <= 32'd0;
+      - frame_cycles <= 32'd0;
+      - jm_we <= 1'b0;
+      - jm_idx <= { 1{ 1'b0 } };
+      - jm_wdata <= { 1{ 1'b0 } };
+      - jm_plane_sel <= 1'b0;
+      - jm_job <= { 1{ 1'b0 } };
+      - jm_layer <= { 1{ 1'b0 } };
+      - jm_write_other_plane <= 1'b0;
+      - cur_x <= { 1{ 1'b0 } };
+      - cur_y <= { 1{ 1'b0 } };
+      - read_phase <= 4'd0;
+      - diag_active <= 1'b0;
+      - opcode_reg <= 5'd0;
+      - constA_reg <= { 1{ 1'b0 } };
+      - constB_reg <= { 1{ 1'b0 } };
+      - constC_reg <= { 1{ 1'b0 } };
+      - constD_reg <= { 1{ 1'b0 } };
+      - activity_counter <= 32'd0;
+      - cycle_counter <= 32'd0;
+      - unit_flux_enable_reg <= 1'b0;
+      - unit_overflow_reverse_top_reg <= 1'b0;
+      - unit_overflow_reverse_bottom_reg <= 1'b0;
+      - unit_pressure_iters_reg <= 8'd1;
+      - unit_weight_top_reg <= { 1{ 1'b0 } };
+      - unit_weight_bottom_reg <= { 1{ 1'b0 } };
+      - unit_weight_side_reg <= { 1{ 1'b0 } };
+      - unit_weight_retain_reg <= { 1{ 1'b0 } };
+      - unit_weight_prev_reg <= { 1{ 1'b0 } };
+      - unit_flux_threshold_reg <= { 1{ 1'b1 } };
+      - unit_flux_reverse_top_reg <= { 1{ 1'b0 } };
+      - unit_flux_reverse_bottom_reg <= { 1{ 1'b0 } };
+      - unit_pressure_gain_reg <= { 1{ 1'b0 } };
+      - unit_backprop_lr_reg <= { 1{ 1'b0 } };
+      - unit_backprop_neigh_reg <= { 1{ 1'b0 } };
+      - unit_backprop_decay_reg <= { 1{ 1'b0 } };
+      - x_start_reg <= { 1{ 1'b0 } };
+      - 'x_end_reg <= (WIDTH > 0)? WIDTH - 1 : { 1{ 1''b0 } };'
+      - y_start_reg <= { 1{ 1'b0 } };
+      - 'y_end_reg <= (HEIGHT > 0)? HEIGHT - 1 : { 1{ 1''b0 } };'
+      - avg_tmp_reg <= { 1{ 1'b0 } };
+      - pressure_value <= { 1{ 1'b0 } };
+      - pressure_iters_rem <= 8'd0;
+      - above_in <= { 1{ 1'b0 } };
+      - below_in <= { 1{ 1'b0 } };
+      - layer_reg <= { 1{ 1'b0 } };
+      - layer_above_reg <= { 1{ 1'b0 } };
+      - layer_below_reg <= { 1{ 1'b0 } };
+      - for(mi=0; mi<16; mi=mi+1) micro_lut_reg[mi] <= { 1{ 1'b0 } };
+      else:
+      - frame_done <= 1'b0;
+      - jm_we <= 1'b0;
+      - jm_write_other_plane <= 1'b0;
+      - if: start_frame
+        then:
+        - "for(mi=0; mi<16; mi=mi+1) begin\n  micro_lut_reg[mi] <= micro_lut[mi];\n\
+          end"
+      - if: micro_lut_we
+        then:
+        - micro_lut_reg[micro_lut_waddr] <= micro_lut_wdata;
+      - if: busy
+        then:
+        - cycle_counter <= cycle_counter + 1;
+      - case: st
+        branches:
+          S_IDLE:
+          - if: start_frame
+            then:
+            - busy <= 1'b1;
+            - cycle_counter <= 32'd1;
+            - activity_counter <= 32'd0;
+            - opcode_reg <= opcode;
+            - constA_reg <= constA;
+            - constB_reg <= constB;
+            - constC_reg <= constC;
+            - constD_reg <= constD;
+            - unit_flux_enable_reg <= unit_flux_enable;
+            - unit_overflow_reverse_top_reg <= unit_overflow_reverse_top;
+            - unit_overflow_reverse_bottom_reg <= unit_overflow_reverse_bottom;
+            - "unit_pressure_iters_reg <= (unit_pressure_iters < 8'd1)? 8'd1 : \n\
+              \                           (unit_pressure_iters > 8'd32)? 8'd32 : unit_pressure_iters;"
+            - unit_weight_top_reg <= unit_weight_top;
+            - unit_weight_bottom_reg <= unit_weight_bottom;
+            - unit_weight_side_reg <= unit_weight_side;
+            - unit_weight_retain_reg <= unit_weight_retain;
+            - unit_weight_prev_reg <= unit_weight_prev;
+            - unit_flux_threshold_reg <= unit_flux_threshold;
+            - unit_flux_reverse_top_reg <= unit_flux_reverse_top;
+            - unit_flux_reverse_bottom_reg <= unit_flux_reverse_bottom;
+            - unit_pressure_gain_reg <= unit_pressure_gain;
+            - unit_backprop_lr_reg <= unit_backprop_lr;
+            - unit_backprop_neigh_reg <= unit_backprop_neigh;
+            - unit_backprop_decay_reg <= unit_backprop_decay;
+            - diag_active <= use_diagonals || unit_pressure_diag_override && (opcode
+              == 5'd13);
+            - width_max = WIDTH;
+            - height_max = HEIGHT;
+            - 'width_tmp = (unit_window_width == 16''d0)? width_max : unit_window_width;'
+            - 'height_tmp = (unit_window_height == 16''d0)? height_max : unit_window_height;'
+            - if: (width_tmp < 1)
+              then:
+              - width_tmp = 1;
+            - if: (height_tmp < 1)
+              then:
+              - height_tmp = 1;
+            - if: (width_tmp > width_max)
+              then:
+              - width_tmp = width_max;
+            - if: (height_tmp > height_max)
+              then:
+              - height_tmp = height_max;
+            - x_off_tmp = unit_window_x_offset;
+            - y_off_tmp = unit_window_y_offset;
+            - if: (x_off_tmp < 0)
+              then:
+              - x_off_tmp = 0;
+            - if: (y_off_tmp < 0)
+              then:
+              - y_off_tmp = 0;
+            - if: (x_off_tmp >= width_max)
+              then:
+              - 'x_off_tmp = (width_max > 0)? width_max - 1 : 0;'
+            - if: (y_off_tmp >= height_max)
+              then:
+              - 'y_off_tmp = (height_max > 0)? height_max - 1 : 0;'
+            - if: (x_off_tmp + width_tmp > width_max)
+              then:
+              - width_tmp = width_max - x_off_tmp;
+              - if: (width_tmp < 1)
+                then:
+                - width_tmp = 1;
+            - if: (y_off_tmp + height_tmp > height_max)
+              then:
+              - height_tmp = height_max - y_off_tmp;
+              - if: (height_tmp < 1)
+                then:
+                - height_tmp = 1;
+            - x_end_tmp = x_off_tmp + width_tmp - 1;
+            - y_end_tmp = y_off_tmp + height_tmp - 1;
+            - x_start_reg <= x_off_tmp[X_W-1:0];
+            - y_start_reg <= y_off_tmp[Y_W-1:0];
+            - x_end_reg <= x_end_tmp[X_W-1:0];
+            - y_end_reg <= y_end_tmp[Y_W-1:0];
+            - cur_x <= x_off_tmp[X_W-1:0];
+            - cur_y <= y_off_tmp[Y_W-1:0];
+            - read_phase <= 4'd0;
+            - jm_job <= job_id;
+            - jm_layer <= layer_id;
+            - layer_reg <= layer_id;
+            - if: (DEPTH > 1)
+              then:
+              - 'layer_above_reg <= (layer_id == { 1{ 1''b0 } })? layer_id : layer_id
+                - 1''b1;'
+              - 'layer_below_reg <= (layer_id == DEPTH - 1)? layer_id : layer_id +
+                1''b1;'
+              else:
+              - layer_above_reg <= layer_id;
+              - layer_below_reg <= layer_id;
+            - jm_plane_sel <= plane_read_sel;
+            - jm_idx <= idx_from_xy(x_off_tmp, y_off_tmp);
+            - busy <= 1'b1;
+            - st <= S_READ;
+            else:
+            - busy <= 1'b0;
+          S_READ:
+          - case: read_phase
+            branches:
+              4'd0:
+              - read_phase <= 4'd1;
+              4'd1:
+              - self_in <= jm_rdata;
+              - xi = cur_x;
+              - yi = clamp_int((cur_y - 1), 0, (HEIGHT - 1));
+              - jm_idx <= idx_from_xy(xi, yi);
+              - read_phase <= 4'd2;
+              4'd2:
+              - n_in <= jm_rdata;
+              - xi = cur_x;
+              - yi = clamp_int((cur_y + 1), 0, (HEIGHT - 1));
+              - jm_idx <= idx_from_xy(xi, yi);
+              - read_phase <= 4'd3;
+              4'd3:
+              - s_in <= jm_rdata;
+              - xi = clamp_int((cur_x + 1), 0, (WIDTH - 1));
+              - yi = cur_y;
+              - jm_idx <= idx_from_xy(xi, yi);
+              - read_phase <= 4'd4;
+              4'd4:
+              - e_in <= jm_rdata;
+              - xi = clamp_int((cur_x - 1), 0, (WIDTH - 1));
+              - yi = cur_y;
+              - jm_idx <= idx_from_xy(xi, yi);
+              - read_phase <= 4'd5;
+              4'd5:
+              - w_in <= jm_rdata;
+              - if: diag_active
+                then:
+                - xi = clamp_int((cur_x + 1), 0, (WIDTH - 1));
+                - yi = clamp_int((cur_y - 1), 0, (HEIGHT - 1));
+                - jm_idx <= idx_from_xy(xi, yi);
+                - read_phase <= 4'd6;
+                else:
+                - ne_in <= self_in;
+                - nw_in <= self_in;
+                - se_in <= self_in;
+                - sw_in <= self_in;
+                - jm_layer <= layer_above_reg;
+                - jm_idx <= idx_from_xy(cur_x, cur_y);
+                - read_phase <= 4'd10;
+              4'd6:
+              - ne_in <= jm_rdata;
+              - xi = clamp_int((cur_x - 1), 0, (WIDTH - 1));
+              - yi = clamp_int((cur_y - 1), 0, (HEIGHT - 1));
+              - jm_idx <= idx_from_xy(xi, yi);
+              - read_phase <= 4'd7;
+              4'd7:
+              - nw_in <= jm_rdata;
+              - xi = clamp_int((cur_x + 1), 0, (WIDTH - 1));
+              - yi = clamp_int((cur_y + 1), 0, (HEIGHT - 1));
+              - jm_idx <= idx_from_xy(xi, yi);
+              - read_phase <= 4'd8;
+              4'd8:
+              - se_in <= jm_rdata;
+              - xi = clamp_int((cur_x - 1), 0, (WIDTH - 1));
+              - yi = clamp_int((cur_y + 1), 0, (HEIGHT - 1));
+              - jm_idx <= idx_from_xy(xi, yi);
+              - read_phase <= 4'd9;
+              4'd9:
+              - sw_in <= jm_rdata;
+              - jm_layer <= layer_above_reg;
+              - jm_idx <= idx_from_xy(cur_x, cur_y);
+              - read_phase <= 4'd10;
+              4'd10:
+              - above_in <= jm_rdata;
+              - jm_layer <= layer_below_reg;
+              - jm_idx <= idx_from_xy(cur_x, cur_y);
+              - read_phase <= 4'd11;
+              4'd11:
+              - below_in <= jm_rdata;
+              - jm_layer <= layer_reg;
+              - jm_idx <= idx_from_xy(cur_x, cur_y);
+              - read_phase <= 4'd12;
+              4'd12:
+              - read_phase <= 4'd15;
+              4'd15:
+              - read_phase <= 4'd0;
+              - st <= S_ALU;
+            default:
+            - read_phase <= 4'd0;
+          S_ALU:
+          - sum_tmp = { { 1{ 1'b0 } } };
+          - sum_tmp = n_in + s_in + e_in + w_in;
+          - min_tmp = min2(min2(n_in, s_in), min2(e_in, w_in));
+          - max_tmp = max2(max2(n_in, s_in), max2(e_in, w_in));
+          - if: diag_active
+            then:
+            - sum_tmp = sum_tmp + ne_in + nw_in + se_in + sw_in;
+            - min_tmp = min2(min_tmp, min2(ne_in, nw_in));
+            - min_tmp = min2(min_tmp, min2(se_in, sw_in));
+            - max_tmp = max2(max_tmp, max2(ne_in, nw_in));
+            - max_tmp = max2(max_tmp, max2(se_in, sw_in));
+            - avg_tmp = sum_tmp[DATA_W-1:0] >> 3;
+            else:
+            - avg_tmp = sum_tmp[DATA_W-1:0] >> 2;
+          - sum_with_vert_tmp = sum_tmp[DATA_W-1:0] + above_in + below_in;
+          - if: (opcode_reg == 5'd13)
+            then:
+            - pressure_value <= self_in;
+            - avg_tmp_reg <= avg_tmp;
+            - 'pressure_iters_rem <= (unit_pressure_iters_reg < 8''d1)? 8''d1 : unit_pressure_iters_reg;'
+            - st <= S_ALU_PRESS;
+            else:
+            - case: opcode_reg
+              branches:
+                5'd0, 5'd1:
+                - alu_res = self_in;
+                5'd2:
+                - alu_res = sum_tmp[DATA_W-1:0];
+                5'd3:
+                - alu_res = avg_tmp;
+                5'd4:
+                - alu_res = self_in + constA_reg;
+                5'd5:
+                - alu_res = self_in - constA_reg;
+                5'd6:
+                - 'alu_res = (0)? self_in * constA_reg + (1 << FRAC_W - 1) >>> FRAC_W
+                  : self_in * constA_reg >>> FRAC_W;'
+                5'd7:
+                - 'alu_res = (constA_reg == { 1{ 1''b0 } })? { 1{ 1''b0 } } : self_inFRAC_W
+                  / constA_reg;'
+                5'd8:
+                - diff = avg_tmp - self_in;
+                - 'alu_res = self_in + ((0)? diff * constA_reg + (1 << FRAC_W - 1)
+                  >>> FRAC_W : diff * constA_reg >>> FRAC_W);'
+                5'd9:
+                - 'alu_res = (self_in < min_tmp)? self_in : min_tmp;'
+                5'd10:
+                - 'alu_res = (self_in > max_tmp)? self_in : max_tmp;'
+                5'd11:
+                - "alu_res = (self_in < constA_reg)? constA_reg : \n          (self_in\
+                  \ > constB_reg)? constB_reg : self_in;"
+                5'd12:
+                - if: (!unit_flux_enable_reg)
+                  then:
+                  - flux_accum = $signed({ { 1{ self_in[DATA_W - 1] } }, self_in });
+                  else:
+                  - 'friction_top = (unit_overflow_reverse_top_reg)? unit_flux_reverse_top_reg
+                    : { 1{ 1''b0 } };'
+                  - 'friction_bottom = (unit_overflow_reverse_bottom_reg)? unit_flux_reverse_bottom_reg
+                    : { 1{ 1''b0 } };'
+                  - friction_side = unit_pressure_gain_reg;
+                  - 'retain_val = (0)? self_in * unit_weight_retain_reg + (1 << FRAC_W
+                    - 1) >>> FRAC_W : self_in * unit_weight_retain_reg >>> FRAC_W;'
+                  - flux_accum = $signed({ { 1{ retain_val[DATA_W - 1] } }, retain_val
+                    });
+                  - flow_term = directional_flow(self_in, n_in, unit_weight_top_reg,
+                    friction_top);
+                  - flux_accum = flux_accum + flow_term;
+                  - flow_term = directional_flow(self_in, s_in, unit_weight_bottom_reg,
+                    friction_bottom);
+                  - flux_accum = flux_accum + flow_term;
+                  - flow_term = directional_flow(self_in, e_in, unit_weight_side_reg,
+                    friction_side);
+                  - flux_accum = flux_accum + flow_term;
+                  - flow_term = directional_flow(self_in, w_in, unit_weight_side_reg,
+                    friction_side);
+                  - flux_accum = flux_accum + flow_term;
+                  - if: diag_active
+                    then:
+                    - flow_term = directional_flow(self_in, ne_in, unit_weight_side_reg,
+                      friction_side);
+                    - flux_accum = flux_accum + flow_term;
+                    - flow_term = directional_flow(self_in, nw_in, unit_weight_side_reg,
+                      friction_side);
+                    - flux_accum = flux_accum + flow_term;
+                    - flow_term = directional_flow(self_in, se_in, unit_weight_side_reg,
+                      friction_side);
+                    - flux_accum = flux_accum + flow_term;
+                    - flow_term = directional_flow(self_in, sw_in, unit_weight_side_reg,
+                      friction_side);
+                    - flux_accum = flux_accum + flow_term;
+                  - 'prev_val = (0)? constB_reg * unit_weight_prev_reg + (1 << FRAC_W
+                    - 1) >>> FRAC_W : constB_reg * unit_weight_prev_reg >>> FRAC_W;'
+                  - flux_accum = flux_accum + $signed({ { 1{ prev_val[DATA_W - 1]
+                    } }, prev_val });
+                  - if: (flux_accum < $signed({ 1{ 1'b0 } }))
+                    then:
+                    - flux_accum = $signed({ 1{ 1'b0 } });
+                  - cap_ext = { { 1{ 1'b0 } }, unit_flux_threshold_reg };
+                  - if: (flux_accum > $signed(cap_ext))
+                    then:
+                    - flux_accum = $signed(cap_ext);
+                - alu_res = flux_accum[DATA_W-1:0];
+                5'd14:
+                - err_term = constB_reg - self_in;
+                - 'grad_term = (0)? err_term * unit_backprop_lr_reg + (1 << FRAC_W
+                  - 1) >>> FRAC_W : err_term * unit_backprop_lr_reg >>> FRAC_W;'
+                - 'neigh_term = (0)? avg_tmp * unit_backprop_neigh_reg + (1 << FRAC_W
+                  - 1) >>> FRAC_W : avg_tmp * unit_backprop_neigh_reg >>> FRAC_W;'
+                - 'decay_term = (0)? self_in * unit_backprop_decay_reg + (1 << FRAC_W
+                  - 1) >>> FRAC_W : self_in * unit_backprop_decay_reg >>> FRAC_W;'
+                - update_term = grad_term + neigh_term - decay_term;
+                - alu_res = self_in + update_term;
+                5'd15:
+                - alu_res = micro_val;
+                5'd16:
+                - alu_res = laplacian_val;
+                5'd17:
+                - 'lap_gain = (0)? laplacian_val * constA_reg + (1 << FRAC_W - 1)
+                  >>> FRAC_W : laplacian_val * constA_reg >>> FRAC_W;'
+                - sharpen_val = self_in - lap_gain;
+                - alu_res = sharpen_val;
+                5'd18:
+                - edge_mag = dx_abs_val + dy_abs_val;
+                - alu_res = edge_mag;
+                5'd19:
+                - 'mix_self = (0)? self_in * constA_reg + (1 << FRAC_W - 1) >>> FRAC_W
+                  : self_in * constA_reg >>> FRAC_W;'
+                - 'mix_avg = (0)? avg_tmp * constB_reg + (1 << FRAC_W - 1) >>> FRAC_W
+                  : avg_tmp * constB_reg >>> FRAC_W;'
+                - 'mix_sum = (0)? sum_with_vert_tmp * constC_reg + (1 << FRAC_W -
+                  1) >>> FRAC_W : sum_with_vert_tmp * constC_reg >>> FRAC_W;'
+                - mix_bias = constD_reg;
+                - acc0 = mix_self + mix_avg;
+                - acc1 = mix_sum + mix_bias;
+                - alu_res = acc0 + acc1;
+              default:
+              - alu_res = self_in;
+            - cell_changed <= alu_res != self_in;
+            - st <= S_WRITE;
+          S_ALU_PRESS:
+          - delta = avg_tmp_reg - pressure_value;
+          - 'next_pressure = pressure_value + ((0)? delta * unit_pressure_gain_reg
+            + (1 << FRAC_W - 1) >>> FRAC_W : delta * unit_pressure_gain_reg >>> FRAC_W);'
+          - pressure_value <= next_pressure;
+          - if: (pressure_iters_rem <= 8'd1)
+            then:
+            - alu_res <= next_pressure;
+            - cell_changed <= next_pressure != self_in;
+            - st <= S_WRITE;
+            else:
+            - pressure_iters_rem <= pressure_iters_rem - 1'b1;
+          S_WRITE:
+          - jm_idx <= idx_from_xy(cur_x, cur_y);
+          - jm_wdata <= alu_res;
+          - jm_we <= 1'b1;
+          - jm_write_other_plane <= 1'b1;
+          - if: cell_changed
+            then:
+            - activity_counter <= activity_counter + 1;
+          - st <= S_NEXT;
+          S_NEXT:
+          - if: (cur_x == x_end_reg)
+            then:
+            - cur_x <= x_start_reg;
+            - if: (cur_y == y_end_reg)
+              then:
+              - cur_y <= y_start_reg;
+              - st <= S_DONE;
+              else:
+              - cur_y <= cur_y + 1'b1;
+              - jm_idx <= idx_from_xy(x_start_reg, (cur_y + 1'b1));
+              - st <= S_READ;
+            else:
+            - cur_x <= cur_x + 1'b1;
+            - jm_idx <= idx_from_xy((cur_x + 1'b1), cur_y);
+            - st <= S_READ;
+          S_DONE:
+          - busy <= 1'b0;
+          - frame_done <= 1'b1;
+          - frame_activity <= activity_counter;
+          - frame_cycles <= cycle_counter + 1;
+          - activity_counter <= 32'd0;
+          - cycle_counter <= 32'd0;
+          - st <= S_IDLE;
 summary:
   modules:
   - name: sand_engine_raster

@@ -28,6 +28,9 @@ RTL_FLOW:
 5. `sand_jobmem2p` pointer-swap BRAM (via `bram_tdp_wrap`) feeds read plane and accepts write plane.
 6. Engine telemetry (`frame_activity`, `frame_cycles`) feeds scheduler, which updates job_done + budgets.
 
+BRIDGE_NOTES:
+- Machine YAML mirrors now include a `modules` block that uses the human-readable descriptor layout (parameters list, port map, logic sections) alongside the AST payload for easier inspection.
+
 CONFIG_CORE (`rtl.yaml/sand_defs.yaml` → `sand_defs.vh`):
 - Grid params: `DATA_W`, `FRAC_W` (default Q8.8), `WIDTH`, `HEIGHT`, `DEPTH`, `N_JOBS`, `STEPS_PER_SLICE`, `USE_DIAGONALS`.
 - CSR map: opcode + const registers, microcode region, adaptive control (`CSR_ADAPT_*`), enhanced flux/pressure/backprop controls (`CSR_UNIT_*`), window sizing/offset/status CSRs.

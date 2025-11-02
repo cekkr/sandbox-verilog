@@ -4,9 +4,6 @@ module: sand_jobmem2p
 original_path: sand_jobmem2p.v
 includes:
 - sand_defs.vh
-tags:
-- memory
-- dual-plane
 interface:
   parameters:
   - name: DATA_W
@@ -25,81 +22,212 @@ interface:
     default: '4'
     signed: false
   ports:
-  - name: clk
-    direction: input
-    datatype: wire
-    signed: false
-  - name: seed_we
-    direction: input
-    datatype: wire
-    signed: false
-  - name: seed_job
-    direction: input
-    datatype: wire
-    width: '[((N_JOBS>1)?$clog2(N_JOBS):1)-1:0]'
-    signed: false
-  - name: seed_layer
-    direction: input
-    datatype: wire
-    width: '[((DEPTH>1)?$clog2(DEPTH):1)-1:0]'
-    signed: false
-  - name: seed_plane
-    direction: input
-    datatype: wire
-    signed: false
-  - name: seed_idx
-    direction: input
-    datatype: wire
-    width: '[((WIDTH*HEIGHT>1)?$clog2((WIDTH*HEIGHT)):1)-1:0]'
-    signed: false
-  - name: seed_data
-    direction: input
-    datatype: wire
-    width: '[DATA_W-1:0]'
-    signed: false
-  - name: eng_we
-    direction: input
-    datatype: wire
-    signed: false
-  - name: eng_job
-    direction: input
-    datatype: wire
-    width: '[((N_JOBS>1)?$clog2(N_JOBS):1)-1:0]'
-    signed: false
-  - name: eng_layer
-    direction: input
-    datatype: wire
-    width: '[((DEPTH>1)?$clog2(DEPTH):1)-1:0]'
-    signed: false
-  - name: eng_plane_sel
-    direction: input
-    datatype: wire
-    signed: false
-  - name: eng_write_other_plane
-    direction: input
-    datatype: wire
-    signed: false
-  - name: eng_idx
-    direction: input
-    datatype: wire
-    width: '[((WIDTH*HEIGHT>1)?$clog2((WIDTH*HEIGHT)):1)-1:0]'
-    signed: false
-  - name: eng_wdata
-    direction: input
-    datatype: wire
-    width: '[DATA_W-1:0]'
-    signed: false
-  - name: eng_rdata
-    direction: output
-    datatype: wire
-    width: '[DATA_W-1:0]'
-    signed: false
+    clk:
+      direction: input
+      datatype: wire
+      signed: false
+    seed_we:
+      direction: input
+      datatype: wire
+      signed: false
+    seed_job:
+      direction: input
+      width: '[((N_JOBS>1)?$clog2(N_JOBS):1)-1:0]'
+      datatype: wire
+      signed: false
+    seed_layer:
+      direction: input
+      width: '[((DEPTH>1)?$clog2(DEPTH):1)-1:0]'
+      datatype: wire
+      signed: false
+    seed_plane:
+      direction: input
+      datatype: wire
+      signed: false
+    seed_idx:
+      direction: input
+      width: '[((WIDTH*HEIGHT>1)?$clog2((WIDTH*HEIGHT)):1)-1:0]'
+      datatype: wire
+      signed: false
+    seed_data:
+      direction: input
+      width: '[DATA_W-1:0]'
+      datatype: wire
+      signed: false
+    eng_we:
+      direction: input
+      datatype: wire
+      signed: false
+    eng_job:
+      direction: input
+      width: '[((N_JOBS>1)?$clog2(N_JOBS):1)-1:0]'
+      datatype: wire
+      signed: false
+    eng_layer:
+      direction: input
+      width: '[((DEPTH>1)?$clog2(DEPTH):1)-1:0]'
+      datatype: wire
+      signed: false
+    eng_plane_sel:
+      direction: input
+      datatype: wire
+      signed: false
+    eng_write_other_plane:
+      direction: input
+      datatype: wire
+      signed: false
+    eng_idx:
+      direction: input
+      width: '[((WIDTH*HEIGHT>1)?$clog2((WIDTH*HEIGHT)):1)-1:0]'
+      datatype: wire
+      signed: false
+    eng_wdata:
+      direction: input
+      width: '[DATA_W-1:0]'
+      datatype: wire
+      signed: false
+    eng_rdata:
+      direction: output
+      width: '[DATA_W-1:0]'
+      datatype: wire
+      signed: false
+signals:
+- name: seed_addr
+  kind: wire
+  width: '[ADDR_W-1:0]'
+- name: eng_raddr
+  kind: wire
+  width: '[ADDR_W-1:0]'
+- name: eng_waddr
+  kind: wire
+  width: '[ADDR_W-1:0]'
+constants:
+- name: CELLS
+  value: WIDTH * HEIGHT
+- name: PLANES
+  value: '2'
+- name: ADDR_W
+  value: $clog2((N_JOBS * DEPTH * PLANES * CELLS))
+assignments:
+- out: seed_addr
+  value: ((seed_job * DEPTH + seed_layer) * PLANES + seed_plane) * CELLS + seed_idx
+- out: eng_raddr
+  value: ((eng_job * DEPTH + eng_layer) * PLANES + eng_plane_sel) * CELLS + eng_idx
+- out: eng_waddr
+  value: ((eng_job * DEPTH + eng_layer) * PLANES + !eng_plane_sel) * CELLS + eng_idx
+instances:
+- module: bram_tdp_wrap
+  instance: u_mem
+  parameters:
+    DATA_W: DATA_W
+    ADDR_W: ADDR_W
+  connections:
+    clk: clk
+    a_we: '((seed_we)? 1''b1 : eng_we & eng_write_other_plane)'
+    a_addr: '((seed_we)? seed_addr : eng_waddr)'
+    a_din: '((seed_we)? seed_data : eng_wdata)'
+    b_we: 1'b0
+    b_addr: eng_raddr
+    b_din: '{ 1{ 1''b0 } }'
+    b_dout: eng_rdata
+implementation:
+  machine_path: machine/sand_jobmem2p.yaml
+  kind: verilog_module
+summary:
+  modules:
+  - name: sand_jobmem2p
+    parameters:
+    - name: DATA_W
+      value: '16'
+      signed: false
+    - name: WIDTH
+      value: '32'
+      signed: false
+    - name: HEIGHT
+      value: '32'
+      signed: false
+    - name: DEPTH
+      value: '4'
+      signed: false
+    - name: N_JOBS
+      value: '4'
+      signed: false
+    ports:
+    - name: clk
+      direction: input
+      signed: false
+      datatype: wire
+    - name: seed_we
+      direction: input
+      signed: false
+      datatype: wire
+    - name: seed_job
+      direction: input
+      width: '[((N_JOBS>1)?$clog2(N_JOBS):1)-1:0]'
+      signed: false
+      datatype: wire
+    - name: seed_layer
+      direction: input
+      width: '[((DEPTH>1)?$clog2(DEPTH):1)-1:0]'
+      signed: false
+      datatype: wire
+    - name: seed_plane
+      direction: input
+      signed: false
+      datatype: wire
+    - name: seed_idx
+      direction: input
+      width: '[((WIDTH*HEIGHT>1)?$clog2((WIDTH*HEIGHT)):1)-1:0]'
+      signed: false
+      datatype: wire
+    - name: seed_data
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: eng_we
+      direction: input
+      signed: false
+      datatype: wire
+    - name: eng_job
+      direction: input
+      width: '[((N_JOBS>1)?$clog2(N_JOBS):1)-1:0]'
+      signed: false
+      datatype: wire
+    - name: eng_layer
+      direction: input
+      width: '[((DEPTH>1)?$clog2(DEPTH):1)-1:0]'
+      signed: false
+      datatype: wire
+    - name: eng_plane_sel
+      direction: input
+      signed: false
+      datatype: wire
+    - name: eng_write_other_plane
+      direction: input
+      signed: false
+      datatype: wire
+    - name: eng_idx
+      direction: input
+      width: '[((WIDTH*HEIGHT>1)?$clog2((WIDTH*HEIGHT)):1)-1:0]'
+      signed: false
+      datatype: wire
+    - name: eng_wdata
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: eng_rdata
+      direction: output
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+tags:
+- memory
+- dual-plane
 behaviour:
   overview: True dual-plane job memory wrapper providing independent read/write planes
     with pointer swaps.
   notes:
   - Abstracts address generation across job, layer, plane, and cell dimensions.
   - Pairs with bram_tdp_wrap for vendor-specific RAM inference.
-implementation:
-  machine_path: machine/sand_jobmem2p.yaml
-  kind: verilog_module

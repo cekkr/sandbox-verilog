@@ -5,20 +5,16 @@ original_path: sand_pe.v
 includes:
 - sand_defs.vh
 - sand_math.vh
-tags:
-- processing-element
-- fixed-point
-- microcode-friendly
 interface:
   parameters:
-    DATA_W:
-      default: 16
-      signed: false
-      note: Data width for cell state (integer + fractional bits).
-    FRAC_W:
-      default: 8
-      signed: false
-      note: Number of fractional bits carried by DATA_W values.
+  - name: DATA_W
+    default: '16'
+    signed: false
+    note: Data width for cell state (integer + fractional bits).
+  - name: FRAC_W
+    default: '8'
+    signed: false
+    note: Number of fractional bits carried by DATA_W values.
   ports:
     clk:
       direction: input
@@ -32,84 +28,780 @@ interface:
       direction: input
       width: '[DATA_W-1:0]'
       note: Current cell value read from the previous tick plane.
-    planar_neighbors:
+    n_in:
       direction: input
       width: '[DATA_W-1:0]'
-      fanout:
-      - n_in
-      - s_in
-      - e_in
-      - w_in
-      note: Four-neighbour planar inputs.
-    diagonal_neighbors:
+    s_in:
       direction: input
       width: '[DATA_W-1:0]'
-      fanout:
-      - ne_in
-      - nw_in
-      - se_in
-      - sw_in
-      note: Optional diagonals, only sampled when use_diagonals=1.
-    vertical_neighbors:
+    e_in:
       direction: input
       width: '[DATA_W-1:0]'
-      fanout:
-      - above_in
-      - below_in
-      note: +/-Z neighbours for 3D stacking.
+    w_in:
+      direction: input
+      width: '[DATA_W-1:0]'
+    ne_in:
+      direction: input
+      width: '[DATA_W-1:0]'
+    nw_in:
+      direction: input
+      width: '[DATA_W-1:0]'
+    se_in:
+      direction: input
+      width: '[DATA_W-1:0]'
+    sw_in:
+      direction: input
+      width: '[DATA_W-1:0]'
+    above_in:
+      direction: input
+      width: '[DATA_W-1:0]'
+    below_in:
+      direction: input
+      width: '[DATA_W-1:0]'
     opcode:
       direction: input
       width: '[5-1:0]'
       note: Operation selector, see behaviour.opcodes.
-    mode:
+    use_diagonals:
       direction: input
-      fanout:
-      - use_diagonals
-      - unit_flux_enable
-      - unit_overflow_reverse_top
-      - unit_overflow_reverse_bottom
-      - unit_pressure_diag_override
-      note: Boolean feature toggles grouped for readability.
-    constants:
+    constA:
       direction: input
       width: '[DATA_W-1:0]'
-      fanout:
-      - constA
-      - constB
-      - constC
-      - constD
-      note: Legacy scalar constants for arithmetic ops.
-    unit_tuple:
+    constB:
       direction: input
       width: '[DATA_W-1:0]'
-      fanout:
-      - unit_weight_top
-      - unit_weight_bottom
-      - unit_weight_side
-      - unit_weight_retain
-      - unit_weight_prev
-      - unit_flux_threshold
-      - unit_flux_reverse_top
-      - unit_flux_reverse_bottom
-      - unit_pressure_gain
-      - unit_backprop_lr
-      - unit_backprop_neigh
-      - unit_backprop_decay
-      note: Enhanced flux/pressure/backprop configuration mirrors scheduler tuple.
+    constC:
+      direction: input
+      width: '[DATA_W-1:0]'
+    constD:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_flux_enable:
+      direction: input
+    unit_overflow_reverse_top:
+      direction: input
+    unit_overflow_reverse_bottom:
+      direction: input
+    unit_pressure_diag_override:
+      direction: input
     unit_pressure_iters:
       direction: input
       width: '[7:0]'
       note: Iteration count for pressure-solve opcode.
+    unit_weight_top:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_weight_bottom:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_weight_side:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_weight_retain:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_weight_prev:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_flux_threshold:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_flux_reverse_top:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_flux_reverse_bottom:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_pressure_gain:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_backprop_lr:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_backprop_neigh:
+      direction: input
+      width: '[DATA_W-1:0]'
+    unit_backprop_decay:
+      direction: input
+      width: '[DATA_W-1:0]'
     micro_lut:
       direction: input
       width: '[DATA_W-1:0]'
+      dimensions:
+      - '[0:15]'
       structure: '[0:15]'
       note: Microcode table indexed by opcode/self state.
     next_out:
       direction: output
-      width: '[DATA_W-1:0]'
       type: reg
+      width: '[DATA_W-1:0]'
       note: Resulting value staged into the write plane.
+signals:
+- name: sum_nbrs
+  kind: reg
+  width: '[DATA_W+3:0]'
+- name: avg_nbrs
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: min_nbr
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: max_nbr
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: sum4_only
+  kind: reg
+  width: '[DATA_W+2:0]'
+- name: nb4
+  kind: wire
+  width: '[DATA_W-1:0]'
+  dimensions:
+  - '[0:3]'
+- name: nb8
+  kind: wire
+  width: '[DATA_W-1:0]'
+  dimensions:
+  - '[0:7]'
+- name: diag_active
+  kind: wire
+- name: i
+  kind: integer
+- name: iter
+  kind: integer
+- name: flux_accum
+  kind: reg
+  width: '[EXT_W-1:0]'
+  signed: true
+- name: flow_term
+  kind: reg
+  width: '[EXT_W-1:0]'
+  signed: true
+- name: retain_val
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: prev_val
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: cap_ext
+  kind: reg
+  width: '[EXT_W-1:0]'
+- name: friction_top
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: friction_bottom
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: friction_side
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: iter_limit
+  kind: reg
+  width: '[7:0]'
+- name: gain_sel
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: delta_val
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: pressure_val
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: lr_sel
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: neigh_sel
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: decay_sel
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: err
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: grad_term
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: neigh_term
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: decay_term
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: update_term
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: lap_gain
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: sharpen_val
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: edge_mag
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: mix_self
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: mix_avg
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: mix_sum
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: acc
+  kind: reg
+  width: '[DATA_W-1:0]'
+- name: micro_idx
+  kind: wire
+  width: '[3:0]'
+- name: micro_val
+  kind: wire
+  width: '[DATA_W-1:0]'
+- name: self_s
+  kind: wire
+  width: '[EXT_W-1:0]'
+  signed: true
+- name: above_s
+  kind: wire
+  width: '[EXT_W-1:0]'
+  signed: true
+- name: below_s
+  kind: wire
+  width: '[EXT_W-1:0]'
+  signed: true
+- name: n_s
+  kind: wire
+  width: '[EXT_W-1:0]'
+  signed: true
+- name: s_s
+  kind: wire
+  width: '[EXT_W-1:0]'
+  signed: true
+- name: e_s
+  kind: wire
+  width: '[EXT_W-1:0]'
+  signed: true
+- name: w_s
+  kind: wire
+  width: '[EXT_W-1:0]'
+  signed: true
+- name: dx_signed
+  kind: wire
+  width: '[EXT_W-1:0]'
+  signed: true
+- name: dy_signed
+  kind: wire
+  width: '[EXT_W-1:0]'
+  signed: true
+- name: dx_signed_neg
+  kind: wire
+  width: '[EXT_W-1:0]'
+  signed: true
+- name: dy_signed_neg
+  kind: wire
+  width: '[EXT_W-1:0]'
+  signed: true
+- name: dx_abs
+  kind: wire
+  width: '[DATA_W-1:0]'
+- name: dy_abs
+  kind: wire
+  width: '[DATA_W-1:0]'
+- name: sum4_signed
+  kind: wire
+  width: '[EXT_W-1:0]'
+  signed: true
+- name: sum3d_signed
+  kind: wire
+  width: '[EXT_W-1:0]'
+  signed: true
+- name: self_x4
+  kind: wire
+  width: '[EXT_W-1:0]'
+  signed: true
+- name: self_x2
+  kind: wire
+  width: '[EXT_W-1:0]'
+  signed: true
+- name: self_x6
+  kind: wire
+  width: '[EXT_W-1:0]'
+  signed: true
+- name: laplacian_signed
+  kind: wire
+  width: '[EXT_W-1:0]'
+  signed: true
+- name: laplacian
+  kind: wire
+  width: '[DATA_W-1:0]'
+- name: sum_planar
+  kind: wire
+  width: '[DATA_W-1:0]'
+- name: sum_with_vert
+  kind: wire
+  width: '[DATA_W-1:0]'
+- name: alu_res
+  kind: reg
+  width: '[DATA_W-1:0]'
+constants:
+- name: EXT_W
+  value: DATA_W + 4
+assignments:
+- out: nb4[0]
+  value: n_in
+- out: nb4[1]
+  value: s_in
+- out: nb4[2]
+  value: e_in
+- out: nb4[3]
+  value: w_in
+- out: nb8[0]
+  value: n_in
+- out: nb8[1]
+  value: s_in
+- out: nb8[2]
+  value: e_in
+- out: nb8[3]
+  value: w_in
+- out: nb8[4]
+  value: ne_in
+- out: nb8[5]
+  value: nw_in
+- out: nb8[6]
+  value: se_in
+- out: nb8[7]
+  value: sw_in
+- out: diag_active
+  value: use_diagonals || unit_pressure_diag_override && (opcode == 5'd13)
+- out: micro_idx
+  value: '{ opcode[1:0], self_in[1:0] }'
+- out: micro_val
+  value: micro_lut[micro_idx]
+- out: self_s
+  value: '{ { 1{ self_in[DATA_W - 1] } }, self_in }'
+- out: above_s
+  value: '{ { 1{ above_in[DATA_W - 1] } }, above_in }'
+- out: below_s
+  value: '{ { 1{ below_in[DATA_W - 1] } }, below_in }'
+- out: n_s
+  value: '{ { 1{ n_in[DATA_W - 1] } }, n_in }'
+- out: s_s
+  value: '{ { 1{ s_in[DATA_W - 1] } }, s_in }'
+- out: e_s
+  value: '{ { 1{ e_in[DATA_W - 1] } }, e_in }'
+- out: w_s
+  value: '{ { 1{ w_in[DATA_W - 1] } }, w_in }'
+- out: dx_signed
+  value: e_s - w_s
+- out: dy_signed
+  value: s_s - n_s
+- out: dx_signed_neg
+  value: -dx_signed
+- out: dy_signed_neg
+  value: -dy_signed
+- out: dx_abs
+  value: '(dx_signed[EXT_W - 1])? dx_signed_neg[DATA_W-1:0] : dx_signed[DATA_W-1:0]'
+- out: dy_abs
+  value: '(dy_signed[EXT_W - 1])? dy_signed_neg[DATA_W-1:0] : dy_signed[DATA_W-1:0]'
+- out: sum4_signed
+  value: n_s + s_s + e_s + w_s
+- out: sum3d_signed
+  value: sum4_signed + above_s + below_s
+- out: self_x4
+  value: self_s2
+- out: self_x2
+  value: self_s1
+- out: self_x6
+  value: self_x4 + self_x2
+- out: laplacian_signed
+  value: sum3d_signed - self_x6
+- out: laplacian
+  value: laplacian_signed[DATA_W-1:0]
+- out: sum_planar
+  value: sum_nbrs[DATA_W-1:0]
+- out: sum_with_vert
+  value: fp_add(fp_add(sum_planar, above_in), below_in)
+always_blocks:
+- 'on':
+  - '*'
+  type: combinational
+  body:
+  - sum_nbrs = { 1{ 1'b0 } };
+  - sum4_only = { 1{ 1'b0 } };
+  - min_nbr = { 1{ 1'b1 } };
+  - max_nbr = { 1{ 1'b0 } };
+  - "for(i=0; i<4; i=i+1) begin\n  sum4_only = sum4_only + nb4[i];\n  if(nb4[i] <\
+    \ min_nbr) min_nbr = nb4[i]; \n  if(nb4[i] > max_nbr) max_nbr = nb4[i]; \nend"
+  - if: (!diag_active)
+    then:
+    - sum_nbrs = { 1'b0, sum4_only };
+    - avg_nbrs = sum4_only[DATA_W-1:0] >> 2;
+    else:
+    - sum_nbrs = { 1'b0, sum4_only };
+    - "for(i=4; i<8; i=i+1) begin\n  sum_nbrs = sum_nbrs + nb8[i];\n  if(nb8[i] <\
+      \ min_nbr) min_nbr = nb8[i]; \n  if(nb8[i] > max_nbr) max_nbr = nb8[i]; \nend"
+    - avg_nbrs = sum_nbrs[DATA_W-1:0] >> 3;
+  - if: (above_in < min_nbr)
+    then:
+    - min_nbr = above_in;
+  - if: (above_in > max_nbr)
+    then:
+    - max_nbr = above_in;
+  - if: (below_in < min_nbr)
+    then:
+    - min_nbr = below_in;
+  - if: (below_in > max_nbr)
+    then:
+    - max_nbr = below_in;
+- 'on':
+  - '*'
+  type: combinational
+  body:
+  - case: opcode
+    branches:
+      5'd0:
+      - alu_res = self_in;
+      5'd1:
+      - alu_res = self_in;
+      5'd2:
+      - alu_res = sum_nbrs[DATA_W-1:0];
+      5'd3:
+      - alu_res = avg_nbrs;
+      5'd4:
+      - alu_res = fp_add(self_in, constA);
+      5'd5:
+      - alu_res = fp_sub(self_in, constA);
+      5'd6:
+      - alu_res = fp_mul_const(self_in, constA);
+      5'd7:
+      - alu_res = fp_div_const(self_in, constA);
+      5'd8:
+      - alu_res = fp_add(self_in, fp_mul_const(fp_sub(avg_nbrs, self_in), constA));
+      5'd9:
+      - 'alu_res = (self_in < min_nbr)? self_in : min_nbr;'
+      5'd10:
+      - 'alu_res = (self_in > max_nbr)? self_in : max_nbr;'
+      5'd11:
+      - "alu_res = (self_in < constA)? constA : \n          (self_in > constB)? constB\
+        \ : self_in;"
+      5'd12:
+      - if: (!unit_flux_enable)
+        then:
+        - retain_val = fp_mul_const(self_in, constA);
+        - flux_accum = { { 1{ retain_val[DATA_W - 1] } }, retain_val };
+        - flow_term = directional_flow(self_in, n_in, constC, constD);
+        - flux_accum = flux_accum + flow_term;
+        - flow_term = directional_flow(self_in, s_in, constC, constD);
+        - flux_accum = flux_accum + flow_term;
+        - flow_term = directional_flow(self_in, e_in, constC, constD);
+        - flux_accum = flux_accum + flow_term;
+        - flow_term = directional_flow(self_in, w_in, constC, constD);
+        - flux_accum = flux_accum + flow_term;
+        - if: diag_active
+          then:
+          - flow_term = directional_flow(self_in, ne_in, constC, constD);
+          - flux_accum = flux_accum + flow_term;
+          - flow_term = directional_flow(self_in, nw_in, constC, constD);
+          - flux_accum = flux_accum + flow_term;
+          - flow_term = directional_flow(self_in, se_in, constC, constD);
+          - flux_accum = flux_accum + flow_term;
+          - flow_term = directional_flow(self_in, sw_in, constC, constD);
+          - flux_accum = flux_accum + flow_term;
+        - if: (flux_accum < 0)
+          then:
+          - flux_accum = { 1{ 1'b0 } };
+        - cap_ext = { { 1{ constB[DATA_W - 1] } }, constB };
+        - if: (flux_accum > cap_ext)
+          then:
+          - flux_accum = cap_ext;
+        else:
+        - 'friction_top = (unit_overflow_reverse_top)? unit_flux_reverse_top : { 1{
+          1''b0 } };'
+        - 'friction_bottom = (unit_overflow_reverse_bottom)? unit_flux_reverse_bottom
+          : { 1{ 1''b0 } };'
+        - friction_side = unit_pressure_gain;
+        - retain_val = fp_mul_const(self_in, unit_weight_retain);
+        - flux_accum = { { 1{ retain_val[DATA_W - 1] } }, retain_val };
+        - flow_term = directional_flow(self_in, n_in, unit_weight_top, friction_top);
+        - flux_accum = flux_accum + flow_term;
+        - flow_term = directional_flow(self_in, s_in, unit_weight_bottom, friction_bottom);
+        - flux_accum = flux_accum + flow_term;
+        - flow_term = directional_flow(self_in, e_in, unit_weight_side, friction_side);
+        - flux_accum = flux_accum + flow_term;
+        - flow_term = directional_flow(self_in, w_in, unit_weight_side, friction_side);
+        - flux_accum = flux_accum + flow_term;
+        - if: diag_active
+          then:
+          - flow_term = directional_flow(self_in, ne_in, unit_weight_side, friction_side);
+          - flux_accum = flux_accum + flow_term;
+          - flow_term = directional_flow(self_in, nw_in, unit_weight_side, friction_side);
+          - flux_accum = flux_accum + flow_term;
+          - flow_term = directional_flow(self_in, se_in, unit_weight_side, friction_side);
+          - flux_accum = flux_accum + flow_term;
+          - flow_term = directional_flow(self_in, sw_in, unit_weight_side, friction_side);
+          - flux_accum = flux_accum + flow_term;
+        - prev_val = fp_mul_const(constB, unit_weight_prev);
+        - flux_accum = flux_accum + $signed({ { 1{ prev_val[DATA_W - 1] } }, prev_val
+          });
+        - if: (flux_accum < $signed({ 1{ 1'b0 } }))
+          then:
+          - flux_accum = $signed({ 1{ 1'b0 } });
+        - cap_ext = { { 1{ 1'b0 } }, unit_flux_threshold };
+        - if: (flux_accum > $signed(cap_ext))
+          then:
+          - flux_accum = $signed(cap_ext);
+      - alu_res = flux_accum[DATA_W-1:0];
+      5'd13:
+      - 'gain_sel = (unit_pressure_gain != { 1{ 1''b0 } })? unit_pressure_gain : constA;'
+      - "iter_limit = (unit_pressure_iters < 8'd1)? 8'd1 : \n             (unit_pressure_iters\
+        \ > 8'd8)? 8'd8 : unit_pressure_iters;"
+      - pressure_val = self_in;
+      - "for(iter=0; iter<iter_limit; iter=iter+1) begin\n  delta_val = fp_sub(avg_nbrs,\
+        \ pressure_val);\n  pressure_val = fp_add(pressure_val, fp_mul_const(delta_val,\
+        \ gain_sel));\nend"
+      - alu_res = pressure_val;
+      5'd14:
+      - 'lr_sel = (unit_backprop_lr != { 1{ 1''b0 } })? unit_backprop_lr : constA;'
+      - 'neigh_sel = (unit_backprop_neigh != { 1{ 1''b0 } })? unit_backprop_neigh
+        : constC;'
+      - 'decay_sel = (unit_backprop_decay != { 1{ 1''b0 } })? unit_backprop_decay
+        : constD;'
+      - err = fp_sub(constB, self_in);
+      - grad_term = fp_mul_const(err, lr_sel);
+      - neigh_term = fp_mul_const(avg_nbrs, neigh_sel);
+      - decay_term = fp_mul_const(self_in, decay_sel);
+      - update_term = fp_sub(fp_add(grad_term, neigh_term), decay_term);
+      - alu_res = fp_add(self_in, update_term);
+      5'd15:
+      - alu_res = micro_val;
+      5'd16:
+      - alu_res = laplacian;
+      5'd17:
+      - lap_gain = fp_mul_const(laplacian, constA);
+      - sharpen_val = fp_sub(self_in, lap_gain);
+      - alu_res = sharpen_val;
+      5'd18:
+      - edge_mag = fp_add(dx_abs, dy_abs);
+      - alu_res = edge_mag;
+      5'd19:
+      - mix_self = fp_mul_const(self_in, constA);
+      - mix_avg = fp_mul_const(avg_nbrs, constB);
+      - mix_sum = fp_mul_const(sum_with_vert, constC);
+      - acc = fp_add(fp_add(mix_self, mix_avg), fp_add(mix_sum, constD));
+      - alu_res = acc;
+    default:
+    - alu_res = self_in;
+- 'on':
+  - posedge clk
+  type: sequential
+  body:
+  - if: rst
+    then:
+    - next_out <= { 1{ 1'b0 } };
+    else:
+    - next_out <= alu_res;
+implementation:
+  ast_path: machine/sand_pe.v
+  machine_path: machine/sand_pe.yaml
+  kind: verilog_module
+summary:
+  modules:
+  - name: sand_pe
+    parameters:
+    - name: DATA_W
+      value: '16'
+      signed: false
+    - name: FRAC_W
+      value: '8'
+      signed: false
+    ports:
+    - name: clk
+      direction: input
+      signed: false
+      datatype: wire
+    - name: rst
+      direction: input
+      signed: false
+      datatype: wire
+    - name: self_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: n_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: s_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: e_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: w_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: ne_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: nw_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: se_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: sw_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: above_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: below_in
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: opcode
+      direction: input
+      width: '[5-1:0]'
+      signed: false
+      datatype: wire
+    - name: use_diagonals
+      direction: input
+      signed: false
+      datatype: wire
+    - name: constA
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: constB
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: constC
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: constD
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_flux_enable
+      direction: input
+      signed: false
+      datatype: wire
+    - name: unit_overflow_reverse_top
+      direction: input
+      signed: false
+      datatype: wire
+    - name: unit_overflow_reverse_bottom
+      direction: input
+      signed: false
+      datatype: wire
+    - name: unit_pressure_diag_override
+      direction: input
+      signed: false
+      datatype: wire
+    - name: unit_pressure_iters
+      direction: input
+      width: '[7:0]'
+      signed: false
+      datatype: wire
+    - name: unit_weight_top
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_weight_bottom
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_weight_side
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_weight_retain
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_weight_prev
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_flux_threshold
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_flux_reverse_top
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_flux_reverse_bottom
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_pressure_gain
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_backprop_lr
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_backprop_neigh
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: unit_backprop_decay
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: micro_lut
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: next_out
+      direction: output
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: reg
+tags:
+- processing-element
+- fixed-point
+- microcode-friendly
 behaviour:
   overview: 'sand_pe implements the per-cell update for the sandbox grid. It supports
     a
@@ -145,6 +837,3 @@ notes: "- Toggle use_diagonals to include the four diagonal planar inputs in dif
   \ older sandboxes.\n- The micro_lut fanout expects host software to seed 16 entries\
   \ of DATA_W bits.\n- For backpropagation opcodes, unit_backprop_* inputs define\
   \ the learning rate,\n  neighbour weight and decay applied during the update.\n"
-implementation:
-  ast_path: machine/sand_pe.v
-  machine_path: machine/sand_pe.yaml

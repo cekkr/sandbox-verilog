@@ -4,77 +4,165 @@ module: sand_top
 original_path: sand_top.v
 includes:
 - sand_defs.vh
+interface:
+  ports:
+    clk:
+      direction: input
+      datatype: wire
+      signed: false
+    rst:
+      direction: input
+      datatype: wire
+      signed: false
+    csr_we:
+      direction: input
+      datatype: wire
+      signed: false
+    csr_re:
+      direction: input
+      datatype: wire
+      signed: false
+    csr_addr:
+      direction: input
+      width: '[7:0]'
+      datatype: wire
+      signed: false
+    csr_wdata:
+      direction: input
+      width: '[31:0]'
+      datatype: wire
+      signed: false
+    csr_rdata:
+      direction: output
+      width: '[31:0]'
+      datatype: wire
+      signed: false
+    seed_we:
+      direction: input
+      datatype: wire
+      signed: false
+    seed_job:
+      direction: input
+      width: '[$clog2(4)-1:0]'
+      datatype: wire
+      signed: false
+    seed_layer:
+      direction: input
+      width: '[$clog2(4)-1:0]'
+      datatype: wire
+      signed: false
+    seed_idx:
+      direction: input
+      width: '[$clog2((32*32))-1:0]'
+      datatype: wire
+      signed: false
+    seed_data:
+      direction: input
+      width: '[16-1:0]'
+      datatype: wire
+      signed: false
+    job_done:
+      direction: output
+      width: '[4-1:0]'
+      datatype: wire
+      signed: false
+instances:
+- module: sand_scheduler_dynamic
+  instance: u_sched
+  parameters:
+    DATA_W: '16'
+    WIDTH: '32'
+    HEIGHT: '32'
+    DEPTH: '4'
+    N_JOBS: '4'
+  connections:
+    clk: clk
+    rst: rst
+    csr_we: csr_we
+    csr_addr: csr_addr
+    csr_wdata: csr_wdata
+    csr_re: csr_re
+    csr_rdata: csr_rdata
+    seed_we: seed_we
+    seed_job: seed_job
+    seed_layer: seed_layer
+    seed_idx: seed_idx
+    seed_data: seed_data
+    job_done: job_done
+implementation:
+  machine_path: machine/sand_top.yaml
+  kind: verilog_module
+summary:
+  modules:
+  - name: sand_top
+    parameters: []
+    ports:
+    - name: clk
+      direction: input
+      signed: false
+      datatype: wire
+    - name: rst
+      direction: input
+      signed: false
+      datatype: wire
+    - name: csr_we
+      direction: input
+      signed: false
+      datatype: wire
+    - name: csr_re
+      direction: input
+      signed: false
+      datatype: wire
+    - name: csr_addr
+      direction: input
+      width: '[7:0]'
+      signed: false
+      datatype: wire
+    - name: csr_wdata
+      direction: input
+      width: '[31:0]'
+      signed: false
+      datatype: wire
+    - name: csr_rdata
+      direction: output
+      width: '[31:0]'
+      signed: false
+      datatype: wire
+    - name: seed_we
+      direction: input
+      signed: false
+      datatype: wire
+    - name: seed_job
+      direction: input
+      width: '[$clog2(4)-1:0]'
+      signed: false
+      datatype: wire
+    - name: seed_layer
+      direction: input
+      width: '[$clog2(4)-1:0]'
+      signed: false
+      datatype: wire
+    - name: seed_idx
+      direction: input
+      width: '[$clog2((32*32))-1:0]'
+      signed: false
+      datatype: wire
+    - name: seed_data
+      direction: input
+      width: '[16-1:0]'
+      signed: false
+      datatype: wire
+    - name: job_done
+      direction: output
+      width: '[4-1:0]'
+      signed: false
+      datatype: wire
 tags:
 - integration
 - csr
-interface:
-  ports:
-  - name: clk
-    direction: input
-    datatype: wire
-    signed: false
-  - name: rst
-    direction: input
-    datatype: wire
-    signed: false
-  - name: csr_we
-    direction: input
-    datatype: wire
-    signed: false
-  - name: csr_re
-    direction: input
-    datatype: wire
-    signed: false
-  - name: csr_addr
-    direction: input
-    datatype: wire
-    width: '[7:0]'
-    signed: false
-  - name: csr_wdata
-    direction: input
-    datatype: wire
-    width: '[31:0]'
-    signed: false
-  - name: csr_rdata
-    direction: output
-    datatype: wire
-    width: '[31:0]'
-    signed: false
-  - name: seed_we
-    direction: input
-    datatype: wire
-    signed: false
-  - name: seed_job
-    direction: input
-    datatype: wire
-    width: '[$clog2(4)-1:0]'
-    signed: false
-  - name: seed_layer
-    direction: input
-    datatype: wire
-    width: '[$clog2(4)-1:0]'
-    signed: false
-  - name: seed_idx
-    direction: input
-    datatype: wire
-    width: '[$clog2((32*32))-1:0]'
-    signed: false
-  - name: seed_data
-    direction: input
-    datatype: wire
-    width: '[16-1:0]'
-    signed: false
-  - name: job_done
-    direction: output
-    datatype: wire
-    width: '[4-1:0]'
-    signed: false
 behaviour:
   overview: SoC-facing top-level that wires the CSR bus, scheduler, raster engine,
     and job memory together.
   notes:
   - Hosts seeding and CSR access, exporting job_done/status telemetry for firmware.
   - Clock/reset domain wrapper for the sand processing fabric.
-implementation:
-  machine_path: machine/sand_top.yaml
-  kind: verilog_module

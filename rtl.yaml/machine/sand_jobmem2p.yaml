@@ -3,6 +3,98 @@ kind: verilog_module
 original_path: sand_jobmem2p.v
 includes:
 - sand_defs.vh
+modules:
+- name: sand_jobmem2p
+  parameters:
+  - name: DATA_W
+    default: '16'
+  - name: WIDTH
+    default: '32'
+  - name: HEIGHT
+    default: '32'
+  - name: DEPTH
+    default: '4'
+  - name: N_JOBS
+    default: '4'
+  ports:
+    clk:
+      direction: input
+    seed_we:
+      direction: input
+    seed_job:
+      direction: input
+      width: '[((N_JOBS>1)?$clog2(N_JOBS):1)-1:0]'
+    seed_layer:
+      direction: input
+      width: '[((DEPTH>1)?$clog2(DEPTH):1)-1:0]'
+    seed_plane:
+      direction: input
+    seed_idx:
+      direction: input
+      width: '[((WIDTH*HEIGHT>1)?$clog2((WIDTH*HEIGHT)):1)-1:0]'
+    seed_data:
+      direction: input
+      width: '[DATA_W-1:0]'
+    eng_we:
+      direction: input
+    eng_job:
+      direction: input
+      width: '[((N_JOBS>1)?$clog2(N_JOBS):1)-1:0]'
+    eng_layer:
+      direction: input
+      width: '[((DEPTH>1)?$clog2(DEPTH):1)-1:0]'
+    eng_plane_sel:
+      direction: input
+    eng_write_other_plane:
+      direction: input
+    eng_idx:
+      direction: input
+      width: '[((WIDTH*HEIGHT>1)?$clog2((WIDTH*HEIGHT)):1)-1:0]'
+    eng_wdata:
+      direction: input
+      width: '[DATA_W-1:0]'
+    eng_rdata:
+      direction: output
+      width: '[DATA_W-1:0]'
+  signals:
+  - name: seed_addr
+    kind: wire
+    width: '[ADDR_W-1:0]'
+  - name: eng_raddr
+    kind: wire
+    width: '[ADDR_W-1:0]'
+  - name: eng_waddr
+    kind: wire
+    width: '[ADDR_W-1:0]'
+  constants:
+  - name: CELLS
+    value: WIDTH * HEIGHT
+  - name: PLANES
+    value: '2'
+  - name: ADDR_W
+    value: $clog2((N_JOBS * DEPTH * PLANES * CELLS))
+  assignments:
+  - out: seed_addr
+    value: ((seed_job * DEPTH + seed_layer) * PLANES + seed_plane) * CELLS + seed_idx
+  - out: eng_raddr
+    value: ((eng_job * DEPTH + eng_layer) * PLANES + eng_plane_sel) * CELLS + eng_idx
+  - out: eng_waddr
+    value: ((eng_job * DEPTH + eng_layer) * PLANES + !eng_plane_sel) * CELLS + eng_idx
+  instances:
+  - module: bram_tdp_wrap
+    instance: u_mem
+    parameters:
+      DATA_W: DATA_W
+      ADDR_W: ADDR_W
+    connections:
+      clk: clk
+      a_we: '((seed_we)? 1''b1 : eng_we & eng_write_other_plane)'
+      a_addr: '((seed_we)? seed_addr : eng_waddr)'
+      a_din: '((seed_we)? seed_data : eng_wdata)'
+      b_we: 1'b0
+      b_addr: eng_raddr
+      b_din: '{ 1{ 1''b0 } }'
+      b_dout: eng_rdata
 summary:
   modules:
   - name: sand_jobmem2p

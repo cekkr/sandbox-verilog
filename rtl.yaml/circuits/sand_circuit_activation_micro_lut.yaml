@@ -4,29 +4,96 @@ module: sand_circuit_activation_micro_lut
 original_path: circuits/sand_circuit_activation_micro_lut.v
 includes:
 - sand_defs.vh
+interface:
+  ports:
+    value_in:
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    micro_lut:
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+      dimensions:
+      - '[0:15]'
+      datatype: wire
+    value_out:
+      direction: output
+      width: '[16-1:0]'
+      signed: true
+signals:
+- name: abs_val
+  kind: integer
+- name: bucket
+  kind: reg
+  width: '[1:0]'
+- name: frac_flag
+  kind: reg
+- name: lut_idx
+  kind: reg
+  width: '[3:0]'
+- name: lut_val
+  kind: reg
+  width: '[16-1:0]'
+  signed: true
+constants:
+- name: Q_ONE
+  value: 1 << 8
+assignments:
+- out: value_out
+  value: lut_val
+always_blocks:
+- 'on':
+  - '*'
+  type: combinational
+  body:
+  - 'abs_val = (value_in[16 - 1])? -$signed(value_in) : $signed(value_in);'
+  - if: (abs_val >= (Q_ONE << 1))
+    then:
+    - bucket = 2'd3;
+    else:
+    - if: (abs_val >= (Q_ONE * 3 >> 1))
+      then:
+      - bucket = 2'd2;
+      else:
+      - if: (abs_val >= (Q_ONE >> 1))
+        then:
+        - bucket = 2'd1;
+        else:
+        - bucket = 2'd0;
+  - if: (8 > 0)
+    then:
+    - frac_flag = (abs_val >> 8 - 1) & 1'b1;
+    else:
+    - frac_flag = 1'b0;
+  - lut_idx = { value_in[16 - 1], bucket, frac_flag };
+  - lut_val = micro_lut[lut_idx];
+implementation:
+  machine_path: ../machine/circuits/sand_circuit_activation_micro_lut.yaml
+  kind: verilog_module
+summary:
+  modules:
+  - name: sand_circuit_activation_micro_lut
+    parameters: []
+    ports:
+    - name: value_in
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    - name: micro_lut
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+      datatype: wire
+    - name: value_out
+      direction: output
+      width: '[16-1:0]'
+      signed: true
 tags:
 - activation
 - micro-lut
-interface:
-  ports:
-  - name: value_in
-    direction: input
-    width: '[16-1:0]'
-    signed: true
-  - name: micro_lut
-    direction: input
-    datatype: wire
-    width: '[16-1:0]'
-    signed: true
-  - name: value_out
-    direction: output
-    width: '[16-1:0]'
-    signed: true
 behaviour:
   overview: 16-entry combinational activation table used by the sand_pe microcode
     path.
   notes:
   - Index typically combines opcode bits with the current cell state.
-implementation:
-  machine_path: ../machine/circuits/sand_circuit_activation_micro_lut.yaml
-  kind: verilog_module

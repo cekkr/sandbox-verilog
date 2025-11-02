@@ -1,96 +1,434 @@
 version: 1
-kind: sand_module
-module: sand_scheduler_dynamic
+kind: verilog_module_fallback
 original_path: sand_scheduler_dynamic.v
 includes:
 - sand_defs.vh
-tags:
-- scheduler
-- control
-interface:
-  parameters:
-  - name: DATA_W
-    default: '16'
-    signed: false
-  - name: WIDTH
-    default: '32'
-    signed: false
-  - name: HEIGHT
-    default: '32'
-    signed: false
-  - name: DEPTH
-    default: '4'
-    signed: false
-  - name: N_JOBS
-    default: '4'
-    signed: false
-  ports:
-  - name: clk
-    direction: input
-    datatype: wire
-    signed: false
-  - name: rst
-    direction: input
-    datatype: wire
-    signed: false
-  - name: csr_we
-    direction: input
-    datatype: wire
-    signed: false
-  - name: csr_addr
-    direction: input
-    datatype: wire
-    width: '[7:0]'
-    signed: false
-  - name: csr_wdata
-    direction: input
-    datatype: wire
-    width: '[31:0]'
-    signed: false
-  - name: csr_re
-    direction: input
-    datatype: wire
-    signed: false
-  - name: csr_rdata
-    direction: output
-    datatype: reg
-    width: '[31:0]'
-    signed: false
-  - name: seed_we
-    direction: input
-    datatype: wire
-    signed: false
-  - name: seed_job
-    direction: input
-    datatype: wire
-    width: '[((N_JOBS>1)?$clog2(N_JOBS):1)-1:0]'
-    signed: false
-  - name: seed_layer
-    direction: input
-    datatype: wire
-    width: '[((DEPTH>1)?$clog2(DEPTH):1)-1:0]'
-    signed: false
-  - name: seed_idx
-    direction: input
-    datatype: wire
-    width: '[((WIDTH*HEIGHT>1)?$clog2((WIDTH*HEIGHT)):1)-1:0]'
-    signed: false
-  - name: seed_data
-    direction: input
-    datatype: wire
-    width: '[DATA_W-1:0]'
-    signed: false
-  - name: job_done
-    direction: output
-    datatype: reg
-    width: '[N_JOBS-1:0]'
-    signed: false
-behaviour:
-  overview: Adaptive scheduler that time-slices jobs using telemetry-driven budgets
-    and window selections.
-  notes:
-  - Monitors frame activity/cycle counters to expand or shrink per-job work.
-  - Streams unit configuration and window parameters to the raster engine.
-implementation:
-  machine_path: machine/sand_scheduler_dynamic.yaml
-  kind: verilog_module_fallback
+summary:
+  modules:
+  - name: sand_scheduler_dynamic
+    parameters:
+    - name: DATA_W
+      value: '16'
+      signed: false
+    - name: WIDTH
+      value: '32'
+      signed: false
+    - name: HEIGHT
+      value: '32'
+      signed: false
+    - name: DEPTH
+      value: '4'
+      signed: false
+    - name: N_JOBS
+      value: '4'
+      signed: false
+    ports:
+    - name: clk
+      direction: input
+      signed: false
+      datatype: wire
+    - name: rst
+      direction: input
+      signed: false
+      datatype: wire
+    - name: csr_we
+      direction: input
+      signed: false
+      datatype: wire
+    - name: csr_addr
+      direction: input
+      width: '[7:0]'
+      signed: false
+      datatype: wire
+    - name: csr_wdata
+      direction: input
+      width: '[31:0]'
+      signed: false
+      datatype: wire
+    - name: csr_re
+      direction: input
+      signed: false
+      datatype: wire
+    - name: csr_rdata
+      direction: output
+      width: '[31:0]'
+      signed: false
+      datatype: reg
+    - name: seed_we
+      direction: input
+      signed: false
+      datatype: wire
+    - name: seed_job
+      direction: input
+      width: '[((N_JOBS>1)?$clog2(N_JOBS):1)-1:0]'
+      signed: false
+      datatype: wire
+    - name: seed_layer
+      direction: input
+      width: '[((DEPTH>1)?$clog2(DEPTH):1)-1:0]'
+      signed: false
+      datatype: wire
+    - name: seed_idx
+      direction: input
+      width: '[((WIDTH*HEIGHT>1)?$clog2((WIDTH*HEIGHT)):1)-1:0]'
+      signed: false
+      datatype: wire
+    - name: seed_data
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: false
+      datatype: wire
+    - name: job_done
+      direction: output
+      width: '[N_JOBS-1:0]'
+      signed: false
+      datatype: reg
+parse_error: " line:364: before: \"[\" \u2014 PyVerilog cannot parse certain SystemVerilog\
+  \ bit-slice constructs (e.g. variable replication counts) yet."
+body_text: "// =============================================================================\n\
+  // sand_scheduler_dynamic.v \u2014 adaptive scheduler with pointer-swap raster engine\n\
+  // - Bridges CSR control to the streaming engine and two-plane job memory\n// -\
+  \ Dynamically adjusts per-job step budgets based on activity & cycle metrics\n//\
+  \ =============================================================================\n\
+  `include \"sand_defs.vh\"\n\nmodule sand_scheduler_dynamic #(\n    parameter DATA_W\
+  \ = `DATA_W,\n    parameter WIDTH  = `WIDTH,\n    parameter HEIGHT = `HEIGHT,\n\
+  \    parameter DEPTH  = `DEPTH,\n    parameter N_JOBS = `N_JOBS\n)(\n    input \
+  \ wire                      clk,\n    input  wire                      rst,\n\n\
+  \    // Tiny CSR bus\n    input  wire                      csr_we,\n    input  wire\
+  \ [7:0]                csr_addr,\n    input  wire [31:0]               csr_wdata,\n\
+  \    input  wire                      csr_re,\n    output reg  [31:0]          \
+  \     csr_rdata,\n\n    // Seeding port (writes plane 0 by default)\n    input \
+  \ wire                      seed_we,\n    input  wire [((N_JOBS > 1) ? $clog2(N_JOBS)\
+  \ : 1)-1:0] seed_job,\n    input  wire [((DEPTH  > 1) ? $clog2(DEPTH)  : 1)-1:0]\
+  \ seed_layer,\n    input  wire [(((WIDTH*HEIGHT) > 1) ? $clog2(WIDTH*HEIGHT) : 1)-1:0]\
+  \ seed_idx,\n    input  wire [DATA_W-1:0]         seed_data,\n\n    output reg \
+  \ [N_JOBS-1:0]         job_done\n);\n    localparam integer CELLS   = WIDTH*HEIGHT;\n\
+  \    localparam integer JOB_W   = (N_JOBS > 1) ? $clog2(N_JOBS) : 1;\n    localparam\
+  \ integer LAYER_W = (DEPTH  > 1) ? $clog2(DEPTH)  : 1;\n    localparam integer CELL_W\
+  \  = (CELLS  > 1) ? $clog2(CELLS)  : 1;\n    localparam integer STEP_MAX= (`STEPS_PER_SLICE\
+  \ > 0) ? `STEPS_PER_SLICE : 1;\n\n    // -------------------------------------------------------------------------\n\
+  \    // Configuration registers\n    // -------------------------------------------------------------------------\n\
+  \    reg [`OPCODE_W-1:0]  opcode;\n    reg [DATA_W-1:0]     constA, constB, constC,\
+  \ constD;\n    reg                  force_diag, use_micro;\n    reg [DATA_W-1:0]\
+  \     micro_lut [0:15];\n    reg                  micro_lut_wr_stb;\n    reg [3:0]\
+  \            micro_lut_wr_idx;\n    reg [DATA_W-1:0]     micro_lut_wr_data;\n\n\
+  \    // Enhanced unit behaviour controls\n    reg                  unit_flux_enable;\n\
+  \    reg                  unit_overflow_reverse_top;\n    reg                  unit_overflow_reverse_bottom;\n\
+  \    reg                  unit_pressure_diag_override;\n    reg [7:0]          \
+  \  unit_pressure_iters;\n    reg [DATA_W-1:0]     unit_weight_top;\n    reg [DATA_W-1:0]\
+  \     unit_weight_bottom;\n    reg [DATA_W-1:0]     unit_weight_side;\n    reg [DATA_W-1:0]\
+  \     unit_weight_retain;\n    reg [DATA_W-1:0]     unit_weight_prev;\n    reg [DATA_W-1:0]\
+  \     unit_flux_threshold;\n    reg [DATA_W-1:0]     unit_flux_reverse_top;\n  \
+  \  reg [DATA_W-1:0]     unit_flux_reverse_bottom;\n    reg [DATA_W-1:0]     unit_pressure_gain;\n\
+  \    reg [DATA_W-1:0]     unit_backprop_lr;\n    reg [DATA_W-1:0]     unit_backprop_neigh;\n\
+  \    reg [DATA_W-1:0]     unit_backprop_decay;\n\n    // Per-job dynamic window\
+  \ placement\n    reg [15:0]           unit_window_width  [0:N_JOBS-1];\n    reg\
+  \ [15:0]           unit_window_height [0:N_JOBS-1];\n    reg [15:0]           unit_window_xoff\
+  \   [0:N_JOBS-1];\n    reg [15:0]           unit_window_yoff   [0:N_JOBS-1];\n\n\
+  \    // Adaptive control registers\n    reg                  adapt_enable;\n   \
+  \ reg                  adapt_auto;\n    reg                  adapt_use_heavy;\n\
+  \    reg [7:0]            adapt_manual_steps;\n    reg [7:0]            adapt_min_steps;\n\
+  \    reg [7:0]            adapt_max_steps;\n    reg [31:0]           adapt_thresh_lo;\n\
+  \    reg [31:0]           adapt_thresh_hi;\n    reg [31:0]           adapt_cycle_limit;\n\
+  \    reg [JOB_W-1:0]      status_job_sel;\n\n    // Per-job adaptive state\n   \
+  \ reg [7:0]            step_budget [0:N_JOBS-1];\n    reg [31:0]           last_activity\
+  \ [0:N_JOBS-1];\n    reg [31:0]           last_cycles   [0:N_JOBS-1];\n\n    //\
+  \ Plane select per job/layer\n    reg plane_sel [0:N_JOBS-1][0:DEPTH-1];\n\n   \
+  \ // -------------------------------------------------------------------------\n\
+  \    // Memory + engine wiring\n    // -------------------------------------------------------------------------\n\
+  \    wire                       jm_we_i;\n    wire [JOB_W-1:0]           jm_job_i;\n\
+  \    wire [LAYER_W-1:0]         jm_layer_i;\n    wire                       jm_plane_sel_i;\n\
+  \    wire                       jm_write_other_plane_i;\n    wire [CELL_W-1:0] \
+  \         jm_idx_i;\n    wire [DATA_W-1:0]          jm_wdata_i;\n    wire [DATA_W-1:0]\
+  \          jm_rdata_i;\n\n    sand_jobmem2p #(\n        .DATA_W(DATA_W),\n     \
+  \   .WIDTH(WIDTH),\n        .HEIGHT(HEIGHT),\n        .DEPTH(DEPTH),\n        .N_JOBS(N_JOBS)\n\
+  \    ) u_mem (\n        .clk(clk),\n        .seed_we(seed_we),\n        .seed_job(seed_job),\n\
+  \        .seed_layer(seed_layer),\n        .seed_plane(1'b0),\n        .seed_idx(seed_idx),\n\
+  \        .seed_data(seed_data),\n        .eng_we(jm_we_i),\n        .eng_job(jm_job_i),\n\
+  \        .eng_layer(jm_layer_i),\n        .eng_plane_sel(jm_plane_sel_i),\n    \
+  \    .eng_write_other_plane(jm_write_other_plane_i),\n        .eng_idx(jm_idx_i),\n\
+  \        .eng_wdata(jm_wdata_i),\n        .eng_rdata(jm_rdata_i)\n    );\n\n   \
+  \ reg                      start_frame;\n    wire                     eng_busy;\n\
+  \    wire                     eng_done;\n    reg  [JOB_W-1:0]         eng_job_sel;\n\
+  \    reg  [LAYER_W-1:0]       eng_layer_sel;\n    reg                      eng_plane_sel;\n\
+  \    wire [31:0]              eng_activity;\n    wire [31:0]              eng_cycles;\n\
+  \    reg  [15:0]              win_width_sel;\n    reg  [15:0]              win_height_sel;\n\
+  \    reg  [15:0]              win_xoff_sel;\n    reg  [15:0]              win_yoff_sel;\n\
+  \n    sand_engine_raster #(\n        .DATA_W(DATA_W),\n        .FRAC_W(`FRAC_W),\n\
+  \        .WIDTH(WIDTH),\n        .HEIGHT(HEIGHT),\n        .N_JOBS(N_JOBS),\n  \
+  \      .DEPTH(DEPTH)\n    ) u_eng (\n        .clk(clk),\n        .rst(rst),\n  \
+  \      .start_frame(start_frame),\n        .busy(eng_busy),\n        .frame_done(eng_done),\n\
+  \        .opcode(use_micro ? `OP_MICRO : opcode),\n        .use_diagonals(force_diag),\n\
+  \        .constA(constA),\n        .constB(constB),\n        .constC(constC),\n\
+  \        .constD(constD),\n        .micro_lut(micro_lut),\n        .micro_lut_we(micro_lut_wr_stb),\n\
+  \        .micro_lut_waddr(micro_lut_wr_idx),\n        .micro_lut_wdata(micro_lut_wr_data),\n\
+  \        .job_id(eng_job_sel),\n        .layer_id(eng_layer_sel),\n        .plane_read_sel(eng_plane_sel),\n\
+  \        .jm_we(jm_we_i),\n        .jm_job(jm_job_i),\n        .jm_layer(jm_layer_i),\n\
+  \        .jm_plane_sel(jm_plane_sel_i),\n        .jm_write_other_plane(jm_write_other_plane_i),\n\
+  \        .jm_idx(jm_idx_i),\n        .jm_wdata(jm_wdata_i),\n        .jm_rdata(jm_rdata_i),\n\
+  \        .frame_activity(eng_activity),\n        .frame_cycles(eng_cycles),\n  \
+  \      .unit_flux_enable(unit_flux_enable),\n        .unit_overflow_reverse_top(unit_overflow_reverse_top),\n\
+  \        .unit_overflow_reverse_bottom(unit_overflow_reverse_bottom),\n        .unit_pressure_diag_override(unit_pressure_diag_override),\n\
+  \        .unit_pressure_iters(unit_pressure_iters),\n        .unit_weight_top(unit_weight_top),\n\
+  \        .unit_weight_bottom(unit_weight_bottom),\n        .unit_weight_side(unit_weight_side),\n\
+  \        .unit_weight_retain(unit_weight_retain),\n        .unit_weight_prev(unit_weight_prev),\n\
+  \        .unit_flux_threshold(unit_flux_threshold),\n        .unit_flux_reverse_top(unit_flux_reverse_top),\n\
+  \        .unit_flux_reverse_bottom(unit_flux_reverse_bottom),\n        .unit_pressure_gain(unit_pressure_gain),\n\
+  \        .unit_backprop_lr(unit_backprop_lr),\n        .unit_backprop_neigh(unit_backprop_neigh),\n\
+  \        .unit_backprop_decay(unit_backprop_decay),\n        .unit_window_width(win_width_sel),\n\
+  \        .unit_window_height(win_height_sel),\n        .unit_window_x_offset(win_xoff_sel),\n\
+  \        .unit_window_y_offset(win_yoff_sel)\n    );\n\n    // -------------------------------------------------------------------------\n\
+  \    // Scheduler FSM\n    // -------------------------------------------------------------------------\n\
+  \    localparam S_IDLE  = 3'd0,\n               S_WAIT  = 3'd1,\n              \
+  \ S_NEXTJ = 3'd2,\n               S_NEXTL = 3'd3;\n\n    reg [2:0]          st;\n\
+  \    reg [JOB_W-1:0]    cur_job;\n    reg [LAYER_W-1:0]  cur_layer;\n    reg [7:0]\
+  \          cur_budget;\n    reg [7:0]          step_cnt;\n\n    wire [JOB_W-1:0]\
+  \   next_job = (cur_job == (N_JOBS-1)) ? {JOB_W{1'b0}} : (cur_job + {{(JOB_W-1){1'b0}},1'b1});\n\
+  \n    // -------------------------------------------------------------------------\n\
+  \    // Helper functions/tasks\n    // -------------------------------------------------------------------------\n\
+  \    function [7:0] clamp_steps;\n        input [15:0] value;\n        integer tmp;\n\
+  \        begin\n            tmp = value;\n            if (tmp < 1) tmp = 1;\n  \
+  \          if (tmp > STEP_MAX) tmp = STEP_MAX;\n            clamp_steps = tmp[7:0];\n\
+  \        end\n    endfunction\n\n    wire [7:0] step_max_u8 = clamp_steps(STEP_MAX);\n\
+  \n    wire heavy_opcode = (opcode == `OP_MUL_CONST) ||\n                       \
+  \ (opcode == `OP_DIV_CONST) ||\n                        (opcode == `OP_DIFFUSION)\
+  \ ||\n                        (opcode == `OP_MICRO) ||\n                       \
+  \ (opcode == `OP_SHARPEN) ||\n                        (opcode == `OP_MIX);\n\n \
+  \   // -------------------------------------------------------------------------\n\
+  \    // CSR write path + scheduler core\n    // -------------------------------------------------------------------------\n\
+  \    integer j, l;\n    reg [7:0] adapt_min_clamped;\n    reg [7:0] adapt_max_clamped;\n\
+  \    reg [7:0] manual_clamped;\n\n    always @(posedge clk) begin\n        if (rst)\
+  \ begin\n            opcode        <= `OP_DIFFUSION;\n            constA       \
+  \ <= {DATA_W{1'b0}};\n            constB        <= {DATA_W{1'b0}};\n           \
+  \ constC        <= {DATA_W{1'b0}};\n            constD        <= {DATA_W{1'b0}};\n\
+  \            force_diag    <= `USE_DIAGONALS[0];\n            use_micro     <= 1'b0;\n\
+  \            adapt_enable  <= 1'b0;\n            adapt_auto    <= 1'b1;\n      \
+  \      adapt_use_heavy <= 1'b1;\n            unit_flux_enable            <= 1'b0;\n\
+  \            unit_overflow_reverse_top   <= 1'b0;\n            unit_overflow_reverse_bottom<=\
+  \ 1'b0;\n            unit_pressure_diag_override <= 1'b0;\n            unit_pressure_iters\
+  \         <= 8'd1;\n            unit_weight_top             <= {DATA_W{1'b0}};\n\
+  \            unit_weight_bottom          <= {DATA_W{1'b0}};\n            unit_weight_side\
+  \            <= {DATA_W{1'b0}};\n            unit_weight_retain          <= {DATA_W{1'b0}};\n\
+  \            unit_weight_prev            <= {DATA_W{1'b0}};\n            unit_flux_threshold\
+  \         <= {DATA_W{1'b1}};\n            unit_flux_reverse_top       <= {DATA_W{1'b0}};\n\
+  \            unit_flux_reverse_bottom    <= {DATA_W{1'b0}};\n            unit_pressure_gain\
+  \          <= {DATA_W{1'b0}};\n            unit_backprop_lr            <= {DATA_W{1'b0}};\n\
+  \            unit_backprop_neigh         <= {DATA_W{1'b0}};\n            unit_backprop_decay\
+  \         <= {DATA_W{1'b0}};\n            adapt_manual_steps <= clamp_steps(`ADAPT_DEFAULT_MANUAL_STEPS);\n\
+  \            adapt_min_steps    <= clamp_steps(`ADAPT_DEFAULT_MIN_STEPS);\n    \
+  \        adapt_max_steps    <= clamp_steps(`ADAPT_DEFAULT_MAX_STEPS);\n        \
+  \    adapt_thresh_lo    <= `ADAPT_DEFAULT_LOW_THRESH;\n            adapt_thresh_hi\
+  \    <= `ADAPT_DEFAULT_HIGH_THRESH;\n            adapt_cycle_limit  <= `ADAPT_DEFAULT_CAP_CYCLES;\n\
+  \            status_job_sel     <= {JOB_W{1'b0}};\n            micro_lut_wr_stb\
+  \   <= 1'b0;\n            micro_lut_wr_idx   <= 4'd0;\n            micro_lut_wr_data\
+  \  <= {DATA_W{1'b0}};\n\n            for (j=0; j<16; j=j+1) micro_lut[j] <= {DATA_W{1'b0}};\n\
+  \            for (j=0; j<N_JOBS; j=j+1) begin\n                step_budget[j]  \
+  \ <= clamp_steps(`STEPS_PER_SLICE);\n                last_activity[j] <= 32'd0;\n\
+  \                last_cycles[j]   <= 32'd0;\n                unit_window_width[j]\
+  \  <= WIDTH;\n                unit_window_height[j] <= HEIGHT;\n               \
+  \ unit_window_xoff[j]   <= 16'd0;\n                unit_window_yoff[j]   <= 16'd0;\n\
+  \                for (l=0; l<DEPTH; l=l+1) plane_sel[j][l] <= 1'b0;\n          \
+  \  end\n\n            st          <= S_IDLE;\n            cur_job     <= {JOB_W{1'b0}};\n\
+  \            cur_layer   <= {LAYER_W{1'b0}};\n            cur_budget  <= clamp_steps(`STEPS_PER_SLICE);\n\
+  \            step_cnt    <= 8'd0;\n            start_frame <= 1'b0;\n          \
+  \  job_done    <= {N_JOBS{1'b0}};\n            eng_job_sel   <= {JOB_W{1'b0}};\n\
+  \            eng_layer_sel <= {LAYER_W{1'b0}};\n            eng_plane_sel <= 1'b0;\n\
+  \            win_width_sel  <= WIDTH;\n            win_height_sel <= HEIGHT;\n \
+  \           win_xoff_sel   <= 16'd0;\n            win_yoff_sel   <= 16'd0;\n   \
+  \     end else begin\n            start_frame <= 1'b0;\n            micro_lut_wr_stb\
+  \ <= 1'b0;\n\n            // ---------------- CSR writes -------------------------------------\n\
+  \            if (csr_we) begin\n                case (csr_addr)\n              \
+  \      `CSR_JOB_SELECT: begin\n                        status_job_sel <= csr_wdata[JOB_W-1:0];\n\
+  \                    end\n                    `CSR_RULE_OP:     opcode     <= csr_wdata[`OPCODE_W-1:0];\n\
+  \                    `CSR_RULE_CONSTA: constA     <= csr_wdata[DATA_W-1:0];\n  \
+  \                  `CSR_RULE_CONSTB: constB     <= csr_wdata[DATA_W-1:0];\n    \
+  \                `CSR_RULE_CONSTC: constC     <= csr_wdata[DATA_W-1:0];\n      \
+  \              `CSR_RULE_CONSTD: constD     <= csr_wdata[DATA_W-1:0];\n        \
+  \            `CSR_FLAGS: begin\n                        force_diag <= csr_wdata[0];\n\
+  \                        use_micro  <= csr_wdata[1];\n                    end\n\
+  \                    `CSR_STATUS: begin\n                        job_done <= job_done\
+  \ & ~csr_wdata[N_JOBS-1:0];\n                    end\n                    `CSR_ADAPT_CTRL:\
+  \ begin\n                        adapt_enable      <= csr_wdata[0];\n          \
+  \              adapt_auto        <= csr_wdata[1];\n                        adapt_use_heavy\
+  \   <= csr_wdata[2];\n                        manual_clamped    = clamp_steps(csr_wdata[10:3]);\n\
+  \                        adapt_min_clamped = clamp_steps(csr_wdata[18:11]);\n  \
+  \                      adapt_max_clamped = clamp_steps(csr_wdata[26:19]);\n    \
+  \                    if (adapt_max_clamped < adapt_min_clamped)\n              \
+  \              adapt_max_clamped = adapt_min_clamped;\n                        adapt_manual_steps\
+  \ <= manual_clamped;\n                        adapt_min_steps    <= adapt_min_clamped;\n\
+  \                        adapt_max_steps    <= adapt_max_clamped;\n            \
+  \        end\n                    `CSR_ADAPT_THRESH_LO: adapt_thresh_lo <= csr_wdata;\n\
+  \                    `CSR_ADAPT_THRESH_HI: adapt_thresh_hi <= csr_wdata;\n     \
+  \               `CSR_ADAPT_CAPACITY:  adapt_cycle_limit <= csr_wdata;\n        \
+  \            `CSR_ADAPT_STATUS_SEL:status_job_sel <= csr_wdata[JOB_W-1:0];\n   \
+  \                 `CSR_UNIT_CTRL: begin\n                        unit_flux_enable\
+  \            <= csr_wdata[0];\n                        unit_overflow_reverse_top\
+  \   <= csr_wdata[1];\n                        unit_overflow_reverse_bottom<= csr_wdata[2];\n\
+  \                        unit_pressure_diag_override <= csr_wdata[3];\n        \
+  \                if (csr_wdata[15:8] == 8'd0)\n                            unit_pressure_iters\
+  \ <= 8'd1;\n                        else if (csr_wdata[15:8] > 8'd32)\n        \
+  \                    unit_pressure_iters <= 8'd32;\n                        else\n\
+  \                            unit_pressure_iters <= csr_wdata[15:8];\n         \
+  \           end\n                    `CSR_UNIT_WINDOW_WH: begin\n              \
+  \          integer idx;\n                        integer width_tmp;\n          \
+  \              integer height_tmp;\n                        integer x_tmp;\n   \
+  \                     integer y_tmp;\n                        idx = status_job_sel;\n\
+  \                        if (idx < N_JOBS) begin\n                            width_tmp\
+  \  = csr_wdata[15:0];\n                            height_tmp = csr_wdata[31:16];\n\
+  \                            if (width_tmp == 0)  width_tmp  = WIDTH;\n        \
+  \                    if (height_tmp == 0) height_tmp = HEIGHT;\n               \
+  \             if (width_tmp < 1)   width_tmp = 1;\n                            if\
+  \ (height_tmp < 1)  height_tmp = 1;\n                            if (width_tmp >\
+  \ WIDTH)   width_tmp = WIDTH;\n                            if (height_tmp > HEIGHT)\
+  \ height_tmp = HEIGHT;\n                            x_tmp = unit_window_xoff[idx];\n\
+  \                            y_tmp = unit_window_yoff[idx];\n                  \
+  \          if ((x_tmp + width_tmp) > WIDTH)\n                                width_tmp\
+  \ = WIDTH - x_tmp;\n                            if ((y_tmp + height_tmp) > HEIGHT)\n\
+  \                                height_tmp = HEIGHT - y_tmp;\n                \
+  \            if (width_tmp < 1)  width_tmp = 1;\n                            if\
+  \ (height_tmp < 1) height_tmp = 1;\n                            unit_window_width[idx]\
+  \  <= width_tmp[15:0];\n                            unit_window_height[idx] <= height_tmp[15:0];\n\
+  \                        end\n                    end\n                    `CSR_UNIT_WINDOW_OFFSET:\
+  \ begin\n                        integer idx;\n                        integer x_tmp;\n\
+  \                        integer y_tmp;\n                        integer width_tmp;\n\
+  \                        integer height_tmp;\n                        idx = status_job_sel;\n\
+  \                        if (idx < N_JOBS) begin\n                            x_tmp\
+  \ = csr_wdata[15:0];\n                            y_tmp = csr_wdata[31:16];\n  \
+  \                          if (x_tmp < 0) x_tmp = 0;\n                         \
+  \   if (y_tmp < 0) y_tmp = 0;\n                            if (x_tmp >= WIDTH) \
+  \ x_tmp = WIDTH - 1;\n                            if (y_tmp >= HEIGHT) y_tmp = HEIGHT\
+  \ - 1;\n                            width_tmp  = unit_window_width[idx];\n     \
+  \                       height_tmp = unit_window_height[idx];\n                \
+  \            if ((x_tmp + width_tmp) > WIDTH) begin\n                          \
+  \      width_tmp = WIDTH - x_tmp;\n                                if (width_tmp\
+  \ < 1) width_tmp = 1;\n                            end\n                       \
+  \     if ((y_tmp + height_tmp) > HEIGHT) begin\n                               \
+  \ height_tmp = HEIGHT - y_tmp;\n                                if (height_tmp <\
+  \ 1) height_tmp = 1;\n                            end\n                        \
+  \    unit_window_xoff[idx]   <= x_tmp[15:0];\n                            unit_window_yoff[idx]\
+  \   <= y_tmp[15:0];\n                            unit_window_width[idx]  <= width_tmp[15:0];\n\
+  \                            unit_window_height[idx] <= height_tmp[15:0];\n    \
+  \                    end\n                    end\n                    `CSR_UNIT_FLUX_WEIGHT_TOP:\
+  \     unit_weight_top    <= csr_wdata[DATA_W-1:0];\n                    `CSR_UNIT_FLUX_WEIGHT_BOTTOM:\
+  \  unit_weight_bottom <= csr_wdata[DATA_W-1:0];\n                    `CSR_UNIT_FLUX_WEIGHT_SIDE:\
+  \    unit_weight_side   <= csr_wdata[DATA_W-1:0];\n                    `CSR_UNIT_FLUX_WEIGHT_RETAIN:\
+  \  unit_weight_retain <= csr_wdata[DATA_W-1:0];\n                    `CSR_UNIT_FLUX_WEIGHT_PREV:\
+  \    unit_weight_prev   <= csr_wdata[DATA_W-1:0];\n                    `CSR_UNIT_FLUX_THRESHOLD:\
+  \      unit_flux_threshold     <= csr_wdata[DATA_W-1:0];\n                    `CSR_UNIT_FLUX_REVERSE_TOP:\
+  \    unit_flux_reverse_top   <= csr_wdata[DATA_W-1:0];\n                    `CSR_UNIT_FLUX_REVERSE_BOTTOM:\
+  \ unit_flux_reverse_bottom<= csr_wdata[DATA_W-1:0];\n                    `CSR_UNIT_PRESSURE_GAIN:\
+  \       unit_pressure_gain  <= csr_wdata[DATA_W-1:0];\n                    `CSR_UNIT_BACKPROP_LR:\
+  \         unit_backprop_lr     <= csr_wdata[DATA_W-1:0];\n                    `CSR_UNIT_BACKPROP_NEIGH:\
+  \      unit_backprop_neigh  <= csr_wdata[DATA_W-1:0];\n                    `CSR_UNIT_BACKPROP_DECAY:\
+  \      unit_backprop_decay  <= csr_wdata[DATA_W-1:0];\n                    default:\
+  \ begin\n                        if (csr_addr >= `CSR_MICRO_BASE && csr_addr < (`CSR_MICRO_BASE+16))\
+  \ begin\n                            micro_lut[csr_addr-`CSR_MICRO_BASE] <= csr_wdata[DATA_W-1:0];\n\
+  \                            micro_lut_wr_stb  <= 1'b1;\n                      \
+  \      micro_lut_wr_idx  <= csr_addr-`CSR_MICRO_BASE;\n                        \
+  \    micro_lut_wr_data <= csr_wdata[DATA_W-1:0];\n                        end\n\
+  \                    end\n                endcase\n            end\n\n         \
+  \   // ---------------- Scheduler FSM ---------------------------------\n      \
+  \      case (st)\n                S_IDLE: begin\n                    cur_budget\
+  \    <= step_budget[cur_job];\n                    eng_job_sel   <= cur_job;\n \
+  \                   eng_layer_sel <= cur_layer;\n                    eng_plane_sel\
+  \ <= plane_sel[cur_job][cur_layer];\n                    win_width_sel  <= unit_window_width[cur_job];\n\
+  \                    win_height_sel <= unit_window_height[cur_job];\n          \
+  \          win_xoff_sel   <= unit_window_xoff[cur_job];\n                    win_yoff_sel\
+  \   <= unit_window_yoff[cur_job];\n                    start_frame   <= 1'b1;\n\
+  \                    st            <= S_WAIT;\n                end\n\n         \
+  \       S_WAIT: begin\n                    if (eng_done) begin\n               \
+  \         reg plane_next;\n                        reg [7:0] budget_curr;\n    \
+  \                    reg [7:0] budget_next;\n                        reg [7:0] min_step;\n\
+  \                        reg [7:0] max_step;\n                        reg [7:0]\
+  \ manual_step;\n                        reg [31:0] act_lo;\n                   \
+  \     reg [31:0] act_hi;\n                        reg [7:0] step_cnt_inc;\n\n  \
+  \                      plane_next = plane_sel[cur_job][cur_layer] ^ 1'b1;\n    \
+  \                    plane_sel[cur_job][cur_layer] <= plane_next;\n\n          \
+  \              last_activity[cur_job] <= eng_activity;\n                       \
+  \ last_cycles[cur_job]   <= eng_cycles;\n\n                        budget_curr =\
+  \ step_budget[cur_job];\n                        min_step    <= adapt_min_steps;\n\
+  \                        max_step    <= adapt_max_steps;\n                     \
+  \   manual_step <= adapt_manual_steps;\n                        if (min_step < 1)\
+  \ min_step = 1;\n                        if (max_step < min_step) max_step = min_step;\n\
+  \                        if (max_step > step_max_u8) max_step = step_max_u8;\n \
+  \                       if (manual_step < 1) manual_step = 8'd1;\n             \
+  \           if (manual_step > step_max_u8) manual_step = step_max_u8;\n        \
+  \                act_lo      = adapt_thresh_lo;\n                        act_hi\
+  \      = (adapt_thresh_hi < adapt_thresh_lo) ? adapt_thresh_lo : adapt_thresh_hi;\n\
+  \n                        if (!adapt_enable) begin\n                           \
+  \ budget_next = step_max_u8;\n                        end else if (!adapt_auto)\
+  \ begin\n                            budget_next = manual_step;\n              \
+  \          end else begin\n                            budget_next = budget_curr;\n\
+  \                            if (adapt_cycle_limit != 32'd0 && eng_cycles > adapt_cycle_limit\
+  \ && budget_next > min_step)\n                                budget_next = budget_next\
+  \ - 1'b1;\n                            else begin\n                            \
+  \    if (eng_activity > act_hi && budget_next < max_step)\n                    \
+  \                budget_next = budget_next + 1'b1;\n                           \
+  \     else if (eng_activity < act_lo && budget_next > min_step)\n              \
+  \                      budget_next = budget_next - 1'b1;\n                     \
+  \       end\n                            if (adapt_use_heavy && heavy_opcode &&\
+  \ budget_next > min_step)\n                                budget_next = budget_next\
+  \ - 1'b1;\n                        end\n\n                        if (budget_next\
+  \ < 8'd1) budget_next = 8'd1;\n                        if (budget_next > step_max_u8)\
+  \ budget_next = step_max_u8;\n\n                        step_budget[cur_job] <=\
+  \ budget_next;\n                        cur_budget           <= budget_next;\n\n\
+  \                        step_cnt_inc = step_cnt + 1'b1;\n\n                   \
+  \     if (step_cnt_inc < budget_next) begin\n                            step_cnt\
+  \ <= step_cnt_inc;\n                            st       <= S_IDLE;\n          \
+  \              end else begin\n                            step_cnt <= 8'd0;\n \
+  \                           if (cur_layer == (DEPTH-1)) begin\n                \
+  \                job_done[cur_job] <= 1'b1;\n                                cur_layer\
+  \ <= {LAYER_W{1'b0}};\n                                cur_job   <= next_job;\n\
+  \                                st        <= S_NEXTJ;\n                       \
+  \     end else begin\n                                cur_layer <= cur_layer + {{(LAYER_W-1){1'b0}},1'b1};\n\
+  \                                st        <= S_NEXTL;\n                       \
+  \     end\n                        end\n                    end\n              \
+  \  end\n\n                S_NEXTL: begin\n                    st <= S_IDLE;\n  \
+  \              end\n\n                S_NEXTJ: begin\n                    st <=\
+  \ S_IDLE;\n                end\n            endcase\n        end\n    end\n\n  \
+  \  // Engine busy indicator (includes scheduler waiting)\n    wire engine_active\
+  \ = (st != S_IDLE) || eng_busy;\n\n    // -------------------------------------------------------------------------\n\
+  \    // CSR read mux\n    // -------------------------------------------------------------------------\n\
+  \    wire [JOB_W-1:0] status_idx = ($unsigned(status_job_sel) < N_JOBS) ? status_job_sel\
+  \ : {JOB_W{1'b0}};\n    wire [7:0] status_budget = step_budget[status_idx];\n  \
+  \  wire [31:0] status_activity = last_activity[status_idx];\n    wire [31:0] status_cycles\
+  \   = last_cycles[status_idx];\n\n    always @* begin\n        csr_rdata = 32'h0;\n\
+  \        if (csr_re) begin\n            case (csr_addr)\n                `CSR_STATUS:\
+  \ begin\n                    csr_rdata = { {(32-N_JOBS-1){1'b0}}, job_done, engine_active\
+  \ };\n                end\n                `CSR_ADAPT_STATUS: begin\n          \
+  \          csr_rdata = { status_cycles[15:0], status_activity[15:0] };\n       \
+  \         end\n                `CSR_ADAPT_BUDGET: begin\n                    csr_rdata\
+  \ = { adapt_max_steps, adapt_min_steps, status_budget, adapt_manual_steps };\n \
+  \               end\n                `CSR_UNIT_CTRL: begin\n                   \
+  \ csr_rdata = { 16'd0,\n                                  unit_pressure_iters,\n\
+  \                                  4'd0,\n                                  unit_pressure_diag_override,\n\
+  \                                  unit_overflow_reverse_bottom,\n             \
+  \                     unit_overflow_reverse_top,\n                             \
+  \     unit_flux_enable };\n                end\n                `CSR_UNIT_STATUS_WINDOW:\
+  \ begin\n                    csr_rdata = { unit_window_height[status_idx], unit_window_width[status_idx]\
+  \ };\n                end\n                `CSR_UNIT_STATUS_OFFSET: begin\n    \
+  \                csr_rdata = { unit_window_yoff[status_idx], unit_window_xoff[status_idx]\
+  \ };\n                end\n                `CSR_UNIT_FLUX_WEIGHT_TOP: begin\n  \
+  \                  csr_rdata = {{(32-DATA_W){1'b0}}, unit_weight_top};\n       \
+  \         end\n                `CSR_UNIT_FLUX_WEIGHT_BOTTOM: begin\n           \
+  \         csr_rdata = {{(32-DATA_W){1'b0}}, unit_weight_bottom};\n             \
+  \   end\n                `CSR_UNIT_FLUX_WEIGHT_SIDE: begin\n                   \
+  \ csr_rdata = {{(32-DATA_W){1'b0}}, unit_weight_side};\n                end\n  \
+  \              `CSR_UNIT_FLUX_WEIGHT_RETAIN: begin\n                    csr_rdata\
+  \ = {{(32-DATA_W){1'b0}}, unit_weight_retain};\n                end\n          \
+  \      `CSR_UNIT_FLUX_WEIGHT_PREV: begin\n                    csr_rdata = {{(32-DATA_W){1'b0}},\
+  \ unit_weight_prev};\n                end\n                `CSR_UNIT_FLUX_THRESHOLD:\
+  \ begin\n                    csr_rdata = {{(32-DATA_W){1'b0}}, unit_flux_threshold};\n\
+  \                end\n                `CSR_UNIT_FLUX_REVERSE_TOP: begin\n      \
+  \              csr_rdata = {{(32-DATA_W){1'b0}}, unit_flux_reverse_top};\n     \
+  \           end\n                `CSR_UNIT_FLUX_REVERSE_BOTTOM: begin\n        \
+  \            csr_rdata = {{(32-DATA_W){1'b0}}, unit_flux_reverse_bottom};\n    \
+  \            end\n                `CSR_UNIT_PRESSURE_GAIN: begin\n             \
+  \       csr_rdata = {{(32-DATA_W){1'b0}}, unit_pressure_gain};\n               \
+  \ end\n                `CSR_UNIT_BACKPROP_LR: begin\n                    csr_rdata\
+  \ = {{(32-DATA_W){1'b0}}, unit_backprop_lr};\n                end\n            \
+  \    `CSR_UNIT_BACKPROP_NEIGH: begin\n                    csr_rdata = {{(32-DATA_W){1'b0}},\
+  \ unit_backprop_neigh};\n                end\n                `CSR_UNIT_BACKPROP_DECAY:\
+  \ begin\n                    csr_rdata = {{(32-DATA_W){1'b0}}, unit_backprop_decay};\n\
+  \                end\n                default: csr_rdata = 32'h0;\n            endcase\n\
+  \        end\n    end\nendmodule\n"
