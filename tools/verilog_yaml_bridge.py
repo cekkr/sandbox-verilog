@@ -723,10 +723,15 @@ def _statement_to_items(statement: Any) -> List[Any]:
         default_body: List[Any] = []
         for case_item in statement.caselist:
             labels: List[str] = []
-            for cond in case_item.cond:
-                if isinstance(cond, vast.Default):
-                    labels.append("default")
+            cond_values = case_item.cond
+            if cond_values is None:
+                labels.append("default")
+            else:
+                if not isinstance(cond_values, (list, tuple)):
+                    cond_iterable = [cond_values]
                 else:
+                    cond_iterable = cond_values
+                for cond in cond_iterable:
                     rendered = _expr_to_str(cond)
                     if rendered is not None:
                         labels.append(rendered)
@@ -1020,7 +1025,13 @@ def build_sand_module_record(
         raise ValueError("No modules available to build sand_module record")
     primary = modules[0]
     original_rel = str(source.relative_to(rtl_root)).replace("\\", "/")
-    machine_rel = Path("machine") / source.relative_to(rtl_root)
+    relative_path = source.relative_to(rtl_root)
+    depth = max(len(relative_path.parts) - 1, 0)
+    if depth > 0:
+        ascender = Path(*([".."] * depth))
+        machine_rel = ascender / "machine" / relative_path
+    else:
+        machine_rel = Path("machine") / relative_path
     record: Dict[str, Any] = {
         "version": YAML_VERSION,
         "kind": "sand_module",
