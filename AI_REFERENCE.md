@@ -31,6 +31,9 @@ RTL_FLOW:
 BRIDGE_NOTES:
 - Machine YAML mirrors now include a `modules` block that uses the human-readable descriptor layout (parameters list, port map, logic sections) alongside the AST payload for easier inspection.
 - `sand_scheduler_dynamic.yaml` now carries a curated human descriptor instead of fallback text, outlining CSR behaviour, adaptive controls, and engine wiring.
+- The base `rtl.yaml/` directory holds the configuration-oriented descriptors; the bridge-ready, human-readable RTL mirrors reside under `rtl.yaml/machine/` (see studies/rtl.yaml.md for the full workflow).
+- After every edit or conversion involving the descriptor tree, rerun `tools/verilog_yaml_bridge.py` (typically via `python3 tools/verilog_yaml_bridge.py export --rtl-root <verilog_root> --yaml-root rtl.yaml`) so the RTL round-trip is validated immediately.
+- Whenever you export from Verilog to YAML, scan the generated machine entries for a `parse_error` field—if it appears, resolve the offending RTL construct or update the bridge sanitiser until PyVerilog accepts the source.
 
 CONFIG_CORE (`rtl.yaml/sand_defs.yaml` → `sand_defs.vh`):
 - Grid params: `DATA_W`, `FRAC_W` (default Q8.8), `WIDTH`, `HEIGHT`, `DEPTH`, `N_JOBS`, `STEPS_PER_SLICE`, `USE_DIAGONALS`.
