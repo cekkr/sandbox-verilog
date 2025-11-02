@@ -3,6 +3,67 @@ kind: verilog_module
 original_path: circuits/sand_circuit_activation_softsign.v
 includes:
 - sand_defs.vh
+modules:
+- name: sand_circuit_activation_softsign
+  ports:
+    value_in:
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    value_out:
+      direction: output
+      width: '[16-1:0]'
+      signed: true
+  signals:
+  - name: numerator
+    kind: integer
+  - name: denominator
+    kind: integer
+  - name: abs_val
+    kind: integer
+  - name: scaled
+    kind: integer
+  - name: result
+    kind: reg
+    width: '[16-1:0]'
+    signed: true
+  constants:
+  - name: Q_ONE_INT
+    value: 1 << 8
+  - name: Q_MAX
+    value: (1 << 16 - 1) - 1
+    signed: true
+  - name: Q_MIN
+    value: -(1 << 16 - 1)
+    signed: true
+  assignments:
+  - out: value_out
+    value: result
+  always_blocks:
+  - 'on':
+    - '*'
+    type: combinational
+    body:
+    - numerator = $signed(value_in);
+    - 'abs_val = (value_in[16 - 1])? -$signed(value_in) : $signed(value_in);'
+    - denominator = abs_val + Q_ONE_INT;
+    - if: (denominator <= 0)
+      then:
+      - denominator = 1;
+    - scaled = numerator8;
+    - if: (scaled >= 0)
+      then:
+      - scaled = scaled + (denominator >> 1);
+      else:
+      - scaled = scaled - (denominator >> 1);
+    - result = $signed((scaled / denominator));
+    - if: (result > Q_MAX)
+      then:
+      - result = Q_MAX;
+      else:
+      - if: (result < Q_MIN)
+        then:
+        - result = Q_MIN;
 summary:
   modules:
   - name: sand_circuit_activation_softsign

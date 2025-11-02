@@ -3,6 +3,78 @@ kind: verilog_module
 original_path: circuits/sand_circuit_neuron_relu.v
 includes:
 - sand_defs.vh
+modules:
+- name: sand_circuit_neuron_relu
+  parameters:
+  - name: DATA_W
+    default: '16'
+  - name: FRAC_W
+    default: '8'
+  ports:
+    edge_in:
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: true
+    raw_in:
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: true
+    edge_gain_q:
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: true
+    raw_gain_q:
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: true
+    bias_q:
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: true
+    threshold_q:
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: true
+    raw_out:
+      direction: output
+      width: '[DATA_W-1:0]'
+      signed: true
+      type: reg
+    relu_out:
+      direction: output
+      width: '[DATA_W-1:0]'
+      signed: true
+      type: reg
+    fire:
+      direction: output
+      type: reg
+  signals:
+  - name: edge_term
+    kind: integer
+  - name: raw_term
+    kind: integer
+  - name: combined
+    kind: integer
+  constants:
+  - name: Q_MAX
+    value: (1 << DATA_W - 1) - 1
+  - name: Q_MIN
+    value: -(1 << DATA_W - 1)
+  always_blocks:
+  - 'on':
+    - '*'
+    type: combinational
+    body:
+    - edge_term = $signed(edge_gain_q) * $signed(edge_in) >>> FRAC_W;
+    - raw_term = $signed(raw_gain_q) * $signed(raw_in) >>> FRAC_W;
+    - combined = edge_term + raw_term + $signed(bias_q);
+    - raw_out = clamp_signed(combined);
+    - if: (combined > 0)
+      then:
+      - relu_out = clamp_positive(combined);
+      else:
+      - relu_out = { 1{ 1'b0 } };
+    - fire = combined >= threshold_q;
 summary:
   modules:
   - name: sand_circuit_neuron_relu

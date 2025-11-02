@@ -3,6 +3,76 @@ kind: verilog_module
 original_path: circuits/sand_circuit_edge_l1.v
 includes:
 - sand_defs.vh
+modules:
+- name: sand_circuit_edge_l1
+  parameters:
+  - name: DATA_W
+    default: '16'
+  ports:
+    center:
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: true
+    north:
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: true
+    south:
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: true
+    east:
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: true
+    west:
+      direction: input
+      width: '[DATA_W-1:0]'
+      signed: true
+    edge_out:
+      direction: output
+      width: '[DATA_W-1:0]'
+      type: reg
+  signals:
+  - name: dx
+    kind: integer
+  - name: dy
+    kind: integer
+  - name: abs_dx
+    kind: integer
+  - name: abs_dy
+    kind: integer
+  - name: sum
+    kind: integer
+  constants:
+  - name: Q_MAX
+    value: (1 << DATA_W - 1) - 1
+  always_blocks:
+  - 'on':
+    - '*'
+    type: combinational
+    body:
+    - dx = $signed(east) - $signed(west);
+    - if: (dx < 0)
+      then:
+      - abs_dx = -dx;
+      else:
+      - abs_dx = dx;
+    - dy = $signed(south) - $signed(north);
+    - if: (dy < 0)
+      then:
+      - abs_dy = -dy;
+      else:
+      - abs_dy = dy;
+    - sum = abs_dx + abs_dy;
+    - if: (sum < 0)
+      then:
+      - sum = 0;
+      else:
+      - if: (sum > Q_MAX)
+        then:
+        - sum = Q_MAX;
+    - edge_out = sum;
 summary:
   modules:
   - name: sand_circuit_edge_l1

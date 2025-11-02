@@ -91,7 +91,7 @@ module sand_scheduler_dynamic #(
     reg [31:0]           last_cycles   [0:N_JOBS-1];
 
     // Plane select per job/layer
-    reg plane_sel [0:N_JOBS-1][0:DEPTH-1];
+    reg [DEPTH-1:0]      plane_sel [0:N_JOBS-1];
 
     // -------------------------------------------------------------------------
     // Memory + engine wiring
@@ -215,7 +215,7 @@ module sand_scheduler_dynamic #(
     reg [7:0]          cur_budget;
     reg [7:0]          step_cnt;
 
-    wire [JOB_W-1:0]   next_job = (cur_job == (N_JOBS-1)) ? {JOB_W{1'b0}} : (cur_job + {{(JOB_W-1){1'b0}},1'b1});
+    wire [JOB_W-1:0]   next_job = (cur_job == (N_JOBS-1)) ? {JOB_W{1'b0}} : (cur_job + 1'b1);
 
     // -------------------------------------------------------------------------
     // Helper functions/tasks
@@ -255,7 +255,7 @@ module sand_scheduler_dynamic #(
             constB        <= {DATA_W{1'b0}};
             constC        <= {DATA_W{1'b0}};
             constD        <= {DATA_W{1'b0}};
-            force_diag    <= `USE_DIAGONALS[0];
+            force_diag    <= (`USE_DIAGONALS != 0);
             use_micro     <= 1'b0;
             adapt_enable  <= 1'b0;
             adapt_auto    <= 1'b1;
@@ -340,11 +340,11 @@ module sand_scheduler_dynamic #(
                         adapt_enable      <= csr_wdata[0];
                         adapt_auto        <= csr_wdata[1];
                         adapt_use_heavy   <= csr_wdata[2];
-                        manual_clamped    = clamp_steps(csr_wdata[10:3]);
-                        adapt_min_clamped = clamp_steps(csr_wdata[18:11]);
-                        adapt_max_clamped = clamp_steps(csr_wdata[26:19]);
+                        manual_clamped    <= clamp_steps({8'd0, ((csr_wdata >> 3)  & 8'hFF)});
+                        adapt_min_clamped <= clamp_steps({8'd0, ((csr_wdata >> 11) & 8'hFF)});
+                        adapt_max_clamped <= clamp_steps({8'd0, ((csr_wdata >> 19) & 8'hFF)});
                         if (adapt_max_clamped < adapt_min_clamped)
-                            adapt_max_clamped = adapt_min_clamped;
+                            adapt_max_clamped <= adapt_min_clamped;
                         adapt_manual_steps <= manual_clamped;
                         adapt_min_steps    <= adapt_min_clamped;
                         adapt_max_steps    <= adapt_max_clamped;
@@ -352,7 +352,7 @@ module sand_scheduler_dynamic #(
                     `CSR_ADAPT_THRESH_LO: adapt_thresh_lo <= csr_wdata;
                     `CSR_ADAPT_THRESH_HI: adapt_thresh_hi <= csr_wdata;
                     `CSR_ADAPT_CAPACITY:  adapt_cycle_limit <= csr_wdata;
-                    `CSR_ADAPT_STATUS_SEL:status_job_sel <= csr_wdata[JOB_W-1:0];
+                    `CSR_ADAPT_STATUS_SEL: status_job_sel <= csr_wdata[JOB_W-1:0];
                     `CSR_UNIT_CTRL: begin
                         unit_flux_enable            <= csr_wdata[0];
                         unit_overflow_reverse_top   <= csr_wdata[1];
@@ -528,7 +528,7 @@ module sand_scheduler_dynamic #(
                                 cur_job   <= next_job;
                                 st        <= S_NEXTJ;
                             end else begin
-                                cur_layer <= cur_layer + {{(LAYER_W-1){1'b0}},1'b1};
+                                cur_layer <= cur_layer + 1'b1;
                                 st        <= S_NEXTL;
                             end
                         end

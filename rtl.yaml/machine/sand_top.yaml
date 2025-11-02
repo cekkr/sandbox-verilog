@@ -3,6 +3,66 @@ kind: verilog_module
 original_path: sand_top.v
 includes:
 - sand_defs.vh
+modules:
+- name: sand_top
+  ports:
+    clk:
+      direction: input
+    rst:
+      direction: input
+    csr_we:
+      direction: input
+    csr_re:
+      direction: input
+    csr_addr:
+      direction: input
+      width: '[7:0]'
+    csr_wdata:
+      direction: input
+      width: '[31:0]'
+    csr_rdata:
+      direction: output
+      width: '[31:0]'
+    seed_we:
+      direction: input
+    seed_job:
+      direction: input
+      width: '[$clog2(4)-1:0]'
+    seed_layer:
+      direction: input
+      width: '[$clog2(4)-1:0]'
+    seed_idx:
+      direction: input
+      width: '[$clog2((32*32))-1:0]'
+    seed_data:
+      direction: input
+      width: '[16-1:0]'
+    job_done:
+      direction: output
+      width: '[4-1:0]'
+  instances:
+  - module: sand_scheduler_dynamic
+    instance: u_sched
+    parameters:
+      DATA_W: '16'
+      WIDTH: '32'
+      HEIGHT: '32'
+      DEPTH: '4'
+      N_JOBS: '4'
+    connections:
+      clk: clk
+      rst: rst
+      csr_we: csr_we
+      csr_addr: csr_addr
+      csr_wdata: csr_wdata
+      csr_re: csr_re
+      csr_rdata: csr_rdata
+      seed_we: seed_we
+      seed_job: seed_job
+      seed_layer: seed_layer
+      seed_idx: seed_idx
+      seed_data: seed_data
+      job_done: job_done
 summary:
   modules:
   - name: sand_top
