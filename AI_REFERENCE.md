@@ -30,6 +30,7 @@ RTL_FLOW:
 
 BRIDGE_NOTES:
 - Machine YAML mirrors now include a `modules` block that uses the human-readable descriptor layout (parameters list, port map, logic sections) alongside the AST payload for easier inspection.
+- `sand_scheduler_dynamic.yaml` now carries a curated human descriptor instead of fallback text, outlining CSR behaviour, adaptive controls, and engine wiring.
 
 CONFIG_CORE (`rtl.yaml/sand_defs.yaml` → `sand_defs.vh`):
 - Grid params: `DATA_W`, `FRAC_W` (default Q8.8), `WIDTH`, `HEIGHT`, `DEPTH`, `N_JOBS`, `STEPS_PER_SLICE`, `USE_DIAGONALS`.
