@@ -101,5 +101,5 @@ behaviour:
   - Abstracts address generation across job, layer, plane, and cell dimensions.
   - Pairs with bram_tdp_wrap for vendor-specific RAM inference.
 implementation:
-  machine_path: machine/sand_jobmem2p.v
+  machine_path: machine/sand_jobmem2p.yaml
   kind: verilog_module

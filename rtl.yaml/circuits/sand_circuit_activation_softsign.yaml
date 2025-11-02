@@ -21,5 +21,5 @@ behaviour:
   notes:
   - Implements smooth saturation for neural-style pipelines.
 implementation:
-  machine_path: ../machine/circuits/sand_circuit_activation_softsign.v
+  machine_path: ../machine/circuits/sand_circuit_activation_softsign.yaml
   kind: verilog_module

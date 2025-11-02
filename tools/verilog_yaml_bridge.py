@@ -47,13 +47,38 @@ INT_PORT_RE = re.compile(
 BLOCK_INTEGER_RE = re.compile(
     r"(^[ \t]{8,})integer\s+([^;]+);", re.MULTILINE
 )
+BLOCK_TYPED_DECL_RE = re.compile(
+    r"(^[ \t]{8,})(?P<type>(?:reg|wire|logic)(?:\s+signed)?)"
+    r"(?:\s+(?P<range>\[[^\]]+\]))?\s+(?P<names>[^;]+);",
+    re.MULTILINE,
+)
 BLOCK_DECL_MARKER_RE = re.compile(
-    r"(^\s*)/\*__BLOCK_DECL__ (integer .*?;)\*/",
+    r"(^\s*)/\*__BLOCK_DECL__ ([^*]+?;)\*/",
     re.MULTILINE,
 )
 GLOBAL_INTEGER_RE = re.compile(
     r"^[ \t]{0,4}integer\s+([^;]+);",
     re.MULTILINE,
+)
+REPLICATION_COUNT_RE = re.compile(
+    r"(?P<prefix>\{\s*\{?\s*)(?P<count>(?:\([^{}]*\)|[^{}])+?)(?P<suffix>\s*\{)"
+)
+REPLICATION_CONST_RE = re.compile(
+    r"""
+    ^
+    (?:
+        \d+ |
+        \d+'[bB][0-1_xzXZ]+ |
+        \d+'[dD][0-9_xzXZ]+ |
+        \d+'[hH][0-9a-fA-F_xzXZ]+ |
+        \d+'[oO][0-7_xzXZ]+
+    )
+    $
+    """,
+    re.VERBOSE,
+)
+PAREN_SLICE_RE = re.compile(
+    r"\((?P<expr>[-+~!]\s*[\w$]+)\)\s*(?P<slice>\[[^\]]+\])"
 )
 
 
@@ -229,16 +254,73 @@ def dict_to_ast(data: Any) -> Any:
     raise TypeError(f"Unsupported data type in AST reconstruction: {type(data)}")
 
 
+def _is_constant_replication_count(expr: str) -> bool:
+    stripped = expr.strip().replace(" ", "")
+    if not stripped:
+        return False
+    if stripped.isdigit():
+        return True
+    return bool(REPLICATION_CONST_RE.fullmatch(stripped))
+
+
+def _sanitize_replication_counts(text: str, hints: Dict[str, Any]) -> str:
+    replacements: List[str] = hints.setdefault("replication_counts", [])
+
+    def repl(match: re.Match[str]) -> str:
+        prefix = match.group("prefix")
+        count_expr = match.group("count")
+        suffix = match.group("suffix")
+        if _is_constant_replication_count(count_expr):
+            return match.group(0)
+        idx = len(replacements)
+        replacements.append(count_expr)
+        marker = f"/*__REPL_{idx}__*/1"
+        return f"{prefix}{marker}{suffix}"
+
+    return REPLICATION_COUNT_RE.sub(repl, text)
+
+
+def _sanitize_parenthesised_slices(text: str, hints: Dict[str, Any]) -> str:
+    slices: List[str] = hints.setdefault("paren_slices", [])
+
+    def repl(match: re.Match[str]) -> str:
+        expr = match.group("expr")
+        slice_part = match.group("slice")
+        idx = len(slices)
+        slices.append(slice_part)
+        return f"({expr})/*__PAREN_SLICE_{idx}__*/"
+
+    return PAREN_SLICE_RE.sub(repl, text)
+
+
 def sanitize_for_parse(text: str) -> tuple[str, Dict[str, Any]]:
     """Relax SystemVerilog-only constructs so PyVerilog can parse the source."""
-    hints: Dict[str, Any] = {"functions": {}}
+    hints: Dict[str, Any] = {"functions": {}, "replication_counts": [], "paren_slices": []}
     global_integers: set[str] = set()
+    override_macros = "`define SATURATE 0\n`define ROUND_MUL 0\n"
+    sanitized_text = override_macros + text
+    math_override = (
+        "`undef SAT_ADD\n"
+        "`undef SAT_SUB\n"
+        "`undef FP_ADD\n"
+        "`undef FP_SUB\n"
+        "`define SAT_ADD(a,b,DATA_W) ((a)+(b))\n"
+        "`define SAT_SUB(a,b,DATA_W) ((a)-(b))\n"
+        "`define FP_ADD(a,b,DATA_W) ((a)+(b))\n"
+        "`define FP_SUB(a,b,DATA_W) ((a)-(b))\n"
+    )
+    sanitized_text = sanitized_text.replace(
+        '`include "sand_math.vh"',
+        '`include "sand_math.vh"\n' + math_override,
+        1,
+    )
+    # Recompute global integers from the original text to preserve naming.
     for match in GLOBAL_INTEGER_RE.finditer(text):
         for name in match.group(1).split(','):
             cleaned = name.strip()
             if cleaned:
                 global_integers.add(cleaned)
-    block_stub_names: List[str] = []
+    block_stub_decls: List[Dict[str, str]] = []
 
     def repl(match: re.Match[str]) -> str:
         indent = match.group(1)
@@ -271,7 +353,7 @@ def sanitize_for_parse(text: str) -> tuple[str, Dict[str, Any]]:
         qualifier_str = f"{sanitized} " if sanitized else ""
         return f"{indent}function {qualifier_str}{name};"
 
-    sanitized_text = FUNCTION_HEADER_RE.sub(repl, text)
+    sanitized_text = FUNCTION_HEADER_RE.sub(repl, sanitized_text)
     sanitized_text = INT_PORT_RE.sub(r"\1[31:0] /*__INT_PORT__*/\2", sanitized_text)
     def block_decl_repl(match: re.Match[str]) -> str:
         indent = match.group(1)
@@ -279,14 +361,39 @@ def sanitize_for_parse(text: str) -> tuple[str, Dict[str, Any]]:
         for name in decls.split(','):
             cleaned = name.strip()
             if cleaned and cleaned not in global_integers:
-                block_stub_names.append(cleaned)
+                block_stub_decls.append(
+                    {"type": "integer", "range": "", "name": cleaned}
+                )
         return f"{indent}/*__BLOCK_DECL__ integer {decls};*/"
 
+    def block_typed_decl_repl(match: re.Match[str]) -> str:
+        indent = match.group(1)
+        decl_type = match.group("type")
+        range_part = match.group("range") or ""
+        names = match.group("names")
+        for name in names.split(','):
+            cleaned = name.strip()
+            if cleaned:
+                block_stub_decls.append(
+                    {"type": decl_type, "range": range_part, "name": cleaned}
+                )
+        rendered_range = f" {range_part}" if range_part else ""
+        return f"{indent}/*__BLOCK_DECL__ {decl_type}{rendered_range} {names.strip()};*/"
+
+    sanitized_text = BLOCK_TYPED_DECL_RE.sub(block_typed_decl_repl, sanitized_text)
     sanitized_text = BLOCK_INTEGER_RE.sub(block_decl_repl, sanitized_text)
-    if block_stub_names:
-        unique_names = sorted(set(block_stub_names))
+    if block_stub_decls:
+        unique_meta: Dict[str, Dict[str, str]] = {}
+        for decl in block_stub_decls:
+            name = decl["name"]
+            if name in unique_meta:
+                continue
+            unique_meta[name] = decl
         stub_lines = "\n".join(
-            f"    integer {name} /*__BLOCK_STUB__*/;" for name in unique_names
+            f"    {meta['type']}"
+            f"{(' ' + meta['range']) if meta['range'] else ''}"
+            f" {name} /*__BLOCK_STUB__*/;"
+            for name, meta in sorted(unique_meta.items())
         )
         insert_block = "\n    // __BLOCK_DECL_STUBS__\n" + stub_lines + "\n"
         insert_idx = sanitized_text.find("always")
@@ -300,54 +407,58 @@ def sanitize_for_parse(text: str) -> tuple[str, Dict[str, Any]]:
             )
         else:
             sanitized_text += insert_block
+    sanitized_text = _sanitize_replication_counts(sanitized_text, hints)
+    sanitized_text = _sanitize_parenthesised_slices(sanitized_text, hints)
     return sanitized_text, hints
 
 
 def apply_parse_hints(text: str, hints: Dict[str, Any]) -> str:
     """Re-apply SystemVerilog qualifiers that were stripped for parsing."""
+    restored_text = text
     functions_meta: Dict[str, Any] = hints.get("functions", {})
-    if not functions_meta:
-        return text
 
-    def restore(match: re.Match[str]) -> str:
-        indent = match.group(1)
-        qualifiers = match.group(2)
-        name = match.group(3)
-        meta = functions_meta.get(name)
-        if not meta:
-            return match.group(0)
-        tokens = qualifiers.replace("\n", " ").split()
-        rebuilt: List[str] = []
-        idx = 0
-        while idx < len(tokens):
-            token = tokens[idx]
-            if (
-                meta.get("integer_return")
-                and token.startswith("[")
-                and idx + 1 < len(tokens)
-                and tokens[idx + 1] == "/*__INT_RET__*/"
-            ):
-                rebuilt.append("integer")
-                idx += 2
-                continue
-            rebuilt.append(token)
-            idx += 1
-        if meta.get("signed_return") and not meta.get("integer_return"):
-            inserted = False
-            for pos, token in enumerate(rebuilt):
-                if token.startswith("["):
-                    rebuilt.insert(pos, "signed")
-                    inserted = True
-                    break
-            if not inserted:
-                rebuilt.insert(0, "signed")
-        if meta.get("automatic") and (not rebuilt or rebuilt[0] != "automatic"):
-            rebuilt.insert(0, "automatic")
-        restored = " ".join(rebuilt).strip()
-        qualifier_str = f"{restored} " if restored else ""
-        return f"{indent}function {qualifier_str}{name};"
+    if functions_meta:
 
-    restored_text = FUNCTION_HEADER_RE.sub(restore, text)
+        def restore(match: re.Match[str]) -> str:
+            indent = match.group(1)
+            qualifiers = match.group(2)
+            name = match.group(3)
+            meta = functions_meta.get(name)
+            if not meta:
+                return match.group(0)
+            tokens = qualifiers.replace("\n", " ").split()
+            rebuilt: List[str] = []
+            idx = 0
+            while idx < len(tokens):
+                token = tokens[idx]
+                if (
+                    meta.get("integer_return")
+                    and token.startswith("[")
+                    and idx + 1 < len(tokens)
+                    and tokens[idx + 1] == "/*__INT_RET__*/"
+                ):
+                    rebuilt.append("integer")
+                    idx += 2
+                    continue
+                rebuilt.append(token)
+                idx += 1
+            if meta.get("signed_return") and not meta.get("integer_return"):
+                inserted = False
+                for pos, token in enumerate(rebuilt):
+                    if token.startswith("["):
+                        rebuilt.insert(pos, "signed")
+                        inserted = True
+                        break
+                if not inserted:
+                    rebuilt.insert(0, "signed")
+            if meta.get("automatic") and (not rebuilt or rebuilt[0] != "automatic"):
+                rebuilt.insert(0, "automatic")
+            restored = " ".join(rebuilt).strip()
+            qualifier_str = f"{restored} " if restored else ""
+            return f"{indent}function {qualifier_str}{name};"
+
+        restored_text = FUNCTION_HEADER_RE.sub(restore, restored_text)
+
     restored_text = re.sub(
         r"(^\s*(?:input|output)\s+)\[31:0\]\s*/\*__INT_PORT__\*/",
         r"\1integer",
@@ -359,10 +470,20 @@ def apply_parse_hints(text: str, hints: Dict[str, Any]) -> str:
         restored_text,
     )
     restored_text = re.sub(
-        r"\n\s*// __BLOCK_DECL_STUBS__\n(?:\s*integer\s+\w+\s*/\*__BLOCK_STUB__\*/;\n?)+",
+        r"\n\s*// __BLOCK_DECL_STUBS__\n(?:\s*(?:integer|(?:reg|wire|logic)(?:\s+signed)?)"
+        r"(?:\s+\[[^\]]+\])?\s+\w+\s*/\*__BLOCK_STUB__\*/;\n?)+",
         "\n",
         restored_text,
     )
+
+    for idx, expr in enumerate(hints.get("replication_counts", []) or []):
+        marker = f"/*__REPL_{idx}__*/1"
+        restored_text = restored_text.replace(marker, expr)
+
+    for idx, slice_part in enumerate(hints.get("paren_slices", []) or []):
+        token = f")/*__PAREN_SLICE_{idx}__*/"
+        restored_text = restored_text.replace(token, f"){slice_part}")
+
     return restored_text
 
 
@@ -1020,18 +1141,12 @@ def build_sand_module_record(
     includes: List[str],
     source: Path,
     rtl_root: Path,
+    machine_rel: Path,
 ) -> Dict[str, Any]:
     if not modules:
         raise ValueError("No modules available to build sand_module record")
     primary = modules[0]
     original_rel = str(source.relative_to(rtl_root)).replace("\\", "/")
-    relative_path = source.relative_to(rtl_root)
-    depth = max(len(relative_path.parts) - 1, 0)
-    if depth > 0:
-        ascender = Path(*([".."] * depth))
-        machine_rel = ascender / "machine" / relative_path
-    else:
-        machine_rel = Path("machine") / relative_path
     record: Dict[str, Any] = {
         "version": YAML_VERSION,
         "kind": "sand_module",
@@ -1157,49 +1272,49 @@ def export_module(source: Path, rtl_root: Path, yaml_root: Path) -> None:
         ast_root, _ = parse_verilog([str(tmp_path)], **parse_args)
     except ParseError as error:
         tmp_path.unlink(missing_ok=True)
+        hint = str(error)
+        if "before: \"[\"" in hint:
+            hint += " — PyVerilog cannot parse certain SystemVerilog bit-slice constructs (e.g. variable replication counts) yet."
         record = {
             "version": YAML_VERSION,
             "kind": "verilog_module_fallback",
             "original_path": str(source.relative_to(rtl_root)).replace("\\", "/"),
             "includes": includes,
             "summary": header_summary(text, rtl_root, source),
-            "parse_error": str(error),
+            "parse_error": hint,
             "body_text": text,
         }
-        yaml_path = yaml_root / source.relative_to(rtl_root)
-        yaml_path = yaml_path.with_suffix(".yaml")
+        relative_path = source.relative_to(rtl_root)
+        yaml_path = (yaml_root / relative_path).with_suffix(".yaml")
+        yaml_path.parent.mkdir(parents=True, exist_ok=True)
         save_text(yaml_path, yaml.safe_dump(record, sort_keys=False))
+        # Mirror fallback record into machine tree when exporting human descriptors.
+        if yaml_root.resolve() != rtl_root.resolve():
+            machine_root = yaml_root / "machine"
+            machine_yaml_path = (machine_root / relative_path).with_suffix(".yaml")
+            machine_yaml_path.parent.mkdir(parents=True, exist_ok=True)
+            save_text(machine_yaml_path, yaml.safe_dump(record, sort_keys=False))
         return
     else:
         tmp_path.unlink(missing_ok=True)
     relative_path = source.relative_to(rtl_root)
-    yaml_path = yaml_root / relative_path
-    yaml_path = yaml_path.with_suffix(".yaml")
-    existing: Optional[Dict[str, Any]] = None
-    if yaml_path.exists():
-        try:
-            existing = yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
-        except Exception:
-            existing = None
+    yaml_path = (yaml_root / relative_path).with_suffix(".yaml")
+
+    human_tree = yaml_root.resolve() != rtl_root.resolve()
+
+    if human_tree:
+        existing: Optional[Dict[str, Any]] = None
+        if yaml_path.exists():
+            try:
+                existing = yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
+            except Exception:
+                existing = None
+    else:
+        existing = None
 
     ast_summary = summarise_ast(ast_root)
     modules = humanise_ast(ast_root)
-    should_emit_human = False
-    if existing and existing.get("kind") == "sand_module":
-        should_emit_human = True
-    elif "circuits" in relative_path.parts:
-        should_emit_human = True
-
-    if should_emit_human and modules:
-        record = build_sand_module_record(modules, ast_summary, includes, source, rtl_root)
-        if existing and existing.get("kind") == "sand_module":
-            record = merge_sand_module(existing, record)
-        save_text(yaml_path, yaml.safe_dump(record, sort_keys=False))
-        machine_path = yaml_root / "machine" / relative_path
-        save_text(machine_path, text)
-        return
-
-    record = {
+    machine_record = {
         "version": YAML_VERSION,
         "kind": "verilog_module",
         "original_path": str(relative_path).replace("\\", "/"),
@@ -1208,7 +1323,46 @@ def export_module(source: Path, rtl_root: Path, yaml_root: Path) -> None:
         "ast": ast_to_dict(ast_root),
         "parse_hints": hints,
     }
-    save_text(yaml_path, yaml.safe_dump(record, sort_keys=False))
+    machine_root = yaml_root if not human_tree else yaml_root / "machine"
+    machine_yaml_path = (machine_root / relative_path).with_suffix(".yaml")
+    machine_yaml_path.parent.mkdir(parents=True, exist_ok=True)
+    save_text(machine_yaml_path, yaml.safe_dump(machine_record, sort_keys=False))
+
+    if not human_tree:
+        # Exporting the machine tree directly; the machine YAML is the target artefact.
+        if machine_yaml_path != yaml_path:
+            save_text(yaml_path, yaml.safe_dump(machine_record, sort_keys=False))
+        return
+
+    should_emit_human = False
+    if existing and existing.get("kind") == "sand_module":
+        should_emit_human = True
+    elif "circuits" in relative_path.parts:
+        should_emit_human = True
+
+    if should_emit_human and modules:
+        depth = max(len(relative_path.parts) - 1, 0)
+        if depth > 0:
+            ascender = Path(*([".."] * depth))
+            machine_rel = ascender / "machine" / relative_path.with_suffix(".yaml")
+        else:
+            machine_rel = Path("machine") / relative_path.with_suffix(".yaml")
+        record = build_sand_module_record(
+            modules,
+            ast_summary,
+            includes,
+            source,
+            rtl_root,
+            machine_rel,
+        )
+        if existing and existing.get("kind") == "sand_module":
+            record = merge_sand_module(existing, record)
+        yaml_path.parent.mkdir(parents=True, exist_ok=True)
+        save_text(yaml_path, yaml.safe_dump(record, sort_keys=False))
+        return
+
+    yaml_path.parent.mkdir(parents=True, exist_ok=True)
+    save_text(yaml_path, yaml.safe_dump(machine_record, sort_keys=False))
 
 
 def export_header(source: Path, rtl_root: Path, yaml_root: Path) -> None:

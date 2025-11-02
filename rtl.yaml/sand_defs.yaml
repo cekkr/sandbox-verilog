@@ -153,5 +153,5 @@ notes:
   - Holds global parameters for grid geometry, opcodes, and CSR layout.
   - Wraps the file in SAND_DEFS_VH guard to avoid double inclusion.
 implementation:
-  machine_path: machine/sand_defs.vh
+  machine_path: machine/sand_defs.yaml
   kind: verilog_header

@@ -3,12 +3,12 @@ kind: sand_module
 module: sand_pe
 original_path: sand_pe.v
 includes:
-  - sand_defs.vh
-  - sand_math.vh
+- sand_defs.vh
+- sand_math.vh
 tags:
-  - processing-element
-  - fixed-point
-  - microcode-friendly
+- processing-element
+- fixed-point
+- microcode-friendly
 interface:
   parameters:
     DATA_W:
@@ -36,26 +36,26 @@ interface:
       direction: input
       width: '[DATA_W-1:0]'
       fanout:
-        - n_in
-        - s_in
-        - e_in
-        - w_in
+      - n_in
+      - s_in
+      - e_in
+      - w_in
       note: Four-neighbour planar inputs.
     diagonal_neighbors:
       direction: input
       width: '[DATA_W-1:0]'
       fanout:
-        - ne_in
-        - nw_in
-        - se_in
-        - sw_in
+      - ne_in
+      - nw_in
+      - se_in
+      - sw_in
       note: Optional diagonals, only sampled when use_diagonals=1.
     vertical_neighbors:
       direction: input
       width: '[DATA_W-1:0]'
       fanout:
-        - above_in
-        - below_in
+      - above_in
+      - below_in
       note: +/-Z neighbours for 3D stacking.
     opcode:
       direction: input
@@ -64,37 +64,37 @@ interface:
     mode:
       direction: input
       fanout:
-        - use_diagonals
-        - unit_flux_enable
-        - unit_overflow_reverse_top
-        - unit_overflow_reverse_bottom
-        - unit_pressure_diag_override
+      - use_diagonals
+      - unit_flux_enable
+      - unit_overflow_reverse_top
+      - unit_overflow_reverse_bottom
+      - unit_pressure_diag_override
       note: Boolean feature toggles grouped for readability.
     constants:
       direction: input
       width: '[DATA_W-1:0]'
       fanout:
-        - constA
-        - constB
-        - constC
-        - constD
+      - constA
+      - constB
+      - constC
+      - constD
       note: Legacy scalar constants for arithmetic ops.
     unit_tuple:
       direction: input
       width: '[DATA_W-1:0]'
       fanout:
-        - unit_weight_top
-        - unit_weight_bottom
-        - unit_weight_side
-        - unit_weight_retain
-        - unit_weight_prev
-        - unit_flux_threshold
-        - unit_flux_reverse_top
-        - unit_flux_reverse_bottom
-        - unit_pressure_gain
-        - unit_backprop_lr
-        - unit_backprop_neigh
-        - unit_backprop_decay
+      - unit_weight_top
+      - unit_weight_bottom
+      - unit_weight_side
+      - unit_weight_retain
+      - unit_weight_prev
+      - unit_flux_threshold
+      - unit_flux_reverse_top
+      - unit_flux_reverse_bottom
+      - unit_pressure_gain
+      - unit_backprop_lr
+      - unit_backprop_neigh
+      - unit_backprop_decay
       note: Enhanced flux/pressure/backprop configuration mirrors scheduler tuple.
     unit_pressure_iters:
       direction: input
@@ -111,33 +111,40 @@ interface:
       type: reg
       note: Resulting value staged into the write plane.
 behaviour:
-  overview: |
-    sand_pe implements the per-cell update for the sandbox grid. It supports a
+  overview: 'sand_pe implements the per-cell update for the sandbox grid. It supports
+    a
+
     mix of diffusion, laplacian, min/max, sharpening, backpropagation and
+
     programmable look-up transformations. Flux and pressure modes consume the
+
     enhanced unit tuple so the streaming raster engine and the legacy fully
+
     parallel fabric share identical semantics.
+
+    '
   opcodes:
-    - opcode: OP_NOP
-      summary: Pass-through of self_in.
-    - opcode: OP_DIFFUSE
-      summary: Average of planar (optionally diagonal) neighbours.
-    - opcode: OP_LAPLACIAN
-      summary: Computes laplacian across planar neighbourhood.
-    - opcode: OP_FLUX
-      summary: Flux transfer based on unit tuple thresholds and weights.
-    - opcode: OP_MICRO_LUT
-      summary: Indexes micro_lut using opcode[1:0] & self_in[1:0].
-  reset: |
-    Synchronous reset zeros pipeline registers and clears buffered accumulators
+  - opcode: OP_NOP
+    summary: Pass-through of self_in.
+  - opcode: OP_DIFFUSE
+    summary: Average of planar (optionally diagonal) neighbours.
+  - opcode: OP_LAPLACIAN
+    summary: Computes laplacian across planar neighbourhood.
+  - opcode: OP_FLUX
+    summary: Flux transfer based on unit tuple thresholds and weights.
+  - opcode: OP_MICRO_LUT
+    summary: Indexes micro_lut using opcode[1:0] & self_in[1:0].
+  reset: 'Synchronous reset zeros pipeline registers and clears buffered accumulators
+
     before issuing the next_out result.
-notes: |
-  - Toggle use_diagonals to include the four diagonal planar inputs in diffusion
-    style operations.
-  - unit_flux_enable gates the enhanced tuple logic; when low the module falls
-    back to constA..D driven arithmetic for compatibility with older sandboxes.
-  - The micro_lut fanout expects host software to seed 16 entries of DATA_W bits.
-  - For backpropagation opcodes, unit_backprop_* inputs define the learning rate,
-    neighbour weight and decay applied during the update.
+
+    '
+notes: "- Toggle use_diagonals to include the four diagonal planar inputs in diffusion\n\
+  \  style operations.\n- unit_flux_enable gates the enhanced tuple logic; when low\
+  \ the module falls\n  back to constA..D driven arithmetic for compatibility with\
+  \ older sandboxes.\n- The micro_lut fanout expects host software to seed 16 entries\
+  \ of DATA_W bits.\n- For backpropagation opcodes, unit_backprop_* inputs define\
+  \ the learning rate,\n  neighbour weight and decay applied during the update.\n"
 implementation:
   ast_path: machine/sand_pe.v
+  machine_path: machine/sand_pe.yaml

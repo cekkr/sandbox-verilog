@@ -62,5 +62,5 @@ behaviour:
   notes:
   - Use behavioural RAMs in simulation; replace with vendor macros in production.
 implementation:
-  machine_path: machine/bram_tdp_wrap.v
+  machine_path: machine/bram_tdp_wrap.yaml
   kind: verilog_module

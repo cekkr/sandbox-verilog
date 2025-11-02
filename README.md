@@ -86,7 +86,7 @@
 ### RTL YAML mirror
 
 - `tools/verilog_yaml_bridge.py` now treats the YAML descriptors as the source of truth. Use `python3 tools/verilog_yaml_bridge.py restore --yaml-root rtl.yaml --rtl-root build/rtl` to regenerate synthesizable Verilog (the legacy tree lives under `old/rtl/`).
-- `export` now emits the human-oriented structure sketched in `studies/rtl.yaml.md`, filling in parameters, ports, and logic summaries for existing `kind: sand_module` files (including `rtl/circuits/*`). Extra metadata such as notes or fanouts is preserved while machine RTL snapshots land in `rtl.yaml/machine/`.
+- `export` now emits the human-oriented structure sketched in `studies/rtl.yaml.md`, filling in parameters, ports, and logic summaries for existing `kind: sand_module` files (including `rtl/circuits/*`). Extra metadata such as notes or fanouts is preserved while machine snapshots land as YAML AST mirrors under `rtl.yaml/machine/`, letting descriptors reference `machine/*.yaml` when regenerating RTL.
 - Machine implementations live as readable Verilog/VH under `rtl.yaml/machine/`; the bridge parses these files during restore to merge them with the descriptor metadata.
 - PyVerilog still cannot fully parse a few SystemVerilog-heavy blocks (`sand_engine_raster`, `sand_scheduler_dynamic`), so the bridge copies their machine sources verbatim when needed (`kind: verilog_module_fallback`).
 - Run `python3 tools/verilog_yaml_bridge.py restore` to regenerate RTL from the YAML mirror after editing.

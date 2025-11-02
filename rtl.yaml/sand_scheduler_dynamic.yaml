@@ -92,5 +92,5 @@ behaviour:
   - Monitors frame activity/cycle counters to expand or shrink per-job work.
   - Streams unit configuration and window parameters to the raster engine.
 implementation:
-  machine_path: machine/sand_scheduler_dynamic.v
+  machine_path: machine/sand_scheduler_dynamic.yaml
   kind: verilog_module_fallback

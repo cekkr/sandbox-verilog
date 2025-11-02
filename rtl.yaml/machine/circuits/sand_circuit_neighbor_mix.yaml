@@ -1,0 +1,162 @@
+version: 1
+kind: sand_module
+module: sand_circuit_neighbor_mix
+original_path: circuits/sand_circuit_neighbor_mix.v
+includes:
+- sand_defs.vh
+- sand_math.vh
+interface:
+  ports:
+    self:
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    north:
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    south:
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    east:
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    west:
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    above:
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    below:
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    self_gain_q:
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    planar_gain_q:
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    vertical_gain_q:
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    bias_q:
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    mix_out:
+      direction: output
+      width: '[16-1:0]'
+      signed: true
+signals:
+- name: mix_reg
+  kind: reg
+  width: '[16-1:0]'
+  signed: true
+- name: planar_sum
+  kind: integer
+- name: vertical_sum
+  kind: integer
+- name: planar_avg
+  kind: integer
+- name: vertical_avg
+  kind: integer
+- name: accum
+  kind: integer
+- name: temp
+  kind: integer
+- name: prod
+  kind: integer
+- name: rounder
+  kind: integer
+constants:
+- name: POS_MAX
+  value: (1 << 16 - 1) - 1
+  signed: true
+- name: NEG_MIN
+  value: -(1 << 16 - 1)
+  signed: true
+assignments:
+- out: mix_out
+  value: mix_reg
+always_blocks:
+- 'on':
+  - '*'
+  type: combinational
+  body:
+  - planar_sum = $signed(north) + $signed(south) + $signed(east) + $signed(west);
+  - planar_avg = planar_sum >>> 2;
+  - vertical_sum = $signed(above) + $signed(below);
+  - vertical_avg = vertical_sum >>> 1;
+  - accum = fp_mul_q(self, self_gain_q);
+  - temp = fp_mul_q(planar_avg, planar_gain_q);
+  - accum = accum + temp;
+  - accum = clamp_int(accum);
+  - temp = fp_mul_q(vertical_avg, vertical_gain_q);
+  - accum = accum + temp;
+  - accum = clamp_int(accum);
+  - accum = accum + bias_q;
+  - mix_reg = clamp_int(accum);
+implementation:
+  machine_path: ../machine/circuits/sand_circuit_neighbor_mix.yaml
+  kind: verilog_module
+summary:
+  modules:
+  - name: sand_circuit_neighbor_mix
+    parameters: []
+    ports:
+    - name: self
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    - name: north
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    - name: south
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    - name: east
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    - name: west
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    - name: above
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    - name: below
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    - name: self_gain_q
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    - name: planar_gain_q
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    - name: vertical_gain_q
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    - name: bias_q
+      direction: input
+      width: '[16-1:0]'
+      signed: true
+    - name: mix_out
+      direction: output
+      width: '[16-1:0]'
+      signed: true
